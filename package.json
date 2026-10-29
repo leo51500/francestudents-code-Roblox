@@ -1,6 +1,6 @@
 {
   "name": "project-frstcli",
-  "version": "1.5.20",
+  "version": "1.5.21",
   "description": "FranceStudent Code Roblox : agent IA pour Roblox Studio, Luau, Rojo et Blender",
   "main": "index.js",
   "bin": {

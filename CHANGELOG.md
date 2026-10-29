@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.21] — Publication corrigée pour la 1.5.20
+
+- **Release 1.5.20 non publiée** : la fiche `v1.5.20` n'a pas été créée. Le workflow Windows appelé par **Publication automatique** démarrait sans préparation d'Electron, alors que `npm test` charge Electron via `prepare:electron` ; il est désormais aligné sur la CI (installation puis chargement d'Electron avant les vérifications).
+- **Versions du verrou alignées** : `package-lock.json` indiquait encore 1.5.19 en tête de fichier et dans `packages[""]` ; il porte maintenant la version de `package.json`.
+- Vérifié : versions cohérentes entre `package.json` et `package-lock.json` ; publication à contrôler dans **Actions** après le push.
+
 ## [1.5.20] — Zoom partout, panneau Logs, animations de réflexion
 
 - **Zoom partout** : `Ctrl` + molette dans le chat, l'éditeur, le terminal et les Logs ; `Ctrl+=`, `Ctrl+−` et `Ctrl+0` (aussi dans le menu Affichage). Le niveau suit l'ensemble de la fenêtre, donc les conversations, les dialogues et les aperçus grandissent ensemble. Il est mémorisé (`settings.desktopZoom`) et réappliqué avant le premier affichage. Une pastille « 100 % » dans la barre d'état montre le niveau et revient à 100 % au clic.
