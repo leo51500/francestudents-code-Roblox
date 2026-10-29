@@ -23,6 +23,10 @@ module.exports = [
             "desktop/renderer/app.js",
             "desktop/renderer/vendor/**",
             "desktop/vendor-effectcraft/**",
+            "probe_*",
+            "qa/**",
+            "qa2/**",
+            "qa3/**",
             "**/*.tmp"
         ]
     },
