@@ -1,0 +1,84 @@
+name: Publier les exécutables Windows
+
+on:
+  # Déclenché par la fiche de release (auto-release.yml appelle ce workflow
+  # via `workflow_call`, y compris depuis le jeton automatique Actions).
+  workflow_call:
+    inputs:
+      tag:
+        description: Tag de la release à publier (ex. v1.5.7)
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag de la release existante (ex. v1.1.2)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Vérifier le tag et les fichiers déjà publiés
+        id: release
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -ne "v$version") { throw "Le tag doit correspondre à package.json : v$version" }
+          $release = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets,isPrerelease,isDraft | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "Release introuvable" }
+          $names = @($release.assets | ForEach-Object { $_.name })
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $installer = $package.build.nsis.artifactName.Replace('${version}', $version)
+          $required = @($installer, "$installer.blockmap", "latest.yml", "SHA256SUMS.txt")
+          $missing = @($required | Where-Object { $_ -notin $names })
+          "ready=$($missing.Count -eq 0)".ToLower() >> $env:GITHUB_OUTPUT
+      - name: Installer et vérifier
+        if: steps.release.outputs.ready != 'true'
+        run: |
+          npm install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm audit --audit-level=low
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run lint
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build:renderer
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: ./.github/actions/build-effectcraft
+        if: steps.release.outputs.ready != 'true'
+      - name: Construire sans publier de fichiers intermédiaires
+        if: steps.release.outputs.ready != 'true'
+        run: npx electron-builder --win nsis --publish never --config.npmRebuild=false
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Empreintes et publication des exécutables
+        if: steps.release.outputs.ready != 'true'
+        shell: pwsh
+        run: |
+          $hashes = Get-ChildItem release/*-setup.exe | Sort-Object Name | ForEach-Object {
+            "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          }
+          $hashes | Set-Content release/SHA256SUMS.txt -Encoding utf8NoBOM
+          # Explicit allowlist: portable executables remain local.
+          $assets = @(Get-ChildItem release/*-setup.exe,release/*-setup.exe.blockmap,release/latest.yml,release/SHA256SUMS.txt | ForEach-Object { $_.FullName })
+          gh release upload $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY @assets --clobber
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
