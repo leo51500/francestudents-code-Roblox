@@ -53,7 +53,12 @@ jobs:
       - name: Installer et vérifier
         if: steps.release.outputs.ready != 'true'
         run: |
+          # Même préparation qu'en CI : installer, puis charger Electron avant
+          # toute autre commande. `npm test` appelle `node -e "require('electron')"`
+          # (via prepare:electron) et échoue si le binaire n'est pas téléchargé.
           npm install
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run prepare:electron
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm audit --audit-level=low
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

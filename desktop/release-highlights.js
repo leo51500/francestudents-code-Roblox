@@ -1,6 +1,10 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.21":{headline:"La 1.5.20 arrive enfin, avec ses notes.",items:[
+        {icon:"tools",title:"Publication réparée",text:"La fiche de release est désormais créée puis construite avec les mêmes vérifications que la CI, Electron chargé avant les tests : la 1.5.20 et ses nouveautés (zoom partout, panneau Logs, animations de réflexion) sont enfin disponibles."},
+        {icon:"spark",title:"Notes de version à jour",text:"Chaque version publiée reprend ses propres notes ; la 1.5.20 n'a donc pas perdu son résumé en attendant d'être livrée."}
+    ]},
     "1.5.20":{headline:"Zoom partout, un panneau Logs et une interface qui respire.",items:[
         {icon:"tools",title:"Zoom partout",text:"Ctrl + molette dans le chat, le code ou les logs, et Ctrl+= / Ctrl+0 : toute l’interface grandit ensemble, ton réglage est mémorisé, une pastille dans la barre d’état le rappelle."},
         {icon:"chat",title:"Un panneau Logs clair",text:"Les erreurs du service et de l’application arrivent au même endroit, avec l’heure et le code HTTP. Filtre, cherche, copie : plus besoin de deviner ce qui a échoué."},
