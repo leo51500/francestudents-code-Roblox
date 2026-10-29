@@ -1,0 +1,1795 @@
+:root {
+    color-scheme: dark;
+    --bg: #121317;
+    --bg-side: #0c0d11;
+    --bg-activity: #0c0d11;
+    --bg-panel: #16171c;
+    --bg-input: #1c1e24;
+    --bg-hover: #1a1c22;
+    --bg-active: #23252d;
+    --border: #23252d;
+    --fg: #c8cbd3;
+    --fg-dim: #858995;
+    --accent: #f2f3f5;
+    --accent-hover: #ffffff;
+    --danger: #e5484d;
+    --warn: #cca700;
+    --ok: #89d185;
+    --error: #f48771;
+    --mono: Consolas, "Cascadia Code", "Courier New", monospace;
+    --sans: "Segoe UI", system-ui, sans-serif;
+    --left: 248px;
+    --right: 420px;
+    --bottom: 160px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 13px;
+    overflow: hidden;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+
+button:hover {
+    background: var(--bg-hover);
+}
+
+button.primary {
+    background: var(--accent);
+    color: #fff;
+    padding: 5px 12px;
+}
+
+button.primary:hover {
+    background: var(--accent-hover);
+}
+
+button.danger {
+    background: var(--danger);
+    color: #fff;
+    padding: 5px 12px;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+select,
+input,
+textarea {
+    font: inherit;
+    color: var(--fg);
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+}
+
+textarea:focus,
+input:focus,
+select:focus {
+    outline: 1px solid var(--accent);
+}
+
+kbd {
+    font-family: var(--mono);
+    background: var(--bg-input);
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.spacer {
+    flex: 1;
+}
+
+#app {
+    display: grid;
+    grid-template-columns: 132px var(--left) 4px 1fr 4px var(--right);
+    /* Le thème fixe 24 px (--titlebar, 1fr, 24 px) : une valeur plus basse ici couperait
+       la dernière ligne de la barre d'état. */
+    grid-template-rows: 1fr 24px;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Barre latérale gauche : onglets Roblox Studio / Blender lisibles, sans le chrome d'éditeur générique */
+#sidebar-tabs {
+    grid-row: 2;
+    grid-column: 1;
+    background: var(--bg-activity);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--border);
+}
+
+.sb-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px 12px;
+}
+
+.sb-brand img {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+}
+
+/* Navigation latérale neutre : pas de barre d'accent colorée ni de fond bleu « onglet d'IDE ».
+   L'état actif se lit au contraste et à un repère fin, jamais à une couleur de marque. */
+.sb-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 10px;
+}
+
+.sb-tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: var(--radius, 8px);
+    background: transparent;
+    color: var(--fg-dim);
+    font: inherit;
+    font-size: 12.5px;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.14s, color 0.14s;
+}
+
+.sb-tab:hover {
+    background: var(--bg-hover);
+    color: var(--fg);
+}
+
+.sb-tab.active {
+    background: var(--bg-active);
+    color: var(--fg-strong);
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.sb-tab.active::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    width: 3px;
+    height: 14px;
+    margin-top: -7px;
+    border-radius: 2px;
+    background: var(--fg-strong);
+    opacity: 0.6;
+}
+
+.sb-badge:empty {
+    display: none;
+}
+
+.sb-tab.has-changes {
+    color: var(--fg-strong);
+}
+
+.sb-badge {
+    min-width: 16px;
+    height: 16px;
+    margin-left: auto;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: var(--bg-active);
+    color: var(--fg);
+    font-size: 10px;
+    font-style: normal;
+    line-height: 16px;
+    text-align: center;
+}
+
+/* La pastille « Mise à jour » de la barre de titre ne doit jamais recouvrir la barre latérale. */
+#startup-update-open {
+    margin-right: 6px;
+}
+
+.sb-foot {
+    margin-top: auto;
+    display: flex;
+    gap: 2px;
+    padding: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.sb-icon {
+    flex: 1;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--fg-dim);
+    cursor: pointer;
+}
+
+.sb-icon:hover,
+.sb-icon.active {
+    background: var(--bg-hover);
+    color: var(--fg-strong);
+}
+
+/* Disposition robuste : les trois zones suivent la largeur réelle de la fenêtre.
+   Le rail ne rétrécit jamais ; le centre garde un minimum ; l'agent cède la place
+   avant que la fenêtre ne déborde horizontalement. */
+@supports (grid-template-columns: minmax(0, 1fr)) {
+    #app {
+        grid-template-columns: var(--rail, 168px) minmax(150px, var(--left)) 4px minmax(0, 1fr) 4px minmax(0, var(--right));
+    }
+
+    #app.no-sidebar {
+        grid-template-columns: var(--rail, 168px) 0 0 minmax(320px, 1fr) 4px minmax(280px, var(--right));
+    }
+}
+
+/* Ancienne barre d'activité : conservée uniquement pour les boutons injectés par le motion design (masqué). */
+#activity-bar {
+    display: none !important;
+}
+
+/* Explorateur */
+#sidebar {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    background: var(--bg-side);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Rail de navigation : occupe toute la hauteur, logo en haut, outils en bas. */
+#sidebar-tabs {
+    grid-row: 1 / span 2;
+    min-height: 0;
+}
+
+/* Revenir à l'éditeur doit toujours être possible : le rail occupe la colonne 1,
+   il ne peut pas être poussé hors de l'écran par un contenu large. */
+.sb-tabs {
+    min-width: 0;
+}
+
+#app.no-sidebar {
+    grid-template-columns: var(--rail, 168px) 0 0 1fr 4px var(--right);
+}
+
+#app.no-sidebar #sidebar {
+    display: none;
+}
+
+.sidebar-header,
+.agent-header,
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--fg-dim);
+}
+
+.project-name {
+    padding: 2px 10px 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree {
+    flex: 1;
+    overflow: auto;
+    padding-bottom: 10px;
+}
+
+.tree .empty {
+    padding: 16px;
+    color: var(--fg-dim);
+}
+
+.node {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.node:hover {
+    background: var(--bg-hover);
+}
+
+.node.selected {
+    background: var(--bg-active);
+}
+
+.node .twisty {
+    width: 12px;
+    display: inline-block;
+    color: var(--fg-dim);
+    font-size: 10px;
+}
+
+.node .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Explorateur Roblox Studio : bascule fichiers ↔ scène, couleurs par classe d'Instance */
+#btn-tree-roblox.active {
+    color: var(--accent);
+}
+
+#roblox-tree {
+    display: none;
+}
+
+#app.tree-roblox #roblox-tree {
+    display: block;
+}
+
+#app.tree-roblox #tree {
+    display: none;
+}
+
+.roblox-tree-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 8px 6px;
+    font-size: 11px;
+    color: var(--fg-dim);
+}
+
+.explorer-head > span,
+.project-name {
+    padding-left: 0;
+}
+
+.roblox-tree-project {
+    margin: 6px 8px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.roblox-tree .muted,
+.roblox-packages .muted {
+    padding: 8px;
+    color: var(--fg-dim);
+    font-size: 12px;
+}
+
+.roblox-tree-warning {
+    margin: 6px 8px;
+    padding: 4px 6px;
+    font-size: 11px;
+    color: #e2b561;
+    border-left: 2px solid #e2b561;
+}
+
+.roblox-class {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 16px;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    background: rgba(255, 255, 255, 0.08);
+    color: #c9d1d9;
+}
+
+.roblox-class[data-class="service"] { background: rgba(255, 255, 255, 0.09); color: var(--fg-strong); }
+.roblox-class[data-class="Script"] { background: rgba(126, 199, 135, 0.22); color: #7ee787; }
+.roblox-class[data-class="LocalScript"] { background: rgba(88, 166, 255, 0.22); color: #79c0ff; }
+.roblox-class[data-class="ModuleScript"] { background: rgba(210, 168, 255, 0.22); color: #d2a8ff; }
+.roblox-class[data-class="Model"],
+.roblox-class[data-class="Workspace"] { background: rgba(255, 196, 87, 0.2); color: #ffc457; }
+
+.roblox-packages {
+    border-top: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+
+.roblox-packages-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--fg-dim);
+}
+
+.roblox-tree-actions button {
+    font-size: 11px;
+    padding: 2px 6px;
+    margin-left: 4px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-hover);
+    color: inherit;
+    cursor: pointer;
+}
+
+.roblox-tree-actions button:hover:not(:disabled) {
+    background: var(--bg-active);
+}
+
+.roblox-tree-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Panneau Rojo : statut en direct, build et sourcemap */
+.rojo-panel {
+    flex: 1;
+    overflow: auto;
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.rojo-panel.hidden {
+    display: none !important;
+}
+
+.rojo-panel .muted {
+    color: var(--fg-dim);
+}
+
+.rojo-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.rojo-head .muted {
+    flex: 1;
+    min-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rojo-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: none;
+    background: #6e7681;
+}
+
+.rojo-dot-live { background: #7ee787; box-shadow: 0 0 6px rgba(126, 231, 135, 0.7); }
+.rojo-dot-waiting { background: #ffb454; box-shadow: 0 0 6px rgba(255, 180, 84, 0.6); }
+.rojo-dot-offline { background: #6e7681; }
+
+.rojo-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.rojo-actions button {
+    font-size: 11px;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-hover);
+    color: var(--fg);
+    cursor: pointer;
+}
+
+.rojo-actions button:hover:not(:disabled) { background: var(--bg-active); }
+.rojo-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.rojo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.rojo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.rojo-card small { color: var(--fg-dim); font-size: 11px; }
+
+.rojo-note {
+    margin: 0 0 8px;
+    color: #e2b561;
+    font-size: 11px;
+}
+
+.rojo-log {
+    max-height: 140px;
+    overflow: auto;
+    margin: 0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+}
+
+/* Redimensionnement */
+.resizer {
+    grid-row: 1;
+    cursor: col-resize;
+    background: var(--bg);
+}
+
+#resizer-left {
+    grid-column: 3;
+}
+
+#resizer-right {
+    grid-column: 5;
+}
+
+.resizer:hover,
+.resizer-h:hover {
+    background: var(--accent);
+}
+
+.resizer-h {
+    height: 4px;
+    cursor: row-resize;
+    background: var(--border);
+}
+
+/* Zone centrale : rectangle strictement délimité par la grille. Un enfant plus haut
+   (panneau du bas) doit défiler dans son cadre, jamais déborder sur la barre d'état. */
+#center {
+    grid-row: 2;
+    grid-column: 4;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tabs {
+    display: flex;
+    background: var(--bg-side);
+    overflow-x: auto;
+    min-height: 35px;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    height: 35px;
+    border-right: 1px solid var(--bg);
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--fg-dim);
+    background: #2d2d2d;
+}
+
+.tab.active {
+    background: var(--bg);
+    color: #fff;
+    border-top: 1px solid var(--accent);
+}
+
+.tab .dirty {
+    color: #fff;
+}
+
+.tab .close {
+    padding: 0 4px;
+    opacity: 0.7;
+}
+
+.editor-area {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+}
+
+.editor-welcome {
+    padding: 60px;
+    color: var(--fg-dim);
+}
+
+.editor-welcome h1 {
+    color: var(--fg);
+    font-weight: 400;
+}
+
+.editor-welcome li {
+    margin: 6px 0;
+}
+
+.editor {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.gutter {
+    width: 56px;
+    padding: 6px 10px 6px 0;
+    text-align: right;
+    color: #858585;
+    background: var(--bg);
+    overflow: hidden;
+    white-space: pre;
+    user-select: none;
+}
+
+#code {
+    flex: 1;
+    resize: none;
+    border: none;
+    border-radius: 0;
+    background: var(--bg);
+    padding: 6px 10px;
+    font: inherit;
+    line-height: inherit;
+    tab-size: 4;
+    white-space: pre;
+    overflow: auto;
+}
+
+#code:focus {
+    outline: none;
+}
+
+.panel {
+    height: var(--bottom);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-panel);
+    min-height: 60px;
+}
+
+.output {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 6px 10px;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Panneau agent : il occupe la surface de travail (ligne 2), jamais la ligne étroite
+   de la barre de titre ; la barre d'état reste réservée à ses propres informations. */
+#agent {
+    grid-row: 2;
+    grid-column: 6;
+    background: var(--bg-side);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.agent-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.transcript {
+    flex: 1;
+    overflow: auto;
+    padding: 8px 10px;
+    min-height: 0;
+}
+
+.entry {
+    margin: 6px 0;
+    line-height: 1.45;
+    word-wrap: break-word;
+}
+
+.entry.user {
+    background: var(--bg-active);
+    padding: 8px 10px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+}
+
+.entry.assistant {
+    padding: 2px 0;
+}
+
+.entry.assistant pre,
+.entry.print pre {
+    background: var(--bg-panel);
+    padding: 8px;
+    border-radius: 4px;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+.entry.assistant code {
+    font-family: var(--mono);
+    background: var(--bg-panel);
+    padding: 0 3px;
+    border-radius: 3px;
+}
+
+.entry.assistant pre code {
+    padding: 0;
+    background: none;
+}
+
+.entry.info {
+    color: var(--fg-dim);
+    font-size: 12px;
+}
+
+.entry.warn {
+    color: var(--warn);
+    font-size: 12px;
+}
+
+.entry.error {
+    color: var(--error);
+}
+
+.entry.tool {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #9cdcfe;
+}
+
+.entry.tool .name {
+    color: #dcdcaa;
+    font-weight: 600;
+}
+
+.entry.result {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--fg-dim);
+    padding-left: 14px;
+}
+
+.entry.result.ok {
+    color: var(--ok);
+}
+
+.entry.result.error {
+    color: var(--error);
+}
+
+.entry.plan ol {
+    margin: 4px 0;
+    padding-left: 22px;
+}
+
+.entry.print pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.entry.welcome {
+    color: var(--fg-dim);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.entry.welcome b {
+    color: var(--fg);
+}
+
+.diff {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg-panel);
+    border-radius: 4px;
+    overflow: auto;
+    max-height: 320px;
+    padding: 4px 0;
+}
+
+.diff div {
+    white-space: pre;
+    padding: 0 8px;
+}
+
+.diff .add {
+    background: rgba(78, 201, 100, 0.15);
+    color: #b5e8b0;
+}
+
+.diff .del {
+    background: rgba(244, 71, 71, 0.15);
+    color: #f4a5a5;
+}
+
+.diff .hunk {
+    color: var(--fg-dim);
+}
+
+.diff-summary {
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-bottom: 2px;
+}
+
+.spinner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    color: var(--fg-dim);
+    font-size: 12px;
+}
+
+.spinner .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+.prompt-zone {
+    margin: 6px 10px;
+    padding: 10px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--bg);
+}
+
+.prompt-zone .question {
+    white-space: pre-wrap;
+    margin-bottom: 8px;
+}
+
+.prompt-zone .buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.prompt-zone input {
+    width: 100%;
+    padding: 5px 6px;
+    margin-bottom: 6px;
+}
+
+.prompt-zone button {
+    background: var(--bg-input);
+    padding: 5px 10px;
+}
+
+.prompt-zone button.primary {
+    background: var(--accent);
+}
+
+.composer {
+    position: relative;
+    padding: 8px 10px 10px;
+    border-top: 1px solid var(--border);
+}
+
+#input {
+    width: 100%;
+    resize: vertical;
+    min-height: 60px;
+    max-height: 300px;
+    padding: 6px 8px;
+}
+
+.composer-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.slash-menu {
+    position: absolute;
+    bottom: 100%;
+    left: 10px;
+    right: 10px;
+    max-height: 260px;
+    overflow: auto;
+    background: var(--bg-side);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.slash-menu div {
+    padding: 4px 8px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+.slash-menu div.active,
+.slash-menu div:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* Barre d'état */
+#statusbar {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#statusbar.busy {
+    background: #68217a;
+}
+
+/* Rojo : indicateur de synchronisation Studio (port réel + état de connexion) */
+#st-rojo {
+    white-space: nowrap;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 0 6px;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+/* Vert : Studio connecté au serveur Rojo. Orange : serveur en attente de connexion. */
+#st-rojo.st-rojo-live {
+    color: #7ee787;
+    border-color: rgba(126, 231, 135, 0.45);
+}
+
+#st-rojo.st-rojo-waiting {
+    color: #ffb454;
+    border-color: rgba(255, 180, 84, 0.45);
+}
+
+#st-rojo.st-rojo-offline {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+#st-rojo:focus-visible {
+    outline: 1px solid #fff;
+    outline-offset: 1px;
+}
+
+#st-rojo.hidden {
+    display: none;
+}
+
+/* Logo repris depuis l’image fournie ; SVG et PNG régénérés par scripts/make-logo.js.
+   24 px : lisible dans la barre de titre sans pousser le titre ni le champ de recherche. */
+.tb-logo-img {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 6px;
+    -webkit-app-region: no-drag;
+}
+
+.welcome-logo-img {
+    width: 56px;
+    height: 56px;
+    flex: none;
+}
+
+/* Logo du fournisseur devant chaque modèle (Claude, GPT, Gemini) */
+.model-logo {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
+.model-logo-inline {
+    width: 14px;
+    height: 14px;
+    margin-right: 5px;
+    vertical-align: -2px;
+    border-radius: 3px;
+}
+
+#st-cursor {
+    opacity: 0.9;
+}
+
+/* Vues latérales : explorateur / recherche */
+#app.view-search .explorer-only,
+#app.view-ext .explorer-only,
+#app.view-settings .explorer-only,
+#app.view-git .explorer-only,
+#app.view-project .explorer-only,
+#app.view-roblox .explorer-only {
+    display: none !important;
+}
+
+#app:not(.view-search) #search-view {
+    display: none !important;
+}
+
+#app:not(.view-git) #git-view {
+    display: none !important;
+}
+
+/* Vue Git retirée : seuls les styles de base tolérés restent pour le code conservé. */
+.activity {
+    position: relative;
+}
+
+.activity-badge {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--fg-strong);
+    color: var(--bg);
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+}
+
+.activity-badge.hidden {
+    display: none;
+}
+
+.git-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 3px 8px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.git-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.git-row .git-path {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.git-row .git-code {
+    font-family: monospace;
+    opacity: 0.8;
+}
+
+.git-commit {
+    padding: 3px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.git-commit .git-hash {
+    font-family: monospace;
+    opacity: 0.7;
+    margin-right: 6px;
+}
+
+/* Panneau Git : commit, actions réseau et GitHub */
+.git-action-msg {
+    padding: 0 10px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.git-action-msg:empty {
+    display: none;
+}
+
+.git-action-msg.ok {
+    color: #89d185;
+}
+
+.git-action-msg.error {
+    color: #f48771;
+}
+
+.git-commit-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 10px;
+}
+
+.git-gh {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 10px 8px;
+}
+
+.git-form-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.git-form-row.hidden {
+    display: none;
+}
+
+.git-input {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.25);
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    resize: vertical;
+}
+
+.git-input:focus {
+    outline: 1px solid rgba(255, 255, 255, 0.6);
+    border-color: var(--border-strong);
+}
+
+.git-btn {
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.git-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.git-btn-primary {
+    border-color: transparent;
+    background: var(--fg-strong);
+    color: var(--bg);
+}
+
+.git-btn-primary:hover:not(:disabled) {
+    background: #ffffff;
+}
+
+#git-view button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.git-check {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#app:not(.view-ext) #ext-view {
+    display: none !important;
+}
+
+#app:not(.view-settings) #settings-view {
+    display: none !important;
+}
+
+/* Vue Paramètres : auto-approbation des écritures et des commandes */
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.settings-row input {
+    margin: 0;
+}
+
+.settings-note {
+    padding: 4px 10px;
+    font-size: 11px;
+    opacity: 0.75;
+}
+
+/* Vue Extensions : serveurs MCP et skills */
+.ext-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.ext-section {
+    padding: 4px 0 10px;
+}
+
+.ext-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+.ext-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.ext-actions button {
+    background: var(--bg-input);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font: inherit;
+    font-size: 11px;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.ext-actions button:hover {
+    border-color: var(--accent);
+}
+
+.ext-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.ext-item {
+    padding: 5px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ext-item-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ext-item-name {
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ext-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #888;
+    flex: none;
+}
+
+.ext-dot.running { background: #3fb950; }
+.ext-dot.failed { background: #f85149; }
+.ext-dot.starting { background: #d29922; }
+
+.ext-tag {
+    font-size: 10px;
+    opacity: 0.75;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+.ext-item-sub {
+    opacity: 0.7;
+    margin-top: 2px;
+    word-break: break-word;
+}
+
+.ext-item-sub.error {
+    color: #f85149;
+    opacity: 1;
+}
+
+.ext-empty {
+    padding: 4px 10px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.search-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 10px 8px;
+}
+
+.search-form input[type="text"],
+#search-input {
+    width: 100%;
+    background: var(--bg-input);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 4px 6px;
+    font: inherit;
+}
+
+#search-input:focus,
+#terminal-input:focus,
+#palette-input:focus,
+.modal input:focus {
+    outline: 1px solid var(--accent);
+}
+
+#search-summary {
+    padding: 0 10px 6px;
+    font-size: 11px;
+    color: var(--fg-dim);
+}
+
+.search-results {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+    padding-bottom: 8px;
+}
+
+.search-file {
+    padding: 3px 10px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-match {
+    padding: 2px 10px 2px 22px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-file:hover,
+.search-match:hover {
+    background: var(--bg-hover);
+}
+
+.search-match .ln {
+    display: inline-block;
+    min-width: 34px;
+    margin-right: 6px;
+    color: var(--fg-dim);
+    text-align: right;
+}
+
+/* Panneau du bas : onglets et terminal */
+#app.no-panel #panel,
+#app.no-panel .panel,
+#app.no-panel #resizer-bottom {
+    display: none !important;
+}
+
+.panel-tabs {
+    display: flex;
+    gap: 2px;
+    min-width: 0;
+}
+
+.panel-tab {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--fg-dim);
+    padding: 2px 8px;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+}
+
+.panel-tab.active {
+    color: var(--fg);
+    border-bottom-color: var(--accent);
+}
+
+.panel-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.terminal {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+}
+
+.term-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.term-views {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.term-view {
+    flex: 1;
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 0;
+}
+
+.term-list {
+    width: 160px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-left: 1px solid var(--border);
+    padding: 4px 0;
+    font-size: 12px;
+}
+
+.term-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    cursor: pointer;
+    color: var(--fg);
+}
+
+.term-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.term-item.active {
+    background: rgba(255, 255, 255, 0.09);
+    color: var(--fg-strong, var(--fg));
+}
+
+.term-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--ok);
+}
+
+.term-item.running .term-dot {
+    background: var(--warn);
+}
+
+.term-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.term-close {
+    visibility: hidden;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0 4px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.term-item:hover .term-close,
+.term-item.active .term-close {
+    visibility: visible;
+}
+
+.output.hidden,
+.terminal.hidden,
+.palette.hidden,
+.context-menu.hidden,
+.term-list.hidden,
+.term-view.hidden,
+.term-action.hidden,
+#btn-kill-terminal.hidden {
+    display: none !important;
+}
+
+.terminal-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+.terminal-ps {
+    color: var(--ok);
+}
+
+.terminal.running .terminal-ps {
+    color: var(--warn);
+}
+
+#terminal-input {
+    flex: 1;
+    background: transparent;
+    color: var(--fg);
+    border: none;
+    font: inherit;
+    padding: 2px 0;
+}
+
+/* Palette de commandes */
+.palette {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    max-width: calc(100vw - 40px);
+    background: var(--bg-side);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+}
+
+#palette-input {
+    width: 100%;
+    background: var(--bg-input);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px 8px;
+    font: inherit;
+}
+
+.palette-list {
+    max-height: 360px;
+    overflow: auto;
+    margin-top: 4px;
+}
+
+.palette-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.palette-item:hover {
+    background: var(--bg-hover);
+}
+
+.palette-item.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+.palette-item .detail {
+    color: var(--fg-dim);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.palette-item.active .detail {
+    color: #e0e0e0;
+}
+
+.palette-empty {
+    padding: 6px 8px;
+    color: var(--fg-dim);
+}
+
+/* Menu contextuel */
+.context-menu {
+    position: fixed;
+    z-index: 1100;
+    min-width: 220px;
+    background: var(--bg-side);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+    padding: 4px 0;
+}
+
+.context-menu .item {
+    padding: 4px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.context-menu .item:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.context-menu .sep {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--border);
+}
+
+/* Boîte de saisie */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 80px;
+}
+
+.modal {
+    width: 440px;
+    max-width: calc(100vw - 40px);
+    background: var(--bg-side);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.modal input {
+    width: 100%;
+    background: var(--bg-input);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font: inherit;
+}
+
+.modal .buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+/* Copie des blocs de code (double-clic) */
+.transcript pre {
+    cursor: copy;
+}
+
+pre.copied {
+    outline: 1px solid var(--ok);
+}

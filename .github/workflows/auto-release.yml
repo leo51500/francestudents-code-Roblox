@@ -1,0 +1,111 @@
+name: Publication automatique
+
+# Chaque modification livrée reçoit sa version et sa release Windows :
+# un push sur main déclenche la création de la fiche GitHub (tag v<version> de
+# package.json) puis le build Windows qui y dépose ses fichiers.
+# Si la release existe déjà, rien n'est modifié.
+# Le dépôt étant privé, l'API publique renvoie 404 : seule la page Actions
+# (connectée) permet de voir ces exécutions.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version à publier (laisser vide pour package.json)
+        required: false
+        type: string
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      created: ${{ steps.release.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Vérifier la version et créer la release si nécessaire
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.sha }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # CRLF éventuel dans package.json : on nettoie le tag pour que
+          # `gh release create` reçoive exactement v<version>.
+          package_version=$(node -p "require('./package.json').version" | tr -d '\r\n')
+          version="$REQUESTED_VERSION"
+          if [ -z "$version" ]; then
+            version="$package_version"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Version invalide : $version" >&2
+            exit 1
+          fi
+          tag="v$version"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "La release $tag existe déjà : aucune modification."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Le tag $tag existe sans release : publication manuelle requise." >&2
+            exit 1
+          fi
+          # Les releases lancées manuellement avec une version différente de
+          # package.json doivent utiliser le commit actuellement contrôlé.
+          # Ne pas créer un tag de version courante sur une ancienne ref/tag.
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Publication refusée depuis $GITHUB_REF : lancer depuis main." >&2
+            exit 1
+          fi
+          if [ "$version" != "$package_version" ]; then
+            echo "La version demandée ($version) ne correspond pas à package.json ($package_version)." >&2
+            echo "Mets à jour package.json, le changelog et le résumé, puis pousse sur main." >&2
+            exit 1
+          fi
+          if [[ "$version" == *-* ]]; then
+            prerelease=true
+          else
+            prerelease=false
+          fi
+          # Le résumé est facultatif : un échec ici ne doit pas empêcher la release.
+          body=$(node scripts/release-body.js "$version" || true)
+          if [ -z "$body" ]; then
+            body="FranceStudent Code Roblox $version. Installateur Windows 64 bits : FranceStudentCodeRoblox-$version-setup.exe."
+          fi
+          gh release create "$tag" \
+            --repo "$GH_REPO" \
+            --target "$HEAD_SHA" \
+            --title "FranceStudent Code Roblox $version" \
+            --notes "$body" \
+            --prerelease="$prerelease"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: publish
+    # Ne lancer le build Windows que si la fiche vient d'être créée.
+    if: needs.publish.outputs.created == 'true'
+    uses: ./.github/workflows/release-win.yml
+    with:
+      tag: ${{ needs.publish.outputs.tag }}
+    permissions:
+      contents: write
