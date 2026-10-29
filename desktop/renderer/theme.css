@@ -142,6 +142,15 @@ svg.i {
 #app {
     background: var(--bg);
     grid-template-rows: var(--titlebar) 1fr 24px;
+    /* Le contenu couvre exactement sa colonne : aucun débordement horizontal (scrollbar
+       parasite) susceptible d'apparaître pendant le glisser d'un séparateur. */
+    overflow: hidden;
+}
+
+/* Pendant un glisser, la largeur des colonnes suit le pointeur sans interpolation. */
+html.layout-dragging #app,
+html.layout-dragging #app.layout-custom {
+    transition: none !important;
 }
 
 #titlebar { grid-row: 1; grid-column: 1 / -1; }
@@ -232,6 +241,16 @@ svg.i {
     z-index: 5;
     background: linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat;
     transition: background-size 0.15s;
+    /* Zone de saisie élargie : on attrape la poignée sans viser un trait de 1px. */
+    touch-action: none;
+}
+
+#resizer-left::before,
+#resizer-right::before {
+    content: "";
+    position: absolute;
+    inset: 0 -3px;
+    cursor: col-resize;
 }
 
 #resizer-left:hover,
@@ -240,8 +259,18 @@ svg.i {
 }
 
 #resizer-bottom {
+    position: relative;
+    z-index: 5;
     background: linear-gradient(var(--border), var(--border)) center / 100% 1px no-repeat;
     transition: background-size 0.15s;
+    touch-action: none;
+}
+
+#resizer-bottom::before {
+    content: "";
+    position: absolute;
+    inset: -3px 0;
+    cursor: row-resize;
 }
 
 #resizer-bottom:hover {

@@ -687,9 +687,10 @@ function addEntry(cls, html) {
     // La première trace de réponse remplace l'indicateur de réflexion. Une entrée
     // rejouée depuis l'historique, elle, apparaît sans mouvement.
     if (!/^(tool|result|tool-group)/.test(cls)) hideThinkingIndicator();
-    if (ui.replayingConversation) div.classList.add("is-replayed");
     const div = document.createElement("div");
     div.className = `entry ${cls}`;
+    // L'entrée doit exister avant l'ajout de la classe, sinon l'historique rechargé s'anime.
+    if (ui.replayingConversation) div.classList.add("is-replayed");
     div.innerHTML = html;
     transcript.appendChild(div);
     scrollDown();
@@ -3205,7 +3206,10 @@ function dragResizer(id, cssVar, axis, invert) {
         const max = layoutMax(cssVar);
         let last = start;
         let frame = 0;
+        // Le glisser suit le pointeur image par image : aucune transition CSS ne doit
+        // retarder la colonne, sinon la poignée décroche du curseur.
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
+        document.documentElement.classList.add("layout-dragging");
         const apply = () => {
             frame = 0;
             const delta = last - start;
@@ -3225,6 +3229,7 @@ function dragResizer(id, cssVar, axis, invert) {
             handle.removeEventListener("pointerup", up);
             handle.removeEventListener("pointercancel", up);
             document.body.classList.remove("resizing-x", "resizing-y");
+            document.documentElement.classList.remove("layout-dragging");
             delete layoutPreferred[cssVar];
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
             syncLayoutCustom();

@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.22":{headline:"Les panneaux se redimensionnent sans à-coups.",items:[
+        {icon:"tools",title:"Poignées faciles à attraper",text:"La colonne des fichiers, le chat et le panneau du bas se redimensionnent depuis une zone de 3 px de chaque côté du trait : plus besoin de viser un pixel."},
+        {icon:"spark",title:"Glisser fluide",text:"Pendant un glisser, la mise en page suit le curseur sans transition ni barre de défilement parasite, puis reprend son mouvement normal relâché."},
+        {icon:"chat",title:"Historique immédiat",text:"Rouvrir une conversation l’affiche d’un coup, sans rejouer l’arrivée des messages un par un."}
+    ]},
     "1.5.21":{headline:"La 1.5.20 arrive enfin, avec ses notes.",items:[
         {icon:"tools",title:"Publication réparée",text:"La fiche de release est désormais créée puis construite avec les mêmes vérifications que la CI, Electron chargé avant les tests : la 1.5.20 et ses nouveautés (zoom partout, panneau Logs, animations de réflexion) sont enfin disponibles."},
         {icon:"spark",title:"Notes de version à jour",text:"Chaque version publiée reprend ses propres notes ; la 1.5.20 n'a donc pas perdu son résumé en attendant d'être livrée."}

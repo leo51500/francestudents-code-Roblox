@@ -52,9 +52,10 @@ function addEntry(cls, html) {
     // La première trace de réponse remplace l'indicateur de réflexion. Une entrée
     // rejouée depuis l'historique, elle, apparaît sans mouvement.
     if (!/^(tool|result|tool-group)/.test(cls)) hideThinkingIndicator();
-    if (ui.replayingConversation) div.classList.add("is-replayed");
     const div = document.createElement("div");
     div.className = `entry ${cls}`;
+    // L'entrée doit exister avant l'ajout de la classe, sinon l'historique rechargé s'anime.
+    if (ui.replayingConversation) div.classList.add("is-replayed");
     div.innerHTML = html;
     transcript.appendChild(div);
     scrollDown();
