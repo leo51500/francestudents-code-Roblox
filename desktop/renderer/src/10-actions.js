@@ -193,7 +193,10 @@ function dragResizer(id, cssVar, axis, invert) {
         const max = layoutMax(cssVar);
         let last = start;
         let frame = 0;
+        // Le glisser suit le pointeur image par image : aucune transition CSS ne doit
+        // retarder la colonne, sinon la poignée décroche du curseur.
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
+        document.documentElement.classList.add("layout-dragging");
         const apply = () => {
             frame = 0;
             const delta = last - start;
@@ -213,6 +216,7 @@ function dragResizer(id, cssVar, axis, invert) {
             handle.removeEventListener("pointerup", up);
             handle.removeEventListener("pointercancel", up);
             document.body.classList.remove("resizing-x", "resizing-y");
+            document.documentElement.classList.remove("layout-dragging");
             delete layoutPreferred[cssVar];
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
             syncLayoutCustom();

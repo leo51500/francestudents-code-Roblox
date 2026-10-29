@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.22] — Séparateurs qui suivent le curseur
+
+- **Poignées de mise en page fiables** : les trois séparateurs (colonne des fichiers, chat, panneau du bas) captent le pointeur sur une zone élargie de 3 px de chaque côté du trait, au lieu d’un trait d’un pixel qu’il fallait viser. `touch-action` est neutralisé pour éviter que le geste soit détourné.
+- **Glisser sans retard** : pendant un glisser, `html.layout-dragging` désactive les transitions de largeur de `#app`, y compris en disposition personnalisée ; la colonne suit le curseur image par image et la poignée ne décroche plus.
+- **Plus de barre de défilement parasite** : `#app` masque son débordement, ce qui évite l’apparition d’une barre horizontale quand la largeur d’une colonne est ajustée au pixel près.
+- **Historique rechargé sans animation** : l’entrée du transcript reçoit sa classe `is-replayed` après sa création, donc la conversation rouverte s’affiche immédiatement au lieu de rejouer l’arrivée des messages.
+- Vérifié : `npm run check:renderer` (bundle à jour), `eslint .` sans erreur, `npm test` au vert (842 réussis, 0 échec). Le geste de glisser lui-même reste à contrôler dans l’application empaquetée.
+
 ## [1.5.21] — Publication corrigée pour la 1.5.20
 
 - **Release 1.5.20 non publiée** : la fiche `v1.5.20` n'a pas été créée. Le workflow Windows appelé par **Publication automatique** démarrait sans préparation d'Electron, alors que `npm test` charge Electron via `prepare:electron` ; il est désormais aligné sur la CI (installation puis chargement d'Electron avant les vérifications).
