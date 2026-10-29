@@ -36,3 +36,7 @@ history.json
 AMELIORATIONS.md
 FRSTCLI.md
 desktop/vendor-effectcraft/
+probe_*
+qa/
+qa2/
+qa3/
