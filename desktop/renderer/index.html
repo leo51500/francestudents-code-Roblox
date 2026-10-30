@@ -458,7 +458,15 @@
                     <button type="button" data-agent-tab="activity" role="tab" aria-selected="false" aria-controls="agent-activity">Activité</button>
                     <button type="button" data-agent-tab="usage" role="tab" aria-selected="false" aria-controls="agent-usage">Usage</button>
                 </div>
-                <button type="button" id="agent-focus" title="Agrandir l’espace agent" aria-label="Agrandir l’espace agent">⤢</button>
+                <div class="agent-navigation-actions">
+                    <button type="button" id="agent-focus" title="Agrandir l’espace agent" aria-label="Agrandir l’espace agent">⤢</button>
+                    <button type="button" id="agent-detach" title="Afficher le chat dans sa propre fenêtre (glisser pour le placer où vous voulez)" aria-label="Détacher le chat dans une fenêtre">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg>
+                    </button>
+                    <button type="button" id="agent-hide" title="Masquer le chat (Ctrl+Alt+A)" aria-label="Masquer le chat">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z"/><path d="m4 4 16 16"/></svg>
+                    </button>
+                </div>
             </div>
             <div class="agent-context-bar"><span id="agent-project-name">Aucun projet</span><button type="button" id="agent-access" title="Ouvrir les paramètres de permissions">Sur approbation</button></div>
             <section id="agent-live-plan" class="agent-live-plan hidden" aria-label="Plan de travail"></section>

@@ -55,6 +55,8 @@ function showSideView(view) {
 function hideSidebar() {
     $("app").classList.add("no-sidebar");
     setActivity(null);
+    // La disposition choisie (colonnes, panneaux) survit au redémarrage.
+    if (typeof saveLayout === "function") saveLayout();
 }
 
 function toggleSideView(view) {

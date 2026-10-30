@@ -86,21 +86,29 @@ window.addEventListener("beforeunload", (ev) => {
     }
 });
 
+// Pas de palier imposé : une zone va de son minimum utile jusqu'à toute la place libre
+// de la fenêtre. Seule la taille de l'éditeur restant (CENTER_MIN_WIDTH) borne le geste.
 const LAYOUT_LIMITS = {
-    "--left": { min: 150, max: 600 },
-    "--right": { min: 280, max: 900 },
-    "--bottom": { min: 60, max: 600 },
+    "--left": { min: 120 },
+    "--right": { min: 240 },
+    "--bottom": { min: 48 },
 };
-const CENTER_MIN_WIDTH = 320;
-const EDITOR_MIN_HEIGHT = 160;
-// Rail de navigation (toujours visible) et colonnes d'écart autour de l'éditeur :
-// la place réellement disponible exclut ces deux valeurs.
-const LAYOUT_RAIL_WIDTH = 168;
+const CENTER_MIN_WIDTH = 260;
+const EDITOR_MIN_HEIGHT = 120;
+// Rail de navigation et poignées : lus réellement dans la page, pas supposés, pour que
+// l'espace disponible corresponde à la fenêtre telle qu'elle est affichée.
 const LAYOUT_CHROME_WIDTH = 8;
 
 function layoutPx(cssVar) {
     const value = parseInt(getComputedStyle(document.documentElement).getPropertyValue(cssVar), 10);
     return Number.isFinite(value) ? value : LAYOUT_LIMITS[cssVar].min;
+}
+
+/** Largeur réellement occupée par le rail de navigation. */
+function layoutRailWidth() {
+    const rail = $("sidebar-tabs");
+    const width = rail ? rail.getBoundingClientRect().width : 0;
+    return Math.max(0, Math.round(width));
 }
 
 function layoutHidden(cssVar) {
@@ -110,7 +118,7 @@ function layoutHidden(cssVar) {
     return app.classList.contains("no-panel");
 }
 
-function layoutMax(cssVar) {
+function layoutMax(cssVar, otherMeasured = null) {
     const limits = LAYOUT_LIMITS[cssVar];
     let room;
     if (cssVar === "--bottom") {
@@ -119,10 +127,12 @@ function layoutMax(cssVar) {
         room = height - EDITOR_MIN_HEIGHT;
     } else {
         const other = cssVar === "--left" ? "--right" : "--left";
-        const otherWidth = layoutHidden(other) ? 0 : layoutPx(other) + 4;
-        room = window.innerWidth - LAYOUT_RAIL_WIDTH - LAYOUT_CHROME_WIDTH - otherWidth - CENTER_MIN_WIDTH;
+        const otherWidth = layoutHidden(other)
+            ? 0
+            : (Number.isFinite(otherMeasured) && otherMeasured > 0 ? otherMeasured : layoutPx(other)) + 4;
+        room = window.innerWidth - layoutRailWidth() - LAYOUT_CHROME_WIDTH - otherWidth - CENTER_MIN_WIDTH;
     }
-    return Math.max(limits.min, Math.min(limits.max, room));
+    return Math.max(limits.min, room);
 }
 
 function clampLayout() {
@@ -176,9 +186,72 @@ function scheduleClampLayout() {
     });
 }
 
-function dragResizer(id, cssVar, axis, invert) {
+/* Bulle de taille : pendant un glisser (et sur un double-clic) elle affiche la valeur réelle
+ * de la colonne, pas la position du curseur, pour savoir exactement où on se trouve.
+ * Elle est créée à la demande : sans élément, `$("layout-badge")` renvoie null et la bulle
+ * n'apparaissait jamais (masquée par le garde-fou ci-dessous). */
+let layoutBadgeTimer = 0;
+
+function showLayoutBadge(data, sticky = false) {
+    let badge = $("layout-badge");
+    if (!badge) {
+        badge = document.createElement("div");
+        badge.id = "layout-badge";
+        badge.className = "layout-badge";
+        badge.setAttribute("role", "status");
+        badge.setAttribute("aria-live", "polite");
+        document.body.appendChild(badge);
+    }
+    badge.textContent = data.label;
+    badge.classList.remove("hidden");
+    const size = badge.offsetWidth || 84;
+    const height = badge.offsetHeight || 24;
+    // La bulle suit la poignée sans jamais sortir de la fenêtre.
+    const left = Math.max(6, Math.min(window.innerWidth - size - 6, data.clientX - size / 2));
+    const top = Math.max(6, Math.min(window.innerHeight - height - 6, data.clientY - height / 2));
+    badge.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+    if (layoutBadgeTimer) clearTimeout(layoutBadgeTimer);
+    if (!sticky) layoutBadgeTimer = setTimeout(() => badge.classList.add("hidden"), 180);
+}
+
+function hideLayoutBadge() {
+    if (layoutBadgeTimer) clearTimeout(layoutBadgeTimer);
+    if (typeof windowBadgeTimer === "number" && windowBadgeTimer) clearTimeout(windowBadgeTimer);
+    layoutBadgeTimer = 0;
+    windowBadgeTimer = 0;
+    const badge = $("layout-badge");
+    if (badge) badge.classList.add("hidden");
+}
+
+/** Largeur (ou hauteur) réellement occupée par une zone, en pixels CSS. */
+function layoutSizeOf(id, axis) {
+    const el = $(id);
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    return Math.round(axis === "x" ? rect.width : rect.height);
+}
+
+function dragResizer(id, cssVar, axis, invert, zoneId) {
     const handle = $(id);
     if (!handle) return;
+
+    // Libellé et zone mesurée : on lit la taille réellement occupée par le panneau.
+    const label = cssVar === "--left" ? "Fichiers" : cssVar === "--right" ? "Chat" : "Bas";
+    const describe = () => `${label} · ${layoutSizeOf(zoneId, axis)} px`;
+
+    // Double-clic : largeur par défaut de la colonne, tout de suite visible.
+    handle.addEventListener("dblclick", (ev) => {
+        ev.preventDefault();
+        const fallback = cssVar === "--left" ? 248 : cssVar === "--right" ? 420 : 160;
+        document.documentElement.style.setProperty(cssVar, `${Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), fallback))}px`);
+        delete layoutPreferred[cssVar];
+        if (cssVar !== "--bottom") publishCustomWidth(cssVar);
+        syncLayoutCustom();
+        if (typeof saveLayout === "function") saveLayout();
+        requestAnimationFrame(() => showLayoutBadge({ label: describe(), clientX: ev.clientX, clientY: ev.clientY }, true));
+        layoutBadgeTimer = setTimeout(hideLayoutBadge, 900);
+    });
+
     handle.addEventListener("pointerdown", (ev) => {
         if (ev.button !== 0) return;
         ev.preventDefault();
@@ -187,16 +260,21 @@ function dragResizer(id, cssVar, axis, invert) {
         } catch {
             // capture indisponible
         }
+        // Retour immédiat : la classe est posée dès l'appui, même si aucune pose du
+        // pointeur ne survient avant le relâchement (test automatique, glisser très court).
+        document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
+        document.documentElement.classList.add("layout-dragging");
         const start = axis === "x" ? ev.clientX : ev.clientY;
         const initial = layoutPx(cssVar);
         const min = LAYOUT_LIMITS[cssVar].min;
-        const max = layoutMax(cssVar);
+        // La place libre dépend de l'autre colonne telle qu'elle est affichée maintenant,
+        // et non de sa valeur mémorisée (qui peut être plus grande que la place réelle).
+        const max = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
         let last = start;
         let frame = 0;
-        // Le glisser suit le pointeur image par image : aucune transition CSS ne doit
-        // retarder la colonne, sinon la poignée décroche du curseur.
-        document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
-        document.documentElement.classList.add("layout-dragging");
+        // Un appui direct jusqu'au bord peut ne produire aucune pose intermédiaire : la
+        // bulle montre tout de suite la taille tenue.
+        showLayoutBadge({ label: describe(), clientX: ev.clientX, clientY: ev.clientY }, true);
         const apply = (animate) => {
             frame = 0;
             const delta = last - start;
@@ -207,16 +285,28 @@ function dragResizer(id, cssVar, axis, invert) {
             if (animate && value === layoutPx(cssVar)) animate = false;
             if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
+            // La bulle affiche la taille de la valeur visée, disponible dès la frame suivante.
+            showLayoutBadge({ label: `${label} · ${value} px`, clientX: pointer.x, clientY: pointer.y });
         };
+        const pointer = { x: ev.clientX, y: ev.clientY };
         const move = (e) => {
             last = axis === "x" ? e.clientX : e.clientY;
+            pointer.x = e.clientX;
+            pointer.y = e.clientY;
             if (!frame) frame = requestAnimationFrame(apply);
         };
         const up = () => {
             if (frame) {
                 cancelAnimationFrame(frame);
                 apply(true);
+            } else if (last !== start) {
+                // Aucune pose intermédiaire (glisser très court) : la position relâchée
+                // compte quand même, au lieu de perdre le geste.
+                apply(true);
             }
+            // La valeur finale reste visible un court instant après le relâchement.
+            showLayoutBadge({ label: describe(), clientX: pointer.x, clientY: pointer.y }, true);
+            layoutBadgeTimer = setTimeout(hideLayoutBadge, 900);
             handle.removeEventListener("pointermove", move);
             handle.removeEventListener("pointerup", up);
             handle.removeEventListener("pointercancel", up);
@@ -241,13 +331,45 @@ function dragResizer(id, cssVar, axis, invert) {
         handle.addEventListener("pointerup", up);
         handle.addEventListener("pointercancel", up);
     });
+
+    // Accessibilité clavier : flèches pour ajuster, Maj pour un pas de 40 px.
+    handle.tabIndex = 0;
+    handle.setAttribute("role", "separator");
+    handle.setAttribute("aria-orientation", axis === "x" ? "vertical" : "horizontal");
+    handle.setAttribute("aria-label", `Redimensionner ${cssVar === "--right" ? "le chat" : cssVar === "--left" ? "les fichiers" : "le panneau du bas"} (flèches)`);
+    handle.addEventListener("keydown", (ev) => {
+        const keys = axis === "x" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+        if (!keys.includes(ev.key)) return;
+        ev.preventDefault();
+        // Flèche vers le bord de la fenêtre = agrandir cette zone.
+        const grow = axis === "x" ? ev.key === "ArrowRight" : ev.key === "ArrowDown";
+        const step = (ev.shiftKey ? 40 : 8) * (grow === !invert ? 1 : -1) * (invert ? -1 : 1);
+        const next = Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutPx(cssVar) + step));
+        document.documentElement.style.setProperty(cssVar, `${next}px`);
+        delete layoutPreferred[cssVar];
+        if (cssVar !== "--bottom") publishCustomWidth(cssVar);
+        syncLayoutCustom();
+        const rect = handle.getBoundingClientRect();
+        showLayoutBadge({ label: cssVar === "--bottom" ? `Bas · ${next} px` : `${describe()}`, clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2 }, true);
+        layoutBadgeTimer = setTimeout(hideLayoutBadge, 900);
+        if (typeof saveLayout === "function") saveLayout();
+    });
 }
 
-dragResizer("resizer-left", "--left", "x", false);
-dragResizer("resizer-right", "--right", "x", true);
-dragResizer("resizer-bottom", "--bottom", "y", true);
+dragResizer("resizer-left", "--left", "x", false, "sidebar");
+dragResizer("resizer-right", "--right", "x", true, "agent");
+dragResizer("resizer-bottom", "--bottom", "y", true, "panel");
 
-window.addEventListener("resize", scheduleClampLayout);
+let windowBadgeTimer = 0;
+window.addEventListener("resize", () => {
+    scheduleClampLayout();
+    // Taille en direct de la fenêtre : les poignées internes ont leur propre bulle.
+    if (document.documentElement.classList.contains("layout-dragging")) return;
+    showLayoutBadge({ label: `Fenêtre · ${window.innerWidth} × ${window.innerHeight}`, clientX: window.innerWidth / 2, clientY: 40 }, true);
+    if (windowBadgeTimer) clearTimeout(windowBadgeTimer);
+    windowBadgeTimer = setTimeout(hideLayoutBadge, 900);
+});
+
 new MutationObserver(scheduleClampLayout).observe($("app"), { attributes: true, attributeFilter: ["class"] });
 syncLayoutCustom();
 scheduleClampLayout();
