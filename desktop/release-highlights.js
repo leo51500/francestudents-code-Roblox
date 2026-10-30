@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.29":{headline:"La taille du chat fonctionne partout, et vos projets se choisissent dans le chat.",items:[
+        {icon:"tools",title:"Redimensionnement réparé",text:"Le chat s'élargit et se rétrécit à toutes les tailles de fenêtre : la largeur choisie n'est plus écrasée par les règles d'écran."},
+        {icon:"chat",title:"Vos projets dans le chat",text:"Un sélecteur « Discussions dans » liste les projets de votre compte : chaque nouvelle discussion est classée dans celui que vous choisissez."},
+        {icon:"spark",title:"Plus de superpositions",text:"Le menu « Outils du chat » ne recouvre plus la conversation et le panneau retrouve tout son en-tête."}
+    ]},
     "1.5.28":{headline:"Vos discussions rejoignent vos projets FranceStudent, sans chats en série.",items:[
         {icon:"chat",title:"Projets reconnus",text:"L’application liste les projets de votre compte et ne crée plus rien au hasard : choisissez le projet, les nouvelles discussions y sont rattachées."},
         {icon:"tools",title:"Fin des « Tour 28/40 »",text:"Une conversation occupée n’engendre plus une série de nouveaux fils : une seule reprise, puis l’application reprend le fil d’origine."},

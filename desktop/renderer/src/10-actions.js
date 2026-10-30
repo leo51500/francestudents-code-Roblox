@@ -173,7 +173,13 @@ function publishCustomWidth(cssVar) {
 }
 
 function syncLayoutCustom() {
-    $("app").classList.toggle("layout-custom", ["--left", "--right", "--bottom"].some(v => document.documentElement.style.getPropertyValue(v).trim()));
+    // Les largeurs choisies vivent dans --left-custom / --right-custom (voir
+    // publishCustomWidth) : les ignorer ici retirait .layout-custom juste après un
+    // glisser, et la règle de taille de fenêtre réécrivait la colonne (« ça ne marche pas »).
+    const custom = ["--left", "--right", "--bottom"].some(v =>
+        document.documentElement.style.getPropertyValue(v).trim() ||
+        document.documentElement.style.getPropertyValue(`${v}-custom`).trim());
+    $("app").classList.toggle("layout-custom", custom);
 }
 
 let layoutFrame = 0;
@@ -315,7 +321,10 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             delete layoutPreferred[cssVar];
             // --bottom reste une variable de hauteur (le panneau la lit) : il ne passe pas
             // par --left-custom / --right-custom, réservés aux colonnes de la grille.
+            // La classe .layout-custom est posée AVANT de placer la valeur : les règles de
+            // taille de fenêtre ne peuvent plus écraser la largeur choisie.
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
+            $("app").classList.add("layout-custom");
             syncLayoutCustom();
             // Réévalue la place disponible après le geste (largeur enregistrée, classes de
             // disposition) sans attendre le prochain redimensionnement de la fenêtre.

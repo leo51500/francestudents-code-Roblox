@@ -453,6 +453,16 @@
                 </div>
             </div>
             <div class="agent-navigation">
+                <div class="agent-fr-project" id="agent-fr-project">
+                    <label for="fr-project-select" title="Chaque nouvelle discussion est rattachée à ce projet FranceStudent">Discussions dans</label>
+                    <select id="fr-project-select" aria-label="Projet FranceStudent des nouvelles discussions">
+                        <option value="">Aucun projet</option>
+                    </select>
+                    <button type="button" id="fr-project-refresh" title="Actualiser la liste de mes projets" aria-label="Actualiser la liste de mes projets">↻</button>
+                    <button type="button" id="fr-project-open" title="Ouvrir le site FranceStudent" aria-label="Ouvrir le site FranceStudent">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4"/></svg>
+                    </button>
+                </div>
                 <div class="agent-tabs" role="tablist" aria-label="Espace agent">
                     <button type="button" class="selected" data-agent-tab="conversation" role="tab" aria-selected="true" aria-controls="transcript">Conversation</button>
                     <button type="button" data-agent-tab="activity" role="tab" aria-selected="false" aria-controls="agent-activity">Activité</button>
@@ -468,6 +478,7 @@
                     </button>
                 </div>
             </div>
+            <span id="fr-project-state" class="fr-project-state" role="status" aria-live="polite"></span>
             <div class="agent-context-bar"><span id="agent-project-name">Aucun projet</span><button type="button" id="agent-access" title="Ouvrir les paramètres de permissions">Sur approbation</button></div>
             <section id="agent-live-plan" class="agent-live-plan hidden" aria-label="Plan de travail"></section>
             <div id="agent-starter" class="agent-starter">

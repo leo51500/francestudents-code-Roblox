@@ -113,12 +113,15 @@ function saveLayout() {
 try {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "{}");
     for (const v of LAYOUT_VARS) {
-        if (/^[0-9]+px$/.test(saved[v] || "")) document.documentElement.style.setProperty(v, saved[v]);
+        // Reprise telle quelle de la largeur enregistrée : elle redevient une largeur
+        // choisie au démarrage, sinon la règle de taille de fenêtre l'écrasait.
+        if (/^[0-9]+px$/.test(saved[v] || "")) document.documentElement.style.setProperty(v === "--bottom" ? v : `${v}-custom`, saved[v]);
     }
     // Le panneau du bas et la colonne des fichiers se rouvrent comme ils étaient fermés ;
     // le chat n'est pas mémorisé masqué (il porte la conversation et le mode compact).
     if (saved.noPanel) $("app").classList.add("no-panel");
     if (saved.noSidebar && !window.matchMedia("(max-width: 900px)").matches) $("app").classList.add("no-sidebar");
+    if (typeof syncLayoutCustom === "function") syncLayoutCustom();
 } catch {
     // disposition par défaut
 }

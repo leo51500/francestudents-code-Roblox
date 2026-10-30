@@ -368,6 +368,8 @@ function createDesktopBackend(send) {
                 modelId: state.model,
                 chatContextKey: `${Boolean(state.motionDesign)}:${state.mode === "chat" ? "chat" : "agent"}:${state.chatIds[state.mode === "chat" ? "chat" : "agent"] || ""}:${state.model}`,
                 workspace: state.workspace,
+                // Projet FranceStudent actif : le chat indique où part la discussion.
+                frProject: state.frProject ? { id: state.frProject.id, name: state.frProject.name } : null,
                 fullAccess: Boolean(state.fullAccess),
                 autoApprove: Boolean(state.autoApprove),
                 autoApproveCommands: Boolean(state.autoApproveCommands),

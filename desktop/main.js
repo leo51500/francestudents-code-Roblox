@@ -857,6 +857,29 @@ function registerIpc() {
         return result.canceled || !result.filePaths[0] ? null : localSkillImporter.preview(result.filePaths[0]);
     });
     handle("mcpManage", (action, payload) => extensionCenter.mcpAction(action, payload));
+    // Projets FranceStudent : lister, connaître le projet actif et le choisir. C'est le
+    // sélecteur du panneau chat qui alimente le rattachement des nouvelles discussions.
+    handle("frProjects", async (action = "list", payload = {}) => {
+        const fr = require("../src/api/fr-projects");
+        const name = String(action || "list");
+        if (name === "select") {
+            const id = String(payload?.id || "");
+            const projects = await fr.listProjects();
+            const project = id ? projects.find(item => String(item.id) === id) : null;
+            await fr.saveSelected(project || null);
+            pushStatus();
+            return { selected: project ? { id: project.id, name: project.name } : null, projects: projects.map(item => ({ id: item.id, name: item.name })) };
+        }
+        const projects = await fr.listProjects();
+        const saved = require("../src/state").state.frProject || (await fr.loadSelected());
+        // Un projet supprimé sur le site ne doit pas rester « actif » sans le dire.
+        const selected = saved && projects.some(item => String(item.id) === String(saved.id)) ? saved : null;
+        if (saved && !selected) await fr.saveSelected(null);
+        return {
+            projects: projects.map(item => ({ id: item.id, name: item.name })),
+            selected: selected ? { id: selected.id, name: selected.name } : null
+        };
+    });
     handle("preferences", (action, payload) => {
         if (action !== "save") return preferences.get();
         if (busy && Object.keys(payload || {}).some(key => key !== "defaultModel")) throw new Error("Attends la fin de la tâche pour modifier le contexte.");

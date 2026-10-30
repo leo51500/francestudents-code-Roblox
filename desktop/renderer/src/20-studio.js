@@ -6,6 +6,9 @@ let studioTab = "conversation";
 let studioActivitySeq = 0;
 let favoritePrompts = readStudioStorage("frst.prompt-favorites", []);
 if (!Array.isArray(favoritePrompts)) favoritePrompts = [];
+// "Outils du chat" est un menu : fermé au lancement, sinon il recouvre la conversation
+// et masque l'en-tête (onglets, projet des discussions) tant qu'on ne l'a pas fermé.
+document.getElementById("agent-favorites")?.classList.add("hidden");
 const starterFavorites = [
     { title: "Revue des changements", prompt: "Inspecte le diff Git local et recherche les bugs et régressions. Donne les fichiers et lignes concernés, le niveau de gravité et les vérifications utiles, sans modifier le code." },
     { title: "Corriger un bug", prompt: "Reproduis le problème suivant, identifie sa cause, corrige-le puis vérifie la correction : " },
@@ -40,6 +43,8 @@ function setAgentTab(tab) {
 function updateStudioStatus(status) {
     const workspace = status.workspace || null;
     updateAgentProjectLabel(workspace);
+    // Projet FranceStudent : chaque nouvelle discussion part dans le projet choisi.
+    if (typeof syncFrProject === "function") syncFrProject(status.frProject || null);
     $("agent-access").textContent = status.fullAccess ? "Full accès" : status.autoApprove && status.autoApproveCommands ? "Automatique" : "Sur approbation";
     $("agent-access").classList.toggle("full-access", Boolean(status.fullAccess));
     if (studioWorkspace !== workspace) {
@@ -195,6 +200,93 @@ for (const button of document.querySelectorAll("[data-agent-tab]")) {
 }
 for (const button of document.querySelectorAll("[data-starter]")) button.onclick = () => { input.value = button.dataset.starter; autosizeInput(); saveStudioDraft(); input.focus(); };
 $("agent-access").onclick = () => showSideView("settings");
+
+/* ---------- Projet FranceStudent des discussions ----------
+ * Chaque nouvelle discussion est rattachée au projet choisi ici (même réglage que
+ * /fr-project dans le CLI). La liste vient du compte : rien n'est inventé ni créé, et
+ * un projet supprimé sur le site disparaît du sélecteur. */
+let frProjectSelected = null;
+
+function renderFrProjects(data, message = "") {
+    const select = $("fr-project-select"), state = $("fr-project-state");
+    if (!select) return;
+    const projects = Array.isArray(data?.projects) ? data.projects : [];
+    frProjectSelected = data?.selected ? { id: String(data.selected.id), name: String(data.selected.name) } : null;
+    select.replaceChildren();
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = projects.length ? "Aucun projet" : "Aucun projet sur le site";
+    select.appendChild(none);
+    for (const project of projects) {
+        const option = document.createElement("option");
+        option.value = String(project.id);
+        option.textContent = String(project.name || project.id);
+        option.title = `Les nouvelles discussions iront dans « ${option.textContent} »`;
+        select.appendChild(option);
+    }
+    select.value = frProjectSelected?.id || "";
+    select.disabled = !projects.length;
+    select.dataset.loaded = "1";
+    if (state) {
+        state.classList.toggle("error", /impossible|erreur|refus/i.test(message));
+        state.textContent = message || (frProjectSelected
+            ? `Les nouvelles discussions sont classées dans « ${frProjectSelected.name} ».`
+            : "Sans projet : les discussions restent dans l’historique général.");
+    }
+    select.title = frProjectSelected
+        ? `Nouvelles discussions dans « ${frProjectSelected.name} »`
+        : "Choisis le projet FranceStudent des nouvelles discussions";
+}
+
+async function refreshFrProjects(message = "") {
+    const select = $("fr-project-select"), state = $("fr-project-state");
+    if (select) select.disabled = true;
+    if (state && !message) state.textContent = "Chargement de vos projets…";
+    try {
+        renderFrProjects(await api.frProjects("list"), message);
+    } catch (error) {
+        if (state) { state.classList.add("error"); state.textContent = `Projets FranceStudent indisponibles : ${error.message}`; }
+        if (select) select.disabled = true;
+    }
+}
+
+function syncFrProject(project) {
+    // Tant que la liste n'est pas chargée, le statut ne dit rien de plus qu'« aucun
+    // projet » : inutile de relancer une requête à chaque poussée de statut.
+    const select = $("fr-project-select");
+    if (!select || !select.dataset.loaded) return;
+    const next = project ? String(project.id) : "";
+    if (select.value !== next) {
+        refreshFrProjects();
+        return;
+    }
+    frProjectSelected = project ? { id: next, name: String(project.name) } : null;
+    if ($("fr-project-state")) {
+        $("fr-project-state").classList.remove("error");
+        $("fr-project-state").textContent = frProjectSelected
+            ? `Les nouvelles discussions sont classées dans « ${frProjectSelected.name} ».`
+            : "Sans projet : les discussions restent dans l’historique général.";
+    }
+}
+
+$("fr-project-select")?.addEventListener("change", async (event) => {
+    const id = event.target.value;
+    const name = event.target.selectedOptions[0]?.textContent || "";
+    try {
+        const data = await api.frProjects("select", { id });
+        renderFrProjects(data, id ? `Les nouvelles discussions iront dans « ${name} ».` : "Nouveau : plus de rattachement à un projet.");
+    } catch (error) {
+        $("fr-project-state").classList.add("error");
+        $("fr-project-state").textContent = `Choix non enregistré : ${error.message}`;
+        refreshFrProjects();
+    }
+});
+
+$("fr-project-refresh")?.addEventListener("click", () => refreshFrProjects());
+$("fr-project-open")?.addEventListener("click", () => {
+    api.openExternal(typeof connectionOrigin === "string" ? `${connectionOrigin.replace(/\/$/, "")}/projects` : "https://ia.francestudent.org/projects").catch((error) => studioFeedback(error.message));
+});
+refreshFrProjects();
 function setAgentFocus(active){
     $("app").classList.toggle("focus-agent",active);
     const button=$("agent-focus"),label=active?"Quitter le plein écran du chat":"Agrandir le chat";
@@ -244,7 +336,22 @@ if (api.chatWindow) {
 }
 
 $("activity-refresh").onclick = refreshStudioActivity;
-$("favorite-open").onclick = () => { renderFavoritePrompts(); $("agent-favorites").classList.toggle("hidden"); };
+// « Outils du chat » : le panneau ne s'ouvre qu'au clic explicite (bouton ⋯ ou "…").
+// Il était visible au lancement et recouvrait la conversation, l'en-tête et le sélecteur
+// de projet — d'où les superpositions signalées.
+const favoritesPanel = $("agent-favorites");
+favoritesPanel?.classList.add("hidden");
+function closeFavorites() { favoritesPanel?.classList.add("hidden"); }
+$("favorite-open").addEventListener("click", () => {
+    renderFavoritePrompts();
+    favoritesPanel.classList.toggle("hidden");
+});
+document.addEventListener("pointerdown", (event) => {
+    if (!favoritesPanel || favoritesPanel.classList.contains("hidden")) return;
+    if (favoritesPanel.contains(event.target) || event.target.closest("#favorite-open")) return;
+    closeFavorites();
+}, true);
+window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeFavorites(); }, true);
 $("favorite-close").onclick = () => $("agent-favorites").classList.add("hidden");
 $("draft-save-favorite").onclick = () => {
     const prompt = input.value.trim();
