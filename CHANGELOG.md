@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.5.35] — Le sélecteur de projets redevient utilisable après un échec
+- **Liste bloquée corrigée** : quand l'actualisation échouait (session expirée, hors ligne), le sélecteur « Discussions dans » restait désactivé même s'il affichait déjà des projets — impossible de choisir. Il reste maintenant utilisable avec ce qui est déjà chargé.
+- **Retour automatique** : après une reconnexion (ou une minute après un échec), la liste des projets se recharge d'elle-même au prochain mouvement de statut, sans appuyer sur ↻.
+
 ## [1.5.34] — Poignee flottante, raccourci du chat en plein écran
 - **Sash flottant style VS Code** : pendant le glisser, une poignée détachée suit le curseur via `transform`, sans attendre le recalcul de la grille ; la ligne d'accent est désormais un pseudo-element `::before` centré, visible au survol et au focus clavier.
 - **Raccourci Ctrl+Maj+M** : bascule le plein écran du chat, comme le bouton ⤢ ; Échap le quitte toujours.

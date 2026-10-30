@@ -6620,6 +6620,9 @@ $("agent-access").onclick = () => showSideView("settings");
  * /fr-project dans le CLI). La liste vient du compte : rien n'est inventé ni créé, et
  * un projet supprimé sur le site disparaît du sélecteur. */
 let frProjectSelected = null;
+/* Une liste qui a échoué (session expirée, réseau) doit être rechargée dès que
+ * possible, sans marteler l'API à chaque poussée de statut : on laisse un délai. */
+let frProjectsRetryAt = 0;
 
 function renderFrProjects(data, message = "") {
     const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
@@ -6708,7 +6711,12 @@ async function refreshFrProjects(message = "") {
                 state.textContent = `Impossible de joindre le service des projets : ${detail.slice(0, 180)}`;
             }
         }
-        if (select && !select.dataset.loaded) select.disabled = true;
+        if (select) {
+            // La liste déjà chargée reste utilisable : l'utilisateur doit pouvoir choisir
+            // un projet même quand l'actualisation échoue (session expirée, hors ligne).
+            if (!select.dataset.loaded) select.disabled = true;
+            frProjectsRetryAt = Date.now() + 60_000;
+        }
         if (refresh) refresh.disabled = false;
     }
 }
@@ -6718,10 +6726,15 @@ function syncFrProject(project, booted = ui.status?.booted) {
         refreshFrProjects();
         return;
     }
-    // Tant que la liste n'est pas chargée, le statut ne dit rien de plus qu'« aucun
-    // projet » : inutile de relancer une requête à chaque poussée de statut.
+    // Après une reconnexion ou un délai écoulé depuis un échec, la liste se recharge
+    // d'elle-même : plus besoin d'appuyer sur ↻ pour retrouver ses projets.
     const select = $("fr-project-select");
     if (!select || !select.dataset.loaded) return;
+    if (frProjectsRetryAt && Date.now() >= frProjectsRetryAt) {
+        frProjectsRetryAt = 0;
+        refreshFrProjects();
+        return;
+    }
     const next = project ? String(project.id) : "";
     if (select.value !== next) {
         refreshFrProjects();
