@@ -353,10 +353,14 @@ def _prepare_render_scene(resolution):
     scene.render.resolution_x = resolution
     scene.render.resolution_y = resolution
     scene.render.film_transparent = False
-    try:
-        scene.render.engine = "BLENDER_EEVEE_NEXT"
-    except TypeError:
-        scene.render.engine = "BLENDER_WORKBENCH"
+    # EEVEE affiche les matériaux : c'est indispensable pour juger une palette de couleurs.
+    # Workbench reste un repli (rendu gris) réservé aux versions sans EEVEE.
+    for engine in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE", "BLENDER_WORKBENCH"):
+        try:
+            scene.render.engine = engine
+            break
+        except TypeError:
+            continue
     return scene
 
 
@@ -385,6 +389,8 @@ def assemble_quad_image(images, target, size=1024):
             pixels[start:start + columns] = tile_pixels[source:source + columns]
         bpy.data.images.remove(tile)
 
+    # La taille peut suivre une image déjà chargée sous le même nom : on la force.
+    sheet.scale(size, size)
     sheet.pixels.foreach_set(pixels)
     sheet.filepath_raw = os.path.abspath(target)
     sheet.file_format = "PNG"
@@ -430,14 +436,50 @@ def finish(obj, args, material_color=(0.8, 0.8, 0.8, 1.0), materials=None):
     materials=[m1, m2, …] : conserve les couleurs déjà affectées aux faces (palette
     appliquée avant join) et l'export GLB contient un sous-mesh par couleur. Roblox
     Studio les importe en MeshPart texturé : un mesh, plusieurs couleurs.
+
+    L'ordre des emplacements de matériaux est celui de `materials`. Chaque triangle est
+    colorié d'après le matériau de sa face d'origine : trier par numéro de face décale
+    les couleurs (la triangulation crée plus de faces qu'il n'en existait), ce qui donne
+    des diagonales de couleur au lieu de pièces coloriées.
     """
+    if materials:
+        wanted = [material for material in materials if material]
+        index_by_name = {material.name: index for index, material in enumerate(wanted)}
+        # Couleur par sommet, lue AVANT nettoyage et triangulation : join() et clean()
+        # peuvent réordonner ou fusionner les faces, pas les coordonnées des sommets.
+        color_by_vertex = {}
+        slot_names = [slot.name if slot else "" for slot in obj.data.materials]
+        for poly in obj.data.polygons:
+            name = slot_names[poly.material_index] if 0 <= poly.material_index < len(slot_names) else ""
+            color_index = index_by_name.get(name, 0)
+            for vertex_index in poly.vertices:
+                color_by_vertex[vertex_index] = color_index
+
+        clean(obj)
+        triangulate(obj)
+
+        if wanted:
+            obj.data.materials.clear()
+            for material in wanted:
+                obj.data.materials.append(material)
+            # Chaque triangle prend la couleur majoritaire de ses trois sommets.
+            for poly in obj.data.polygons:
+                votes = {}
+                for vertex_index in poly.vertices:
+                    color = color_by_vertex.get(vertex_index, 0)
+                    votes[color] = votes.get(color, 0) + 1
+                poly.material_index = max(votes, key=votes.get) if votes else 0
+        else:
+            add_material(obj, args.name, material_color)
+        if len(obj.data.materials) > 5:
+            print(f"ATTENTION: {len(obj.data.materials)} matériaux ; Roblox préfère 5 couleurs maximum.")
+        if obj.data.materials:
+            uv_unwrap(obj)
+        return _finish_result(obj, args)
+
     clean(obj)
     triangulate(obj)
-    if materials:
-        for material in materials:
-            if material and material.name not in [slot.name for slot in obj.data.materials]:
-                obj.data.materials.append(material)
-    elif obj.data.materials:
+    if obj.data.materials:
         for poly in obj.data.polygons:
             poly.material_index = 0
     else:
@@ -446,6 +488,11 @@ def finish(obj, args, material_color=(0.8, 0.8, 0.8, 1.0), materials=None):
         print(f"ATTENTION: {len(obj.data.materials)} matériaux ; Roblox préfère 5 couleurs maximum.")
     if obj.data.materials:
         uv_unwrap(obj)
+    return _finish_result(obj, args)
+
+
+def _finish_result(obj, args):
+    """Taille en studs, budget de triangles, rendu de contrôle et export GLB."""
     tris = triangle_count(obj)
     result = {"name": args.name, "triangles": tris, "materials": [slot.name for slot in obj.data.materials if slot]}
     if tris and tris < 24:
@@ -486,6 +533,7 @@ def _link(mesh, name, location, z_offset=0.0):
 
 
 def _mesh_from_bmesh(bm, name):
+    import bpy
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
@@ -663,10 +711,17 @@ def noise(obj, strength=0.02, scale=2.0, seed=0):
     """
     import random
     generator = random.Random(seed)
+    # Déformation radiale + léger relief : la base (z minimal) reste plate et au sol,
+    # sans trou sombre ni rocher enterré.
+    lowest = min((vert.co.z for vert in obj.data.vertices), default=0.0)
+    floor_margin = lowest + float(strength) * 0.25
     for vert in obj.data.vertices:
         co = vert.co
         factor = 1.0 + generator.uniform(-1.0, 1.0) * float(strength) * float(scale)
-        vert.co = (co.x * factor, co.y * factor, co.z + generator.uniform(-1.0, 1.0) * float(strength))
+        new_z = co.z + generator.uniform(-1.0, 1.0) * float(strength) * 0.5
+        if co.z <= floor_margin:
+            new_z = lowest
+        vert.co = (co.x * factor, co.y * factor, max(new_z, lowest))
     obj.data.update()
     return obj
 

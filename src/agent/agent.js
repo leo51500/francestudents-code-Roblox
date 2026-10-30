@@ -23,9 +23,18 @@ const {
 } = require("../tools/tools");
 const { execFile } = require("node:child_process");
 const { repeatLimitFor, repeatSteering, stuckSummary, lockedFileHint } = require("./stuck-guard");
-function mcpAttemptKey(args){
-    const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==="object"?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
-    return JSON.stringify(canonical(args));
+/** Ordre stable des clés : deux appels MCP identiques produisent la même clé, quel que soit l'ordre d'écriture. */
+function canonicalValue(value) {
+    if (Array.isArray(value)) return value.map(canonicalValue);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(
+        Object.keys(value).sort().map(key => [key, canonicalValue(value[key])])
+    );
+}
+
+/** Clé d'un appel MCP destiné à éviter deux exécutions identiques. */
+function mcpAttemptKey(args) {
+    return JSON.stringify(canonicalValue(args));
 }
 
 function git(args, cwd) {
@@ -600,6 +609,8 @@ async function runAgent(task, options = {}) {
     // Dernière action en échec : la même action peut être rejouée (relire après correction,
     // relancer un build après un changement) sans être prise pour une boucle infinie.
     let lastActionFailed = false;
+    // Signatures d'écritures refusées par le système : jamais rejouées à l'identique.
+    const lockedSignatures = new Set();
 
     for (let turn = 1; ; turn++) {
         if (maxTurns && turn > maxTurns) {
@@ -819,6 +830,26 @@ async function runAgent(task, options = {}) {
 
         signatures.set(signature, seen);
 
+        // Écriture déjà refusée par le système (verrou, lecture seule) : la rejouer à
+        // l'identique échouera encore. Seule une action différente est exécutée.
+        if (lockedSignatures.has(signature)) {
+            stuck++;
+            ui.result("Écriture verrouillée : pas de nouvelle tentative à l'identique", { tone: "error" });
+            observations.push({
+                tool: action.calls ? "batch" : action.name,
+                args: action.calls ? { calls: action.calls.length } : recordArgs(action.args),
+                ok: false,
+                error: "Cette écriture a déjà échoué pour un fichier verrouillé ou en lecture seule. Elle n'est pas relancée à l'identique : choisis un autre chemin (nouveau nom), ou explique à l'utilisateur comment libérer le fichier, puis termine avec final."
+            });
+            lastActionFailed = true;
+            if (stuck >= 3) {
+                const message = stuckSummary(observations);
+                await finish(message);
+                return { completed: false, message: "L’agent s’est arrêté car il répétait la même action." };
+            }
+            continue;
+        }
+
         if (seen >= repeatLimit && !lastActionFailed) {
             stuck++;
             ui.result("Action répétée : ignorée", { tone: "error" });
@@ -982,26 +1013,33 @@ async function runAgent(task, options = {}) {
             });
             lastActionFailed = failed;
             // Un fichier verrouillé ou en lecture seule n'est pas un bug à réessayer :
-            // la même action échouerait encore. On oriente vers le vrai plan de sortie.
+            // la même action échouerait encore. On oriente vers le vrai plan de sortie,
+            // et on bloque cette écriture tant qu'un autre tour ne l'autorise pas.
             const locked = failed ? lockedFileHint(action, result) : null;
             if (locked) {
                 deferredSteering.push(locked);
                 signatures.delete(signature);
+                lockedSignatures.add(signature);
             }
-            if(action.name==="list_directory"&&recoveredWorkspaceAccess&&(result.denied||result.interrupted||result.is_error||result.error)){
-                const detail=result.message||result.error||"l’accès a été refusé ou interrompu";
-                const message=`La vérification locale du dossier de projet n’a pas abouti : ${clip(detail,240)}. Je n’ai pas relancé l’agent et aucun refus n’a été contourné.`;
-                await finish(message);return {completed:false,message};
-            }
-            if(action.name==="list_directory"&&recoveredWorkspaceAccess&&!result.denied&&!result.interrupted&&!result.is_error){
+            // Vérification d'accès au projet : son résultat décide de la suite, donc elle
+            // est traitée ici et pas laissée au modèle.
+            const workspaceCheck = action.name === "list_directory" && recoveredWorkspaceAccess;
+            if (workspaceCheck) {
+                if (failed) {
+                    const detail = result.message || result.error || "l’accès a été refusé ou interrompu";
+                    const message = `La vérification locale du dossier de projet n’a pas abouti : ${clip(detail, 240)}. Je n’ai pas relancé l’agent et aucun refus n’a été contourné.`;
+                    await finish(message);
+                    return { completed: false, message };
+                }
                 deferredSteering.push("L’IDE vient de vérifier localement le dossier de projet sélectionné : le résultat list_directory ci-joint confirme l’accès à son contenu. Poursuis la demande avec les outils locaux adaptés. Ne répète pas une affirmation générale d’absence d’accès ; si une action précise échoue, base-toi sur son erreur réelle.");
             }
         } catch (error) {
             ui.result(error.message, { tone: "error" });
 
-            if(action.name==="list_directory"&&recoveredWorkspaceAccess){
-                const message=`La vérification locale du dossier de projet a échoué : ${clip(error.message,240)}. Je n’ai pas relancé l’agent et aucun refus n’a été contourné.`;
-                await finish(message);return {completed:false,message};
+            if (action.name === "list_directory" && recoveredWorkspaceAccess) {
+                const message = `La vérification locale du dossier de projet a échoué : ${clip(error.message, 240)}. Je n’ai pas relancé l’agent et aucun refus n’a été contourné.`;
+                await finish(message);
+                return { completed: false, message };
             }
 
             if(mcpKey&&error.executionUncertain)uncertainMcpCalls.add(mcpKey);
@@ -1014,7 +1052,10 @@ async function runAgent(task, options = {}) {
             });
             lastActionFailed = true;
             const locked = lockedFileHint(action, { error: error.message });
-            if (locked) deferredSteering.push(locked);
+            if (locked) {
+                deferredSteering.push(locked);
+                lockedSignatures.add(signature);
+            }
         }
     }
 }

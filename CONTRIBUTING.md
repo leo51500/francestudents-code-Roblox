@@ -47,7 +47,17 @@ Le logo vient de `desktop/renderer/assets/francestudent-logo.svg`. Après l’av
 
 Les exécutables vont dans GitHub Releases, jamais dans Git. Les notes de version rappellent que le projet est maintenu par leo51500.
 
-Le nom du produit est FranceStudent IDE. Les noms de fichiers à joindre viennent de `package.json` (`build.nsis.artifactName`) ; ne pas recopier un ancien nom FranceStudentCode depuis une release historique. Conserver l’`appId` et le dossier de données historique pour que le renommage ne perde pas les profils.
+Le nom du produit est FranceStudent Code Roblox. Les noms de fichiers à joindre viennent de `package.json` (`build.nsis.artifactName`) ; ne pas recopier un ancien nom depuis une release historique. Conserver l’`appId` et le dossier de données historique pour que le renommage ne perde pas les profils.
+
+Trois noms différents coexistent volontairement, ne pas les unifier :
+
+| Champ | Valeur | Ne pas changer parce que… |
+| --- | --- | --- |
+| `name` | `project-frstcli` | Electron en dérive le dossier de profil et le journal des données ; le changer déplace les réglages et les conversations des utilisateurs. |
+| `build.productName` | `FranceStudent Code Roblox` | C’est le nom affiché et le nom des exécutables. |
+| `build.appId` | `fr.francestudent.code.roblox` | Il identifie les mises à jour ; le changer casse la mise à jour automatique des versions installées. |
+
+Un nouveau contributeur qui cherche « FranceStudent Code » dans `package.json` trouvera ces deux champs ; le commentaire `//name` du fichier rappelle pourquoi la ligne `name` est figée.
 
 Construction locale Windows utilisée pour la validation :
 

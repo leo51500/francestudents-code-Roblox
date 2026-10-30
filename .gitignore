@@ -15,6 +15,9 @@ npm-debug.log*
 *.log
 *.tmp
 *.bak
+# Caches Python créés par les tests Blender : jamais versionnés.
+__pycache__/
+*.pyc
 .DS_Store
 Thumbs.db
 desktop.ini

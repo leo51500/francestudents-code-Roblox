@@ -57,6 +57,13 @@ test("les demandes sans rapport (boutique) ne reçoivent ni guide éclairage, ni
     assert.doesNotMatch(text, /bevel\(obj, width\)/);
 });
 
+test("règle du projet : tout modèle 3D passe par Blender", () => {
+    const text = prompt("Modifie mes modèles Blender, ils sont trop simples");
+    assert.match(text, /TOUT MODÈLE 3D PASSE PAR BLENDER/);
+    assert.match(text, /jamais décrit comme un assemblage de Parts/);
+    assert.match(text, /demande explicite/);
+});
+
 test("le brief Roblox nomme les outils de géométrie et la palette", () => {
     const text = prompt("Modifie mes modèles Blender, ils sont trop simples");
     assert.match(text, /bevel/);

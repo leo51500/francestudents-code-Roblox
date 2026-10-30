@@ -1,6 +1,16 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.25":{headline:"Tous les modèles 3D passent par Blender, et le code est plus lisible.",items:[
+        {icon:"tools",title:"Blender par défaut",text:"Un prop, un décor, une arme : l’assistant les modélise dans Blender et les importe, au lieu de vous livrer des Parts à empiler à la main."},
+        {icon:"spark",title:"Code plus clair",text:"Les terminaux ont leur propre module et les contrôles de l’agent sont découpés : plus facile à corriger, sans changer le comportement."},
+        {icon:"chat",title:"Guides surveillés",text:"Un test mesure la taille de chaque guide envoyé au modèle et alerte si l’un grossit trop, pour que les réponses restent précises."}
+    ]},
+    "1.5.24":{headline:"Les modèles Blender gardent enfin leurs couleurs.",items:[
+        {icon:"spark",title:"Rendu vérifié",text:"Le contrôle à quatre angles est réellement rendu et lu par les tests : taille, quatre vues et présence de la palette."},
+        {icon:"tools",title:"Couleurs réparées",text:"La triangulation mélangeait les couleurs en diagonales ; chaque pièce retrouve sa couleur, et les rochers ne sont plus creusés sous le sol."},
+        {icon:"chat",title:"Gardes-fous mesurés",text:"Les guides envoyés à l’agent sont vérifiés section par section, et un fichier verrouillé n’est plus jamais réécrit à l’identique."}
+    ]},
     "1.5.23":{headline:"Des modèles Blender plus beaux, des sons et un agent qui ne tourne plus en rond.",items:[
         {icon:"spark",title:"Agent débloqué",text:"« Je tourne en rond » n'arrête plus la tâche : l'agent change de démarche, et un fichier verrouillé par Studio est expliqué au lieu d'être réessayé sans fin."},
         {icon:"tools",title:"Biseaux, tores et palette",text:"Biseaux, sphères, cônes, tores, symétrie, creux booléens et colonnes en révolution donnent tout de suite un aspect soigné ; plusieurs couleurs par modèle, et un rendu quatre angles pour juger le résultat."},
