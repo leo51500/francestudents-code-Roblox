@@ -1,5 +1,12 @@
 ﻿# Changelog
 
+## [1.5.37] — La barre de titre redevient accessible, le sélecteur de projet passe en tête du chat
+- **Boutons de la barre de titre bloqués** : le chat et sa poignée de redimensionnement démarraient tout en haut de la fenêtre et recouvraient la pastille « Mise à jour » et les boutons de la barre de titre. La grille réserve maintenant une ligne à la barre de titre : aucune colonne ne monte dessous, et ses boutons répondent de nouveau à toutes les tailles de fenêtre.
+- **« Discussions dans » en tête du chat** : le sélecteur de projet ouvre l'en-tête du chat sur sa propre ligne, avant les onglets, avec son libellé entier. On choisit où part la discussion avant d'écrire, y compris dans une petite fenêtre.
+- **Centre d'extensions sur fenêtre étroite** : sous 1240 px, il ne passe plus sous le chat ; il prend la largeur disponible pour que ses onglets et boutons restent cliquables.
+- **Écran de démarrage** : il couvre la barre de titre pendant la vérification des mises à jour et rend la barre inactive jusqu'à sa fermeture, au lieu de laisser des zones de glisser intercepter les clics.
+- Vérifié : `npm run lint`, `npm run build:renderer`, `npm run check:renderer`, `npm test` (889 tests, 886 réussis, 3 ignorés), suite Electron complète (36 tests, 35 réussis, 1 ignoré) et contrôles réels à 1400, 1000 et 900 px.
+
 ## [1.5.36] — Redimensionnement VS Code : suivi en direct, largeurs entières
 - **Panneau qui suit la souris** : en disposition personnalisée (dès le second glisser), la grille CSS lit `--left-custom` / `--right-custom`, mais le glisser ne mettait à jour que `--left` / `--right` — la colonne ignorait la variable et ne bougeait plus. La valeur choisie est maintenant publiée dans la variable `-custom` à chaque image, avec la classe `layout-custom` posée dès l'appui : le panneau suit le curseur en direct.
 - **Calcul sur la taille réelle** : le point de départ du glisser, des flèches clavier et du double-clic est la largeur réellement rendue (`layoutSizeOf`), plus la valeur potentiellement périmée de la variable — la poignée reste collée au bord du panneau et la bulle affiche la taille vraie, toujours entière (arrondi conservé).

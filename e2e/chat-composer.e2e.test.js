@@ -56,7 +56,11 @@ require(${modulePath("desktop/main.js")});`);
         const skillFile = path.join(dir, "SKILL.md");
         fs.writeFileSync(skillFile, "---\nname: downloaded-local\ndescription: My downloaded skill\n---\n\nUseful local instructions");
         await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, skillFile);
-        await page.locator('[data-view="extensions"]').click(); await page.locator('[data-center-tab="installed"]').click();
+        await page.locator('[data-view="extensions"]').click();
+        // La fenêtre a été rétrécie à 900 px : le centre d'extensions passe sous l'agent.
+        // On l'agrandit avant de viser ses onglets, comme le ferait l'utilisateur.
+        await page.setViewportSize({ width: 1400, height: 900 });
+        await page.locator('[data-center-tab="installed"]').click();
         await page.locator("#btn-skill-import-file").click();
         await page.locator("#skill-editor[open]").waitFor();
         assert.match(await page.locator("#skill-editor-content").inputValue(), /Useful local instructions/);

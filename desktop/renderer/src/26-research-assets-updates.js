@@ -94,7 +94,12 @@ async function runStartupUpdateCheck() {
     const primary=$("startup-update-now"),progress=$("startup-update-progress"),later=$("startup-continue"),openButton=$("startup-update-open");
     let finished=false,deadline=null,finishTimer=null,current=null,off=null;
     appRoot.inert=true;
-    const close=()=>{if(finished)return;finished=true;clearTimeout(deadline);clearTimeout(finishTimer);overlay.hidden=true;appRoot.inert=false;if(overlay.contains(document.activeElement))input.focus();};
+    /* L'écran de démarrage couvre la barre de titre pendant qu'il est ouvert : elle est
+     * désactivée, puis rétablie à la fermeture (ses boutons restent cliquables ensuite). */
+    const titlebar=$("titlebar");
+    titlebar.inert=true;
+    const setIsOpen=open=>{overlay.hidden=!open;appRoot.inert=open;titlebar.inert=open;};
+    const close=()=>{if(finished)return;finished=true;clearTimeout(deadline);clearTimeout(finishTimer);overlay.hidden=true;appRoot.inert=false;titlebar.inert=false;if(overlay.contains(document.activeElement))input.focus();};
     const offer=data=>{
         current=data;
         const available=["available","downloading","downloaded"].includes(data.status);
@@ -119,7 +124,7 @@ async function runStartupUpdateCheck() {
         }
     };
     later.onclick=close;later.focus();
-    openButton.onclick=()=>{finished=false;overlay.hidden=false;appRoot.inert=true;offer(current);primary.focus();};
+    openButton.onclick=()=>{finished=false;setIsOpen(true);offer(current);primary.focus();};
     off=api.onEvent((channel,data)=>{if(channel==="appUpdate")offer(data);});
     window.addEventListener("unload",()=>off?.(),{once:true});
     primary.onclick=async()=>{

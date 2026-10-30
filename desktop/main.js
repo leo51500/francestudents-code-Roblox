@@ -863,19 +863,49 @@ function registerIpc() {
         const fr = require("../src/api/fr-projects");
         const name = String(action || "list");
         if (name === "select") {
+            // Rend « Aucun projet » toujours disponible, même si la liste du compte est
+            // momentanément inaccessible (session expirée, hors ligne).
             const id = String(payload?.id || "");
-            const result = await fr.listProjects();
-            const project = id ? result.projects.find(item => String(item.id) === id) : null;
-            await fr.saveSelected(project || null);
+            if (!id) {
+                await fr.saveSelected(null);
+                pushStatus();
+                // La liste connue n'est pas renvoyée : l'interface la conserve pour le
+                // prochain choix, elle n'est pas effacée par un simple « Aucun projet ».
+                return { selected: null, projects: [], unavailable: true };
+            }
+            // La liste vient du compte : on ne mémorise qu’un projet réellement présent.
+            const nm = String(payload?.name || "").slice(0, fr.MAX_NAME_CHARS);
+            let projects;
+            try {
+                ({ projects } = await fr.listProjects());
+            } catch (error) {
+                if (!nm) throw error;
+                await fr.saveSelected({ id, name: nm });
+                pushStatus();
+                return { selected: { id, name: nm }, projects: [], unavailable: true };
+            }
+            const project = projects.find(item => String(item.id) === id);
+            if (!project) {
+                // Connu du sélecteur mais absent de la liste (ou session expirée) : on garde
+                // le nom fourni par l'interface au lieu de perdre le choix.
+                if (!nm) throw new Error("Ce projet n’est pas dans ta liste FranceStudent.");
+                await fr.saveSelected({ id, name: nm });
+                pushStatus();
+                return { selected: { id, name: nm }, projects: [], unavailable: true };
+            }
+            await fr.saveSelected(project);
             pushStatus();
-            return { selected: project ? { id: project.id, name: project.name } : null, projects: result.projects.map(item => ({ id: item.id, name: item.name })) };
+            return { selected: { id: project.id, name: project.name }, projects: projects.map(item => ({ id: item.id, name: item.name })) };
         }
         const result = await fr.listProjects();
         const projects = result.projects;
-        const saved = require("../src/state").state.frProject || (await fr.loadSelected());
+        const previous = require("../src/state").state.frProject;
+        const saved = previous || (await fr.loadSelected());
         // Un projet supprimé sur le site ne doit pas rester « actif » sans le dire.
         const selected = saved && projects.some(item => String(item.id) === String(saved.id)) ? saved : null;
         if (saved && !selected) await fr.saveSelected(null);
+        // pushStatus alimente le sélecteur du chat (et son libellé) sans recharger la page.
+        if (previous?.id !== selected?.id || previous?.name !== selected?.name) pushStatus();
         return {
             projects: projects.map(item => ({ id: item.id, name: item.name })),
             selected: selected ? { id: selected.id, name: selected.name } : null,

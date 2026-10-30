@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.37":{headline:"Les boutons de la barre de titre répondent à nouveau, et « Discussions dans » passe en tête du chat.",items:[
+        {icon:"tools",title:"Barre de titre dégagée",text:"Le chat et sa poignée remontaient sous la pastille « Mise à jour » et les boutons de la fenêtre. La grille réserve maintenant une ligne à la barre de titre : tout reste cliquable, quelle que soit la taille de la fenêtre."},
+        {icon:"chat",title:"Projet choisi avant d'écrire",text:"Le sélecteur de projet ouvre l'en-tête du chat, sur sa propre ligne et avec son libellé entier : on choisit où part la discussion avant de poser la question."},
+        {icon:"spark",title:"Fenêtres étroites",text:"Le centre d'extensions ne passe plus sous le chat et ses onglets restent utilisables ; l'écran de démarrage ne laisse plus l'interface inactive capter les clics."}
+    ]},
     "1.5.36":{headline:"Le redimensionnement suit la souris en direct, avec des largeurs entières.",items:[
         {icon:"tools",title:"Panneau qui suit la souris",text:"En disposition personnalisée, la grille lisait l'ancienne variable : la colonne ne bougeait plus pendant le glisser. La largeur choisie est désormais publiée en direct, image par image, comme dans VS Code."},
         {icon:"spark",title:"Calcul sur la taille réelle",text:"Le glisser, les flèches clavier et le double-clic partent de la largeur réellement rendue du panneau, plus jamais d'une valeur périmée : la poignée reste collée au bord et la bulle annonce la vraie taille."}

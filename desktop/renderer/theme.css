@@ -155,20 +155,24 @@ html.layout-dragging #app.layout-custom {
     transition: none !important;
 }
 
-/* Deux lignes seulement : contenu, puis barre d'état. */
+/* Trois lignes : barre de titre, contenu, puis barre d'état. Aucune colonne ne démarre
+   sous la barre de titre : ses boutons et la pastille « Mise à jour » restent cliquables. */
 #titlebar { grid-row: 1; grid-column: 1 / -1; }
-#activity-bar { grid-row: 1; grid-column: 1; }
+#activity-bar { grid-row: 2; grid-column: 1; }
 /* Le rail de navigation va du haut (logo) jusqu'à la barre d'état (outils en bas). */
-#sidebar-tabs { grid-row: 1 / 3; grid-column: 1; }
-#sidebar { grid-row: 1; grid-column: 2; }
-#resizer-left { grid-row: 1; grid-column: 3; }
-#center { grid-row: 1; grid-column: 4; }
-#resizer-right { grid-row: 1; grid-column: 5; }
-#agent { grid-row: 1; grid-column: 6; }
-#statusbar { grid-row: 2; grid-column: 1 / -1; }
+#sidebar-tabs { grid-row: 2 / -1; grid-column: 1; }
+#sidebar { grid-row: 2; grid-column: 2; }
+#resizer-left { grid-row: 2; grid-column: 3; }
+#center { grid-row: 2; grid-column: 4; }
+#resizer-right { grid-row: 2; grid-column: 5; }
+#agent { grid-row: 2; grid-column: 6; }
+#statusbar { grid-row: 3; grid-column: 1 / -1; }
 
 #app {
     grid-template-columns: var(--rail) var(--left) 4px 1fr 4px var(--right);
+    /* Trois lignes : barre de titre, contenu, barre d'état. Le chat ne remonte donc
+       jamais sous les boutons de la barre de titre (pastille « Mise à jour »). */
+    grid-template-rows: var(--titlebar, 34px) minmax(0, 1fr) 24px;
 }
 
 /* La largeur de l'agent et de la barre latérale ne pousse jamais la fenêtre
