@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.32":{headline:"Les poignées de redimensionnement sont plus faciles à attraper et la bulle de taille s'affiche correctement.",items:[
+        {icon:"tools",title:"Zone de clic élargie",text:"Les poignées du chat, des fichiers et du panneau bas ont une zone d'accroche agrandie (±4 px) : plus besoin de viser le trait de 4 px pour redimensionner."},
+        {icon:"spark",title:"Bulle de taille réparée",text:"La bulle qui affiche la taille en direct (« Chat · 420 px ») avait perdu son style et apparaissait n'importe où. Elle est maintenant bien positionnée et visible."},
+        {icon:"chat",title:"Retour visuel au survol",text:"Le survol des poignées affiche une ligne fine couleur accent, et la couleur reste pendant le glisser pour confirmer que la poignée est bien tenue."}
+    ]},
     "1.5.31":{headline:"Le chat suit ta souris et tes projets FranceStudent remontent enfin.",items:[
         {icon:"chat",title:"Redimensionnement en direct",text:"Le chat, les fichiers et le panneau bas suivent le pointeur pendant le glisser ; la bulle donne la taille actuelle et le réglage reste mémorisé."},
         {icon:"tools",title:"Projets personnels et partagés",text:"L’application récupère aussi les projets partagés et distingue l’absence de session d’une route de service indisponible."},

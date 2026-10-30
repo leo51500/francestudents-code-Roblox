@@ -1,7 +1,7 @@
-{
-  "//name": "Ne pas renommer : Electron dérive le dossier de profil et le chemin des données (~/.francestudent-code-roblox) de ce nom. Le nom affiché est build.productName, l'identifiant de mise à jour est build.appId.",
+﻿{
+  "//name": "Ne pas renommer : Electron dÃ©rive le dossier de profil et le chemin des donnÃ©es (~/.francestudent-code-roblox) de ce nom. Le nom affichÃ© est build.productName, l'identifiant de mise Ã  jour est build.appId.",
   "name": "project-frstcli",
-  "version": "1.5.31",
+  "version": "1.5.32",
   "description": "FranceStudent Code Roblox : agent IA pour Roblox Studio, Luau, Rojo et Blender",
   "main": "index.js",
   "bin": {
