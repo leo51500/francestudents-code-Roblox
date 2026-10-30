@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.38":{headline:"Le sélecteur de projets distingue session expirée, droits refusés et panne réseau.",items:[
+        {icon:"chat",title:"Message juste",text:"Au lancement, la liste était demandée avant que la connexion soit prête : l'échec s'affichait comme une session expirée. Un refus d'accès ou une coupure réseau n'est plus annoncé de la même façon, et le détail exact reste lisible au survol."},
+        {icon:"tools",title:"Projets personnels toujours là",text:"Si la liste des projets partagés est refusée ou absente, tes projets personnels restent affichés et sélectionnables au lieu de disparaître derrière un message de session."},
+        {icon:"spark",title:"Plus de requêtes en boucle",text:"Après un échec, l'application attend une minute avant de redemander la liste au lieu de la réclamer toutes les deux secondes ; une reconnexion la recharge aussitôt."}
+    ]},
     "1.5.37":{headline:"Les boutons de la barre de titre répondent à nouveau, et « Discussions dans » passe en tête du chat.",items:[
         {icon:"tools",title:"Barre de titre dégagée",text:"Le chat et sa poignée remontaient sous la pastille « Mise à jour » et les boutons de la fenêtre. La grille réserve maintenant une ligne à la barre de titre : tout reste cliquable, quelle que soit la taille de la fenêtre."},
         {icon:"chat",title:"Projet choisi avant d'écrire",text:"Le sélecteur de projet ouvre l'en-tête du chat, sur sa propre ligne et avec son libellé entier : on choisit où part la discussion avant de poser la question."},

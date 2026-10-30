@@ -6640,6 +6640,20 @@ let frProjectsKnown = [];
 /* Une liste qui a échoué (session expirée, réseau) doit être rechargée dès que
  * possible, sans marteler l'API à chaque poussée de statut : on laisse un délai. */
 let frProjectsRetryAt = 0;
+/* Dernier état de connexion connu : une reconnexion doit recharger la liste tout
+ * de suite, sans attendre la fin du délai laissé après un échec. */
+let frProjectsBooted = null;
+
+/* Bouton d'action dans la ligne d'état des projets : il ouvre le même guide que
+ * « Se reconnecter », sans ajouter de commande ni de jargon. */
+function frProjectConnectionButton(label = "Se reconnecter") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "fr-project-login";
+    button.textContent = label;
+    button.addEventListener("click", () => { if (typeof openConnectionGuide === "function") openConnectionGuide(); });
+    return button;
+}
 
 function renderFrProjects(data, message = "") {
     const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
@@ -6670,6 +6684,8 @@ function renderFrProjects(data, message = "") {
     select.dataset.loaded = "1";
     if (state) {
         state.classList.toggle("error", /impossible|erreur|refus/i.test(message));
+        // Le détail technique d'un échec précédent ne doit pas rester au survol.
+        state.title = "";
         state.textContent = message || (frProjectSelected
             ? `Les nouvelles discussions sont classées dans « ${frProjectSelected.name} ».`
             : "Sans projet : les discussions restent dans l’historique général.");
@@ -6678,16 +6694,30 @@ function renderFrProjects(data, message = "") {
         ? `Nouvelles discussions dans « ${frProjectSelected.name} »`
         : "Choisis le projet FranceStudent des nouvelles discussions";
     if (refresh) refresh.disabled = false;
+    // Une liste reçue efface le délai laissé après un échec.
+    frProjectsRetryAt = 0;
 }
 
 async function refreshFrProjects(message = "") {
     const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (select) select.disabled = true;
     if (refresh) refresh.disabled = false;
-    if (ui.status && ui.status.booted === false) {
+    // Avant le premier statut, on ignore si la session est prête : interroger l'API à ce
+    // moment-là échouait faute de jeton et affichait une fausse « session expirée ».
+    if (!("booted" in ui.status)) {
         if (state) {
             state.classList.remove("error");
+            state.title = "";
+            state.textContent = "Chargement de vos projets…";
+        }
+        return;
+    }
+    if (ui.status.booted === false) {
+        if (state) {
+            state.classList.remove("error");
+            state.title = "";
             state.textContent = "Connecte-toi pour classer tes discussions dans tes projets FranceStudent.";
+            state.append(" ", frProjectConnectionButton("Se connecter"));
         }
         if (select) {
             select.replaceChildren();
@@ -6702,7 +6732,12 @@ async function refreshFrProjects(message = "") {
         return;
     }
     if (refresh) refresh.disabled = true;
-    if (state && !message) state.textContent = "Chargement de vos projets…";
+    if (state && !message) {
+        // Le texte de chargement n'est pas une erreur : la ligne repasse au neutre.
+        state.classList.remove("error");
+        state.title = "";
+        state.textContent = "Chargement de vos projets…";
+    }
     try {
         const result = await api.frProjects("list");
         renderFrProjects(result, message);
@@ -6711,25 +6746,33 @@ async function refreshFrProjects(message = "") {
         }
     } catch (error) {
         if (state) {
-            state.classList.add("error");
             const detail = String(error.message || "");
             const status = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
-            if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) {
+            // Une panne réseau ne dit rien de la session : on ne l'annonce pas comme
+            // expirée. « Connexion impossible » (renouvellement du jeton) peut cacher
+            // les deux cas, on regarde donc d'abord la cause réelle.
+            const offline = !status && /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EAI_AGAIN|timed out|network|réseau/i.test(detail);
+            state.classList.add("error");
+            // La cause exacte reste lisible au survol : une capture suffit alors à
+            // distinguer session, droits d'accès et réseau, sans jargon à l'écran.
+            state.title = detail.slice(0, 400);
+            if (offline) {
+                state.textContent = "Service des projets injoignable : vérifie la connexion Internet, puis réessaie.";
+            } else if (status === "403") {
                 state.textContent = frProjectSelected
-                    ? `Session expirée pour la liste, mais « ${frProjectSelected.name} » reste choisi : les nouvelles discussions y seront classées. Reconnecte-toi pour changer de projet.`
-                    : "Session expirée. Reconnecte-toi pour choisir dans quel projet classer les nouvelles discussions.";
-                if (typeof openConnectionGuide === "function") {
-                    const login = document.createElement("button");
-                    login.type = "button"; login.className = "fr-project-login"; login.textContent = "Se reconnecter";
-                    login.addEventListener("click", () => openConnectionGuide());
-                    state.append(" ", login);
-                }
+                    ? `L’accès à la liste est refusé (HTTP 403), mais « ${frProjectSelected.name} » reste choisi : les nouvelles discussions y seront classées.`
+                    : "L’accès à tes projets est refusé (HTTP 403). Vérifie que le compte connecté y a droit, puis réessaie.";
             } else if (status === "404") {
                 state.textContent = "Le service des projets FranceStudent n’a pas été trouvé (HTTP 404).";
             } else if (status === "400" || status === "422") {
                 state.textContent = `La requête des projets a été refusée (HTTP ${status}) : ${detail.slice(0, 180)}`;
-            } else if (status) {
+            } else if (status && status !== "401") {
                 state.textContent = `Le service des projets répond HTTP ${status}. Réessaie plus tard.`;
+            } else if (/Aucune session|Connexion impossible|HTTP 401|expir/i.test(detail)) {
+                state.textContent = frProjectSelected
+                    ? `Session expirée pour la liste, mais « ${frProjectSelected.name} » reste choisi : les nouvelles discussions y seront classées. Reconnecte-toi pour changer de projet.`
+                    : "Session expirée. Reconnecte-toi pour choisir dans quel projet classer les nouvelles discussions.";
+                state.append(" ", frProjectConnectionButton());
             } else {
                 state.textContent = `Impossible de joindre le service des projets : ${detail.slice(0, 180)}`;
             }
@@ -6776,20 +6819,33 @@ function keepKnownFrProjects() {
 }
 
 function syncFrProject(project, booted = ui.status?.booted) {
-    if (booted && !$("fr-project-select")?.dataset.loaded) {
+    // Statut inconnu : refreshFrProjects attend le premier statut au lieu d'interroger
+    // l'API sans jeton (ce qui affichait une fausse session expirée au lancement).
+    if (booted === undefined) return;
+    // Sans compte connecté, la ligne d'état explique calmement qu'il faut se connecter.
+    if (booted === false) {
+        const justDisconnected = frProjectsBooted !== false;
+        frProjectsBooted = false;
+        // Le statut est poussé toutes les deux secondes : on ne reconstruit la ligne que
+        // si l'état vient de changer (ou si une ancienne liste reste affichée).
+        if (justDisconnected || $("fr-project-select")?.dataset.loaded) refreshFrProjects();
+        return;
+    }
+    // Une reconnexion recharge la liste sans attendre la fin du délai laissé après un échec.
+    if (frProjectsBooted === false) frProjectsRetryAt = 0;
+    frProjectsBooted = true;
+    // Après un échec, la liste n'est pas redemandée à chaque poussée de statut (toutes
+    // les deux secondes) : on laisse passer le délai, puis on réessaie une seule fois.
+    if (frProjectsRetryAt) {
+        if (Date.now() < frProjectsRetryAt) return;
+        frProjectsRetryAt = 0;
         refreshFrProjects();
         return;
     }
-    // Après une reconnexion ou un délai écoulé depuis un échec, la liste se recharge
-    // d'elle-même : plus besoin d'appuyer sur ↻ pour retrouver ses projets.
     const select = $("fr-project-select");
+    if (!select) return;
     // Le sélecteur reste utilisable avec la liste connue même sans liste chargée.
-    if (!select || !select.dataset.loaded) {
-        if (select) select.disabled = false;
-        return;
-    }
-    if (frProjectsRetryAt && Date.now() >= frProjectsRetryAt) {
-        frProjectsRetryAt = 0;
+    if (!select.dataset.loaded) {
         refreshFrProjects();
         return;
     }
@@ -6801,6 +6857,7 @@ function syncFrProject(project, booted = ui.status?.booted) {
     frProjectSelected = project ? { id: next, name: String(project.name) } : null;
     if ($("fr-project-state")) {
         $("fr-project-state").classList.remove("error");
+        $("fr-project-state").title = "";
         $("fr-project-state").textContent = frProjectSelected
             ? `Les nouvelles discussions sont classées dans « ${frProjectSelected.name} ».`
             : "Sans projet : les discussions restent dans l’historique général.";

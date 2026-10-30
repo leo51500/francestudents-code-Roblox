@@ -105,15 +105,47 @@ test("refresh des projets interprète les erreurs HTTP comme un diagnostic actio
     const projectStatus = (message) => {
         const detail = String(message || "");
         const code = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
-        if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) return "session";
+        const offline = !code && /fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EAI_AGAIN|timed out|network|réseau/i.test(detail);
+        if (offline) return "network-error";
+        if (code === "403") return "forbidden";
         if (code === "404") return "not-found";
         if (code === "400" || code === "422") return "request-rejected";
-        if (code) return "service-error";
+        if (code && code !== "401") return "service-error";
+        if (/Aucune session|Connexion impossible|HTTP 401|expir/i.test(detail)) return "session";
         return "network-error";
     };
     assert.equal(projectStatus("HTTP 404 sur GET /projects"), "not-found");
     assert.equal(projectStatus("HTTP 401 sur GET /projects"), "session");
-    assert.equal(projectStatus("HTTP 403 sur GET /projects"), "session");
+    // Un refus de droits n'est pas une session expirée : le message doit le dire.
+    assert.equal(projectStatus("HTTP 403 sur GET /projects"), "forbidden");
     assert.equal(projectStatus("HTTP 500 sur GET /projects"), "service-error");
+    assert.equal(projectStatus("Aucune session : connecte-toi avec /login"), "session");
+    // Une panne réseau au renouvellement du jeton ne doit pas être annoncée comme une session expirée.
+    assert.equal(projectStatus("Connexion impossible.\n  session enregistrée : fetch failed"), "network-error");
     assert.equal(projectStatus("fetch failed"), "network-error");
+});
+
+test("une route partagée refusée ne cache pas les projets personnels", { concurrency: false }, async () => {
+    const { auth } = require("../src/api/auth");
+    const frProjects = require("../src/api/fr-projects");
+    const originalFetch = global.fetch;
+    const previousAuth = { accessToken: auth.accessToken, expiresAt: auth.expiresAt, deviceId: auth.deviceId };
+    auth.accessToken = "projects-test-token";
+    auth.expiresAt = Date.now() + 300_000;
+    auth.deviceId = "projects-test-device";
+    try {
+        for (const code of [400, 403, 404, 405]) {
+            global.fetch = async url => new Response(
+                String(url).endsWith("/shared") ? "partage désactivé" : JSON.stringify([{ id: "project-5", name: "Mon projet" }]),
+                { status: String(url).endsWith("/shared") ? code : 200 }
+            );
+            assert.deepEqual(await frProjects.listProjects(), { projects: [{ id: "project-5", name: "Mon projet" }], sharedUnavailable: true });
+        }
+        // Un refus d'authentification sur la route partagée reste une erreur visible.
+        global.fetch = async url => new Response(String(url).endsWith("/shared") ? "unauthorized" : JSON.stringify([{ id: "project-6", name: "Mon projet" }]), { status: String(url).endsWith("/shared") ? 401 : 200 });
+        await assert.rejects(frProjects.listProjects(), /Aucune session|HTTP 401/);
+    } finally {
+        Object.assign(auth, previousAuth);
+        global.fetch = originalFetch;
+    }
 });
