@@ -272,9 +272,13 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     handle.addEventListener("dblclick", (ev) => {
         ev.preventDefault();
         const fallback = cssVar === "--left" ? 248 : cssVar === "--right" ? 420 : 160;
-        document.documentElement.style.setProperty(cssVar, `${Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), fallback))}px`);
+        const next = Math.round(Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), fallback)));
+        document.documentElement.style.setProperty(cssVar, `${next}px`);
         delete layoutPreferred[cssVar];
-        if (cssVar !== "--bottom") publishCustomWidth(cssVar);
+        if (cssVar !== "--bottom") {
+            document.documentElement.style.setProperty(`${cssVar}-custom`, `${next}px`);
+            $("app").classList.add("layout-custom");
+        }
         syncLayoutCustom();
         if (typeof saveLayout === "function") saveLayout();
         requestAnimationFrame(() => showLayoutBadge({ label: describe(), clientX: ev.clientX, clientY: ev.clientY }, true));
@@ -293,7 +297,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         document.documentElement.classList.add("layout-dragging");
         const start = axis === "x" ? ev.clientX : ev.clientY;
         activeDrag = { pointerId: ev.pointerId, start, last: start, finished: false };
-        const initial = layoutPx(cssVar);
+        const initial = layoutSizeOf(zoneId, axis) || layoutPx(cssVar);
         const min = LAYOUT_LIMITS[cssVar].min;
         // Afficher le sash flottant dès l'appui, à la position exacte du curseur.
         if (axis === "x") showSash(ev.clientX, ev.clientY);
@@ -305,6 +309,13 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             const nextLimit = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
             const value = Math.round(Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta))));
             document.documentElement.style.setProperty(cssVar, `${value}px`);
+            // En disposition personnalisée, la grille lit --left-custom / --right-custom
+            // (règle #app.layout-custom) : publier la valeur en direct, sinon la colonne
+            // ignore la variable et le panneau ne suit plus le curseur.
+            if (cssVar !== "--bottom") {
+                document.documentElement.style.setProperty(`${cssVar}-custom`, `${value}px`);
+                $("app").classList.add("layout-custom");
+            }
             showLayoutBadge({ label: `${label} · ${value} px`, clientX: Math.round(pointer.x), clientY: Math.round(pointer.y) });
         };
         const pointer = { x: ev.clientX, y: ev.clientY };
@@ -381,10 +392,13 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         ev.preventDefault();
         const grow = axis === "x" ? ev.key === "ArrowRight" : ev.key === "ArrowDown";
         const step = (ev.shiftKey ? 40 : 8) * (grow === !invert ? 1 : -1) * (invert ? -1 : 1);
-        const next = Math.round(Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutPx(cssVar) + step)));
+        const next = Math.round(Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutSizeOf(zoneId, axis) || layoutPx(cssVar)) + step));
         document.documentElement.style.setProperty(cssVar, `${next}px`);
         delete layoutPreferred[cssVar];
-        if (cssVar !== "--bottom") publishCustomWidth(cssVar);
+        if (cssVar !== "--bottom") {
+            document.documentElement.style.setProperty(`${cssVar}-custom`, `${next}px`);
+            $("app").classList.add("layout-custom");
+        }
         syncLayoutCustom();
         const rect = handle.getBoundingClientRect();
         showLayoutBadge({ label: cssVar === "--bottom" ? `Bas · ${next} px` : `${describe()}`, clientX: rect.x + rect.width / 2, clientY: rect.y + rect.height / 2 }, true);

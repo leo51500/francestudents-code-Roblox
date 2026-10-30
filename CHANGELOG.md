@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.5.36] — Redimensionnement VS Code : suivi en direct, largeurs entières
+- **Panneau qui suit la souris** : en disposition personnalisée (dès le second glisser), la grille CSS lit `--left-custom` / `--right-custom`, mais le glisser ne mettait à jour que `--left` / `--right` — la colonne ignorait la variable et ne bougeait plus. La valeur choisie est maintenant publiée dans la variable `-custom` à chaque image, avec la classe `layout-custom` posée dès l'appui : le panneau suit le curseur en direct.
+- **Calcul sur la taille réelle** : le point de départ du glisser, des flèches clavier et du double-clic est la largeur réellement rendue (`layoutSizeOf`), plus la valeur potentiellement périmée de la variable — la poignée reste collée au bord du panneau et la bulle affiche la taille vraie, toujours entière (arrondi conservé).
+
 ## [1.5.35] — Le sélecteur de projets redevient utilisable après un échec
 - **Liste bloquée corrigée** : quand l'actualisation échouait (session expirée, hors ligne), le sélecteur « Discussions dans » restait désactivé même s'il affichait déjà des projets — impossible de choisir. Il reste maintenant utilisable avec ce qui est déjà chargé.
 - **Retour automatique** : après une reconnexion (ou une minute après un échec), la liste des projets se recharge d'elle-même au prochain mouvement de statut, sans appuyer sur ↻.
