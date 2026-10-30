@@ -1,4 +1,11 @@
-# Changelog
+﻿# Changelog
+
+## [1.5.32] — Poignees plus faciles a attraper, bulle de taille reparee
+- **Zone de clic elargie** : les poignees de redimensionnement (chat, fichiers, panneau bas) ont un pseudoelement transparent de +/-4 px de chaque cote du trait, ce qui rend le glisser bien plus facile a declencher sans viser un pixel precis.
+- **Bulle de taille reparee** : la bulle `layout-badge` (« Chat · 420 px ») n'avait aucune regle CSS et apparaissait sans style ni position fixe. Elle est maintenant positionnee en `fixed`, avec fond, bordure et ombre correspondant au theme.
+- **Retour visuel clair** : au survol, une ligne fine couleur `--accent` remplace le fond gris indistinct. Pendant le glisser, la couleur d'accent reste pour confirmer que la poignee est tenue.
+- **Poignee verticale sur toute la hauteur** : `grid-row` corrige de `1` a `1 / span 2` ; la poignee couvrait seulement la rangee du titre (34 px) au lieu de toute la hauteur.
+- Prepare : `npm run build:renderer`. Tests complets a effectuer avant publication.
 
 ## [1.5.30] — Le chat s’agrandit et revient à sa place
 - **Agrandissement corrigé** : le chat s’étend maintenant sur toute la fenêtre, même après avoir redimensionné les panneaux ou personnalisé la disposition. Le bouton et `Échap` rétablissent ensuite l’affichage précédent.

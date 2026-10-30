@@ -6455,7 +6455,7 @@ function updateStudioStatus(status) {
     const workspace = status.workspace || null;
     updateAgentProjectLabel(workspace);
     // Projet FranceStudent : chaque nouvelle discussion part dans le projet choisi.
-    if (typeof syncFrProject === "function") syncFrProject(status.frProject || null);
+    if (typeof syncFrProject === "function") syncFrProject(status.frProject || null, status.booted);
     $("agent-access").textContent = status.fullAccess ? "Full accès" : status.autoApprove && status.autoApproveCommands ? "Automatique" : "Sur approbation";
     $("agent-access").classList.toggle("full-access", Boolean(status.fullAccess));
     if (studioWorkspace !== workspace) {
@@ -6656,6 +6656,24 @@ function renderFrProjects(data, message = "") {
 async function refreshFrProjects(message = "") {
     const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (select) select.disabled = true;
+    if (refresh) refresh.disabled = false;
+    if (ui.status && ui.status.booted === false) {
+        if (state) {
+            state.classList.remove("error");
+            state.textContent = "Connecte-toi pour classer tes discussions dans tes projets FranceStudent.";
+        }
+        if (select) {
+            select.replaceChildren();
+            const none = document.createElement("option");
+            none.value = "";
+            none.textContent = "Aucun projet";
+            select.appendChild(none);
+            select.value = "";
+            select.disabled = true;
+            delete select.dataset.loaded;
+        }
+        return;
+    }
     if (refresh) refresh.disabled = true;
     if (state && !message) state.textContent = "Chargement de vos projets…";
     try {
@@ -6692,7 +6710,11 @@ async function refreshFrProjects(message = "") {
     }
 }
 
-function syncFrProject(project) {
+function syncFrProject(project, booted = ui.status?.booted) {
+    if (booted && !$("fr-project-select")?.dataset.loaded) {
+        refreshFrProjects();
+        return;
+    }
     // Tant que la liste n'est pas chargée, le statut ne dit rien de plus qu'« aucun
     // projet » : inutile de relancer une requête à chaque poussée de statut.
     const select = $("fr-project-select");

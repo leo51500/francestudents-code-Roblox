@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     color-scheme: dark;
     --bg: #121317;
     --bg-side: #0c0d11;
@@ -574,11 +574,20 @@ kbd {
     white-space: pre-wrap;
 }
 
-/* Redimensionnement */
+/* Redimensionnement : poignees verticales (gauche/droite) et horizontale (bas) */
 .resizer {
-    grid-row: 1;
+    grid-row: 1 / span 2;
     cursor: col-resize;
     background: var(--bg);
+    position: relative;
+    z-index: 10;
+}
+
+.resizer::after {
+    content: "";
+    position: absolute;
+    inset: 0 -4px;
+    cursor: col-resize;
 }
 
 #resizer-left {
@@ -589,26 +598,66 @@ kbd {
     grid-column: 5;
 }
 
+/* Ligne fine doree au survol : alignee sur la charte visuelle */
 .resizer:hover,
-.resizer-h:hover {
-    background: var(--border-strong);
+.resizer:focus-visible {
+    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 2px 100% no-repeat, var(--bg);
+    outline: none;
 }
 
-/* La poignée prend la couleur de saisie pendant le glisser : on voit qu'elle est tenue. */
+.resizer-h:hover,
+.resizer-h:focus-visible {
+    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 100% 2px no-repeat, var(--border);
+    outline: none;
+}
+
+/* La poignee active prend la couleur d'accent pendant le glisser. */
 html.layout-dragging #resizer-left,
-html.layout-dragging #resizer-right,
-html.layout-dragging #resizer-bottom {
-    background: linear-gradient(var(--fg-faint), var(--fg-faint)) center / 2px 100% no-repeat;
+html.layout-dragging #resizer-right {
+    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 2px 100% no-repeat;
 }
 
 html.layout-dragging #resizer-bottom {
-    background: linear-gradient(var(--fg-faint), var(--fg-faint)) center / 100% 2px no-repeat;
+    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 100% 2px no-repeat;
 }
 
 .resizer-h {
-    height: 4px;
+    height: 6px;
     cursor: row-resize;
     background: var(--border);
+    position: relative;
+    z-index: 10;
+}
+
+.resizer-h::after {
+    content: "";
+    position: absolute;
+    inset: -4px 0;
+    cursor: row-resize;
+}
+
+/* Bulle de taille affichee pendant le glisser et le redimensionnement fenetre */
+.layout-badge {
+    position: fixed;
+    z-index: 99999;
+    top: 0;
+    left: 0;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: var(--bg-side, #1a1b1e);
+    color: var(--fg, #d8dade);
+    font: 500 11px/1.4 var(--mono, monospace);
+    border: 1px solid var(--border-strong, rgba(255,255,255,.15));
+    box-shadow: 0 2px 8px rgba(0,0,0,.4);
+    pointer-events: none;
+    white-space: nowrap;
+    will-change: transform;
+    transition: opacity 0.12s;
+}
+
+.layout-badge.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Zone centrale : rectangle strictement délimité par la grille. Un enfant plus haut
