@@ -277,7 +277,7 @@ async function refreshFrProjects(message = "") {
             const detail = String(error.message || "");
             const status = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
             if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) {
-                state.textContent = "Session de l’application refusée ou expirée. Vérifie ton compte dans les paramètres, puis réessaie ou reconnecte-toi.";
+                state.textContent = "Session expirée. Reconnecte-toi pour actualiser la liste, ou choisis un projet déjà chargé ci-dessus.";
                 if (typeof openConnectionGuide === "function") {
                     const login = document.createElement("button");
                     login.type = "button"; login.className = "fr-project-login"; login.textContent = "Se reconnecter";
@@ -294,7 +294,7 @@ async function refreshFrProjects(message = "") {
                 state.textContent = `Impossible de joindre le service des projets : ${detail.slice(0, 180)}`;
             }
         }
-        if (select) select.disabled = true;
+        if (select && !select.dataset.loaded) select.disabled = true;
         if (refresh) refresh.disabled = false;
     }
 }

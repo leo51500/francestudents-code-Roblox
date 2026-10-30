@@ -1,5 +1,11 @@
 ﻿# Changelog
 
+## [1.5.33] — Glisser plus précis, messages d'échec plus clairs
+- **Tailles sans décimales** : pendant le redimensionnement, la valeur appliquée aux panneaux et la bulle de taille sont arrondies au pixel ; plus de largeur impaire ni de bulle avec des décimales.
+- **Session expirée, message simplifié** : quand la liste des projets FranceStudent échoue pour raison de session, le texte invite simplement à se reconnecter ou à reprendre un projet déjà chargé, sans formulation technique.
+- **Liste conservée** : si des projets sont déjà affichés dans le sélecteur, un échec d'actualisation ne les désactive plus — on peut continuer à choisir un projet hors ligne.
+- BOM UTF-8 retiré des sources modifiées (suite du correctif 1.5.32 sur `package.json`).
+
 ## [1.5.32] — Poignees plus faciles a attraper, bulle de taille reparee
 - **Zone de clic elargie** : les poignees de redimensionnement (chat, fichiers, panneau bas) ont un pseudoelement transparent de +/-4 px de chaque cote du trait, ce qui rend le glisser bien plus facile a declencher sans viser un pixel precis.
 - **Bulle de taille reparee** : la bulle `layout-badge` (« Chat · 420 px ») n'avait aucune regle CSS et apparaissait sans style ni position fixe. Elle est maintenant positionnee en `fixed`, avec fond, bordure et ombre correspondant au theme.
