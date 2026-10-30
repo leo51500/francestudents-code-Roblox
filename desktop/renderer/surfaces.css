@@ -15,7 +15,7 @@ dialog::backdrop { background: #080b12b3; backdrop-filter: blur(4px); }
 .fs-surface-badge { border: 1px solid var(--border-strong); background: var(--accent-soft); color: var(--link); padding: 3px 7px; border-radius: 6px; font-size: 10px; font-weight: 500; }
 .fs-dialog button,.center-dialog button,.history-delete-dialog button { min-height: 34px; padding: 7px 12px; border: 1px solid var(--border-strong); border-radius: var(--surface-control-radius); color: var(--fg); background: var(--bg-input); font: inherit; font-size: 12px; line-height: 1.45; cursor: pointer; }
 .fs-dialog button:hover:not(:disabled),.center-dialog button:hover:not(:disabled),.history-delete-dialog button:hover:not(:disabled) { background: var(--bg-hover); color: var(--fg-strong); }
-.fs-dialog button.primary,.center-dialog button.primary { color: white; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.fs-dialog button.primary,.center-dialog button.primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); font-weight: 600; }
 .fs-dialog button.primary:hover:not(:disabled) { background: var(--accent-hover); }
 .fs-dialog button.danger { background: #b4232d; border-color: #b4232d; color: white; }
 .fs-dialog button.danger:hover:not(:disabled) { background: #921c25; }

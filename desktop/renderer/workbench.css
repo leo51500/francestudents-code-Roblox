@@ -42,7 +42,7 @@ input:not([type="checkbox"]):not([type="range"]), select, textarea { border-radi
 }
 :is(.settings-card, .center-dialog, .center-card-actions, .center-profile, .center-filters) button:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--fg-faint); }
 :is(.settings-card, .center-dialog, .center-card-actions, .center-profile, .center-filters) button.primary {
-    background: var(--accent); border-color: transparent; color: white;
+    background: var(--accent); border-color: transparent; color: var(--accent-ink);
 }
 :is(.settings-card, .center-dialog, .center-card-actions, .center-profile, .center-filters) button.primary:hover:not(:disabled) { background: var(--accent-hover); }
 .button-danger { color: #ffaaa5 !important; }

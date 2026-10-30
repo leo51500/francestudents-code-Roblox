@@ -70,7 +70,7 @@ function createDesktopBackend(send) {
         startRun(prompt) {
             pendingTools = [];
             runTracking = true;
-            run = { prompt: clean(prompt).slice(0, 500), workspace: require("../src/motion-workspace").toolWorkspace(), motionDesign:!!state.motionDesign, startedAt: Date.now(), endedAt: null, status: "running", actions: [], sources: [], steps: [], commands: 0, reads: 0, writes: 0 };
+            run = { prompt: clean(prompt).slice(0, 500), workspace: require("../src/motion-workspace").toolWorkspace(), motionDesign:!!state.motionDesign, startedAt: Date.now(), endedAt: null, status: "running", actions: [], sources: [], steps: [], subagents: [], commands: 0, reads: 0, writes: 0 };
             publishActivity();
         },
 
@@ -80,12 +80,45 @@ function createDesktopBackend(send) {
             run.status = interrupted ? "interrupted" : ok ? "done" : "failed";
             run.endedAt = Date.now();
             for (const action of pendingTools) { action.status = interrupted ? "interrupted" : "failed"; action.endedAt = run.endedAt; }
+            for (const subagent of run.subagents || []) {
+                if (subagent.state === "done") continue;
+                subagent.state = interrupted ? "interrupted" : "failed";
+                subagent.endedAt = run.endedAt;
+            }
             pendingTools = [];
             publishActivity();
         },
 
         activity() { return run ? structuredClone(run) : null; },
         actionControl(data) { send("actionControl", data); },
+
+        /**
+         * Suivi d'un sous-agent : « start » (rôle, mission), « step » (tour en cours) ou
+         * « done » (compte rendu). Seuls le rôle, le libellé, le brief et le bilan des
+         * fichiers sont envoyés à l'interface ; jamais le contexte interne ni les outils.
+         */
+        subagent(data) {
+            if (!run || !runTracking || !data || typeof data !== "object") return;
+            const phase = data.phase === "step" ? "step" : data.phase === "done" ? "done" : "start";
+            let entry = data.id ? run.subagents.find(item => item.id === data.id) : null;
+            if (!entry) {
+                entry = { id: run.subagents.length + 1, role: clean(data.role || "general"), label: clean(data.label || data.role || "Sous-agent"), brief: clean(data.brief || "").slice(0, 400), state: "running", turns: 0, startedAt: Date.now(), endedAt: null, written: [], report: "" };
+                run.subagents.push(entry);
+            }
+            if (phase === "start") {
+                entry.state = "running";
+                entry.turns = 0;
+                entry.startedAt = Date.now();
+            } else if (phase === "step") {
+                entry.turns = Number(data.turn) || entry.turns;
+            } else {
+                entry.state = data.incomplete ? "incomplete" : "done";
+                entry.endedAt = Date.now();
+                entry.written = Array.isArray(data.written) ? data.written.slice(0, 40).map(clean) : [];
+                entry.report = clean(data.report || "").slice(0, 4000);
+            }
+            publishActivity();
+        },
         banner() {
             // Pas d'encadré d'accueil dans le panneau agent : le modèle, le projet et le mode
             // sont déjà affichés dans la barre d'état.

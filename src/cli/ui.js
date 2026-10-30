@@ -534,6 +534,12 @@ const ui = {
         console.clear();
     },
 
+    /**
+     * Avancement d'un sous-agent : sans effet dans le CLI classique, qui affiche déjà
+     * l'outil task et son compte rendu. La TUI et l'application le suivent si elles le veulent.
+     */
+    subagent() {},
+
     ask
 };
 

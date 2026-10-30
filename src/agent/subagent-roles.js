@@ -6,34 +6,20 @@
  * Un sous-agent garde un contexte propre et ne voit pas la conversation principale :
  * un rôle ne remplace donc pas la mission, il ajoute les conventions du métier pour que
  * le compte rendu soit directement exploitable par l'agent principal.
- * Étape actuelle : lecture seule. L'écriture par sous-agent viendra plus tard, avec des
- * chemins réservés et un verrou par dossier pour éviter deux écritures concurrentes.
+ *
+ * Le registre vit dans ./subagents/index.js : chaque rôle y déclare ses instructions,
+ * ses skills et — s'il peut modifier le projet — ses outils d'écriture. Pour ajouter un
+ * sous-agent, voir src/agent/subagents/README.md ; rien d'autre ne change ici.
  */
 
-const ROLES = {
-    general: {
-        label: "Exploration générale",
-        instructions: "Comprends la structure du projet et rapporte les faits utiles avec leurs chemins."
-    },
-    "roblox-luau": {
-        label: "Scripts Luau et architecture Roblox",
-        instructions: "Luau moderne (--!strict quand c'est possible), API actuelles et typées, remotes validés côté serveur, nettoyage des connexions, pas de boucle sans task.wait. Respecte Rojo (*.project.json, src/), Aftman/Wally et StyLua. Pour chaque constat, cite le service Roblox concerné (ServerScriptService, ReplicatedStorage, StarterPlayer…)."
-    },
-    "roblox-interface": {
-        label: "Interface Roblox (GUI)",
-        instructions: "UI construite dans le code ou en .model.json : ScreenGui/SurfaceGui, UIGridLayout, UIPadding, UIAspectRatioConstraint, UIScale, UIListLayout, TextScaled plutôt que tailles figées ; adapté mobile, manette et console. Rapporte les écrans, leurs composants et les textes visibles."
-    },
-    "roblox-3d": {
-        label: "Scène, modèle 3D et niveau",
-        instructions: "Contenu de jeu : Parts, MeshParts, modèles, positions, échelle (1 stud = 0,28 m), collisions et NetworkOwnership. Vérifie les limites de performances (nombre d'instances, polygones, textures 1024 px max) et rapporte les fichiers de scène (.model.json, init.meta.json) concernés."
-    },
-    blender: {
-        label: "Modélisation Blender",
-        instructions: "Géométrie propre en mètres, origine à la base, normales cohérentes, UV sans chevauchement, textures 1024 px max, caméras et lumières retirées avant l'export GLB. Un modèle n'est décrit comme valide qu'après inspect puis validate ; un rendu n'est examiné que via l'outil d'image."
-    }
-};
+const registry = require("./subagents");
 
-const NAMES = Object.keys(ROLES);
+/** Objet { nom: { label, instructions } } conservé pour les consommateurs existants. */
+const ROLES = Object.freeze(Object.fromEntries(
+    registry.roles().map(role => [role.name, { label: role.label, instructions: role.instructions }])
+));
+
+const NAMES = Object.freeze(registry.names());
 
 /** Rôle normalisé ; un rôle inconnu est refusé pour ne pas inventer de consignes. */
 function roleOf(value) {
@@ -46,7 +32,11 @@ function roleOf(value) {
 /** Bloc ajouté au prompt du sous-agent, après la mission. */
 function rolePrompt(name) {
     const role = ROLES[roleOf(name)];
-    return `SPÉCIALITÉ : ${role.label}\n${role.instructions}\nReste en LECTURE SEULE : tu ne modifies aucun fichier. Ton compte rendu doit être directement utilisable par l'agent principal (chemins relatifs, numéros de ligne, décisions à prendre).`;
+    const canWrite = registry.canWrite(name);
+    const access = canWrite
+        ? "Tu peux MODIFIER le projet avec les outils de ton rôle, uniquement dans les zones indiquées. Une écriture que l'application refuse s'arrête là : ne la contourne pas par un autre outil."
+        : "Reste en LECTURE SEULE : tu ne modifies aucun fichier.";
+    return `SPÉCIALITÉ : ${role.label}\n${role.instructions}\n${access}\nTout ce qui est hors de ta spécialité ne doit pas être produit : signale-le dans le compte rendu pour que l'agent principal le confie à un autre sous-agent.\nTon compte rendu remplace des fichiers et des outils pour l'agent principal : chemins relatifs, chemins produits, contrôles réellement exécutés, décisions à prendre. Ce compte rendu est aussi montré à l'utilisateur : français, factuel, sans balises internes.`;
 }
 
 module.exports = { ROLES, NAMES, roleOf, rolePrompt };

@@ -3210,10 +3210,15 @@ function dragResizer(id, cssVar, axis, invert) {
         // retarder la colonne, sinon la poignée décroche du curseur.
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
         document.documentElement.classList.add("layout-dragging");
-        const apply = () => {
+        const apply = (animate) => {
             frame = 0;
             const delta = last - start;
             const value = Math.max(min, Math.min(max, initial + (invert ? -delta : delta)));
+            // Au relâchement, la classe de glisser est retirée avant d'écrire la valeur
+            // finale : la dernière petite distance parcourue depuis la dernière image
+            // s'anime au lieu d'être perdue (transition coupée uniquement pendant le geste).
+            if (animate && value === layoutPx(cssVar)) animate = false;
+            if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
         };
         const move = (e) => {
@@ -3223,7 +3228,7 @@ function dragResizer(id, cssVar, axis, invert) {
         const up = () => {
             if (frame) {
                 cancelAnimationFrame(frame);
-                apply();
+                apply(true);
             }
             handle.removeEventListener("pointermove", move);
             handle.removeEventListener("pointerup", up);
@@ -3231,8 +3236,18 @@ function dragResizer(id, cssVar, axis, invert) {
             document.body.classList.remove("resizing-x", "resizing-y");
             document.documentElement.classList.remove("layout-dragging");
             delete layoutPreferred[cssVar];
+            // --bottom reste une variable de hauteur (le panneau la lit) : il ne passe pas
+            // par --left-custom / --right-custom, réservés aux colonnes de la grille.
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
             syncLayoutCustom();
+            // Réévalue la place disponible après le geste (largeur enregistrée, classes de
+            // disposition) sans attendre le prochain redimensionnement de la fenêtre.
+            if (layoutFrame) cancelAnimationFrame(layoutFrame);
+            layoutFrame = requestAnimationFrame(() => {
+                layoutFrame = 0;
+                if (appLayoutCustom()) return;
+                clampLayout();
+            });
             if (typeof saveLayout === "function") saveLayout();
         };
         handle.addEventListener("pointermove", move);
@@ -6317,6 +6332,20 @@ function renderAgentActivity(run) {
         const name = document.createElement("small"); name.textContent = label; stat.append(number, name); stats.appendChild(stat);
     }
     overview.append(title, line, stats);
+    // Bandeau des sous-agents : ils travaillent en parallèle avec leurs propres outils, donc
+    // leur place est au-dessus de la chronologie (qui ne montre que les actions du parent).
+    const team = document.createElement("div"); team.className = "activity-subagents";
+    for (const agent of run.subagents || []) {
+        const row = document.createElement("details"); row.className = `activity-action activity-subagent activity-action-${agent.state === "running" ? "running" : agent.state === "done" ? "done" : "failed"}`;
+        row.open = agent.state === "running";
+        const summary = document.createElement("summary");
+        const turns = agent.turns ? ` · ${agent.turns} tour(s)` : "";
+        summary.textContent = `${agent.state === "running" ? "◉" : agent.state === "done" ? "✓" : "!"} Sous-agent ${agent.label}${turns}`;
+        const body = document.createElement("pre");
+        body.textContent = [agent.brief && `Brief : ${agent.brief}`, agent.written?.length && `Fichiers : ${agent.written.join(", ")}`, agent.report].filter(Boolean).join("\n\n");
+        row.append(summary, body); team.appendChild(row);
+    }
+    if (team.childElementCount) overview.appendChild(team);
     for (const action of (run.actions || []).slice().reverse()) {
         const row = document.createElement("details"); row.className = `activity-action activity-action-${action.status}`;
         const summary = document.createElement("summary"); summary.textContent = `${action.status === "done" ? "✓" : action.status === "running" ? "◉" : "!"} ${toolLabel(action.name)} · ${humanDuration(action.startedAt, action.endedAt)}`;

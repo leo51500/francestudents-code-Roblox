@@ -2,20 +2,22 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { ROLES, NAMES, roleOf, rolePrompt } = require("../src/agent/subagent-roles");
+const { canWrite } = require("../src/agent/subagents");
 const { buildPrompt, check, READ_TOOLS } = require("../src/agent/subagent");
 const { validateToolCall } = require("../src/tools/registry");
 
-test("les rôles de sous-agent sont connus, sans doublon et limités à la lecture", () => {
+test("les rôles de sous-agent sont connus, sans doublon et déclarent leur accès en écriture", () => {
     assert.deepEqual(NAMES, Object.keys(ROLES));
     assert.ok(NAMES.includes("general"));
-    for (const name of NAMES) assert.match(rolePrompt(name), /LECTURE SEULE/);
+    // Un rôle en écriture le dit explicitement ; les autres restent en lecture seule.
+    for (const name of NAMES) assert.match(rolePrompt(name), canWrite(name) ? /MODIFIER le projet/ : /LECTURE SEULE/);
     assert.deepEqual(READ_TOOLS, ["list_directory", "read_file", "search_files"]);
 });
 
 test("le prompt du sous-agent garde la mission et ajoute la spécialité", () => {
     const prompt = buildPrompt({ prompt: "Inventorie les ScreenGui", role: "roblox-interface", observations: [], turn: 1 });
     assert.match(prompt, /MISSION :\nInventorie les ScreenGui/);
-    assert.match(prompt, /SPÉCIALITÉ : Interface Roblox/);
+    assert.match(prompt, /SPÉCIALITÉ : Interfaces Roblox/);
     assert.match(prompt, /UIGridLayout|UIAspectRatioConstraint/);
     const general = buildPrompt({ prompt: "Lis src/app.js", observations: [], turn: 1 });
     assert.match(general, /SPÉCIALITÉ : Exploration générale/);

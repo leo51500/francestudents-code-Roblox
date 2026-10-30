@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.26":{headline:"Un agent chef d’orchestre et deux spécialistes : interfaces et 3D.",items:[
+        {icon:"chat",title:"Il délègue",text:"L’assistant garde la conversation et confie le travail au bon spécialiste avec un brief clair, puis récupère son compte rendu pour vous présenter le résultat."}, 
+        {icon:"spark",title:"Sous-agent Interfaces",text:"HUD, menus, boutiques et inventaires en Luau typé, lisibles au doigt comme à la manette, animés avec TweenService et intégrés au projet Rojo."},
+        {icon:"tools",title:"Sous-agent 3D",text:"Armes, véhicules, props : le modèle est généré par un script Blender, exporté en GLB, contrôlé puis préparé pour l’import dans Studio — même échelle, même budget de polygones."}
+    ]},
     "1.5.25":{headline:"Tous les modèles 3D passent par Blender, et le code est plus lisible.",items:[
         {icon:"tools",title:"Blender par défaut",text:"Un prop, un décor, une arme : l’assistant les modélise dans Blender et les importe, au lieu de vous livrer des Parts à empiler à la main."},
         {icon:"spark",title:"Code plus clair",text:"Les terminaux ont leur propre module et les contrôles de l’agent sont découpés : plus facile à corriger, sans changer le comportement."},
