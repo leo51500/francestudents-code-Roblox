@@ -182,18 +182,20 @@ html.layout-dragging #app.layout-custom {
         --right: var(--right-custom, 420px);
     }
 
+    /* Réduire l'agent n'écrase jamais la largeur des fichiers ; le centre cède jusqu'à
+       son minimum avant que quiconque ne déborde (rien ne se superpose). */
     #app.no-sidebar {
-        grid-template-columns: var(--rail) 0 0 minmax(320px, 1fr) 4px minmax(280px, var(--right));
+        grid-template-columns: var(--rail) 0 0 minmax(260px, 1fr) 4px minmax(0, var(--right));
     }
 
     /* Une colonne redimensionnée doit gagner sur les dispositions par défaut de
        #app.no-agent / #app.no-sidebar, sinon la poignée glisse sans rien déplacer,
        et la règle "écran étroit" (rail réduit, sidebar masquée) doit rester plus forte. */
     @media (min-width: 1001px) {
-        #app.layout-custom              { grid-template-columns: var(--rail) minmax(150px, var(--left)) 4px minmax(0, 1fr) 4px minmax(0, var(--right)); }
-        #app.layout-custom.no-agent     { grid-template-columns: var(--rail) minmax(150px, var(--left)) 4px minmax(320px, 1fr) 0 0; }
-        #app.layout-custom.no-sidebar   { grid-template-columns: var(--rail) 0 0 minmax(320px, 1fr) 4px minmax(0, var(--right)); }
-        #app.layout-custom.no-sidebar.no-agent { grid-template-columns: var(--rail) 0 0 minmax(320px, 1fr) 0 0; }
+        #app.layout-custom              { grid-template-columns: var(--rail) minmax(120px, var(--left)) 4px minmax(0, 1fr) 4px minmax(0, var(--right)); }
+        #app.layout-custom.no-agent     { grid-template-columns: var(--rail) minmax(120px, var(--left)) 4px minmax(260px, 1fr) 0 0; }
+        #app.layout-custom.no-sidebar   { grid-template-columns: var(--rail) 0 0 minmax(260px, 1fr) 4px minmax(0, var(--right)); }
+        #app.layout-custom.no-sidebar.no-agent { grid-template-columns: var(--rail) 0 0 minmax(260px, 1fr) 0 0; }
     }
 }
 
@@ -255,12 +257,69 @@ html.layout-dragging #app.layout-custom {
     touch-action: none;
 }
 
+/* La zone de saisie élargie reste au-dessus du bouton voisin : un clic à 3 px du trait
+   doit saisir la poignée, pas le bouton de l'en-tête sous le curseur. */
 #resizer-left::before,
 #resizer-right::before {
     content: "";
     position: absolute;
-    inset: 0 -3px;
+    inset: 0 -5px;
+    z-index: 1;
     cursor: col-resize;
+}
+
+/* Accolade de poignée : au survol, trois points rappellent qu'on peut tirer la colonne. */
+#resizer-left::after,
+#resizer-right::after {
+    content: "⋮";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    background: var(--bg-active);
+    border: 1px solid var(--border-strong);
+    color: var(--fg-dim);
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.12s;
+    pointer-events: none;
+}
+
+#resizer-left:hover::after,
+#resizer-right:hover::after,
+html.layout-dragging #resizer-left::after,
+html.layout-dragging #resizer-right::after {
+    opacity: 1;
+}
+
+/* Bulle de taille pendant le glisser : la valeur réelle, lisible à côté de la poignée. */
+.layout-badge {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2000;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--bg-active);
+    border: 1px solid var(--border-strong);
+    color: var(--fg-strong);
+    font: 600 11px/16px var(--sans);
+    letter-spacing: 0.2px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+}
+
+.layout-badge.hidden {
+    opacity: 0;
+    visibility: hidden;
 }
 
 #resizer-left:hover,
@@ -279,8 +338,35 @@ html.layout-dragging #app.layout-custom {
 #resizer-bottom::before {
     content: "";
     position: absolute;
-    inset: -3px 0;
+    inset: -5px 0;
+    z-index: 1;
     cursor: row-resize;
+}
+
+#resizer-bottom::after {
+    content: "⋯";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 14px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    background: var(--bg-active);
+    border: 1px solid var(--border-strong);
+    color: var(--fg-dim);
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.12s;
+    pointer-events: none;
+}
+
+#resizer-bottom:hover::after,
+html.layout-dragging #resizer-bottom::after {
+    opacity: 1;
 }
 
 #resizer-bottom:hover {

@@ -203,6 +203,46 @@ function setAgentFocus(active){
 }
 $("agent-focus").onclick = () => setAgentFocus(!$("app").classList.contains("focus-agent"));
 setAgentFocus(false);
+
+/* ---------- Fenêtre du chat détachée ----------
+ * Une vraie fenêtre système : on la place, on la redimensionne et on la déplace où l'on
+ * veut (bords libres, multi-écrans), sans palier imposé. Elle affiche la même conversation
+ * (même flux d'événements) et la grande fenêtre masque alors sa colonne pour éviter
+ * tout doublon ou chevauchement. */
+function setChatPinned(pinned) {
+    $("app").classList.toggle("chat-detached", pinned === true);
+    const button = $("agent-detach");
+    if (!button) return;
+    const label = pinned ? "Rattacher le chat à la fenêtre principale" : "Afficher le chat dans sa propre fenêtre (glisser pour le placer où vous voulez)";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-pressed", String(pinned === true));
+    button.classList.toggle("active", pinned === true);
+}
+
+$("agent-hide")?.addEventListener("click", () => {
+    // Masquer le chat libère tout l'espace pour le code ; Ctrl+Alt+A le fait revenir.
+    $("app").classList.add("no-agent");
+    saveLayout();
+    if (typeof scheduleClampLayout === "function") scheduleClampLayout();
+});
+
+$("agent-detach")?.addEventListener("click", async () => {
+    try {
+        const state = await api.chatWindowAction($("app").classList.contains("chat-detached") ? "close" : "open");
+        setChatPinned(state && state.open === true);
+    } catch (error) { studioFeedback(error.message); }
+});
+
+api.chatWindowAction("state").then(state => setChatPinned(state && state.open === true)).catch(() => {});
+
+if (api.chatWindow) {
+    // Cette fenêtre EST le chat détaché : pas de superflu autour, juste le panneau agent.
+    $("app").classList.add("chat-only");
+    api.setChatWindowPinned(true);
+    window.addEventListener("beforeunload", () => api.setChatWindowPinned(false));
+}
+
 $("activity-refresh").onclick = refreshStudioActivity;
 $("favorite-open").onclick = () => { renderFavoritePrompts(); $("agent-favorites").classList.toggle("hidden"); };
 $("favorite-close").onclick = () => $("agent-favorites").classList.add("hidden");
@@ -221,4 +261,6 @@ transcript.addEventListener("click", event => {
     if (link) { event.preventDefault(); api.openExternal(link.dataset.webUrl).catch(error => studioFeedback(error.message)); }
 });
 setInterval(() => { if (studioTab === "activity" && !document.hidden) refreshStudioActivity(); }, 3000);
+
+// L'état arrive par le statut (chatPinned) : la colonne se rétablit aussi au redémarrage.
 setAgentTab("conversation");

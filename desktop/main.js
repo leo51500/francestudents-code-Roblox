@@ -22,6 +22,8 @@ const { createLspManager } = require("./lsp");
 const { createStabilityMonitor, rendererCode, safeSend } = require("./stability");
 const stability = createStabilityMonitor({ directory: require("../src/config").CONFIG.dataDir, version: require("../package.json").version });
 const gotLock = app.requestSingleInstanceLock();
+// La fenêtre du chat détaché (voir openChatWindow plus bas).
+let chatWin = null;
 let appClosing = false;
 if (gotLock) {
     stability.start();
@@ -144,6 +146,9 @@ function send(channel, data) {
         else if(channel==="liveEnd" && transcriptLive){transcriptStore.capture(id,{type:"assistant",text:transcriptLive}).catch(error=>{transcriptFailure=error.message;});transcriptLive="";}
     }
     safeSend(win, channel, data, stability.record);
+    // La fenêtre du chat détaché reçoit le même flux : elle affiche la conversation en
+    // cours, sans état dupliqué ni seconde session.
+    if (chatWin && !chatWin.isDestroyed()) safeSend(chatWin, channel, data, stability.record);
 }
 
 function pushStatus() {
@@ -1248,6 +1253,73 @@ function registerIpc() {
         if(!forceSystem){try{const local=require("./preview-server").localPreviewUrl(url);send("localBrowserOpen",{url:local});return;}catch{/* external site */}}
         return shell.openExternal(String(url));
     });
+    // Chat détaché : "open" ouvre la fenêtre (position libre, mémorisée), "close" la ferme,
+    // "state" indique si elle est ouverte. Aucun contenu n'est dupliqué : la même session
+    // React agit dans les deux fenêtres grâce au flux d'événements déjà en place.
+    handle("chatWindow", (action) => {
+        const name = String(action || "state");
+        if (name === "open") return openChatWindow();
+        if (name === "close") { closeChatWindow(); return { open: false }; }
+        return { open: Boolean(chatWin && !chatWin.isDestroyed()) };
+    });
+    // Fenêtre du chat ouverte = la grande fenêtre masque sa colonne : jamais deux affichages
+    // de la même conversation côte à côte.
+    ipcMain.on("frst:chatWindowPinned", (event, pinned) => {
+        if (!require("./ipc-security").isTrustedIpcSender(event, win, path.join(__dirname, "renderer", "index.html"))) return;
+        require("../src/settings").save({ chatWindowPinned: pinned === true });
+        pushStatus();
+    });
+}
+
+function openChatWindow() {
+    if (chatWin && !chatWin.isDestroyed()) { chatWin.focus(); return { open: true }; }
+    const saved = require("../src/settings").load().chatWindowBounds || {};
+    chatWin = new BrowserWindow({
+        width: Math.max(360, Number(saved.width) || 460),
+        height: Math.max(420, Number(saved.height) || 760),
+        x: Number.isFinite(saved.x) ? saved.x : undefined,
+        y: Number.isFinite(saved.y) ? saved.y : undefined,
+        minWidth: 340,
+        minHeight: 380,
+        backgroundColor: "#1f1f1f",
+        title: "Chat — FranceStudent Code Roblox",
+        // Fenêtre classique : la barre de titre native se glisse où l'on veut.
+        titleBarStyle: "default",
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+            additionalArguments: ["--frst-chat-window"]
+        }
+    });
+    const created = chatWin;
+    created.setMenuBarVisibility(false);
+    created.webContents.on("will-navigate", (event) => event.preventDefault());
+    created.webContents.setWindowOpenHandler(({ url }) => {
+        if (/^https?:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+        return { action: "deny" };
+    });
+    created.loadFile(path.join(__dirname, "renderer", "index.html"), { query: { chat: "1" } });
+    const rememberBounds = () => {
+        if (created.isDestroyed() || created.isMinimized() || created.isMaximized()) return;
+        const b = created.getBounds();
+        require("../src/settings").save({ chatWindowBounds: { x: b.x, y: b.y, width: b.width, height: b.height } });
+    };
+    created.on("moved", rememberBounds);
+    created.on("resized", rememberBounds);
+    created.on("closed", () => {
+        rememberBounds();
+        chatWin = null;
+        send("chatWindowClosed");
+    });
+    send("chatWindowOpened");
+    return { open: true };
+}
+
+function closeChatWindow() {
+    if (!chatWin || chatWin.isDestroyed()) return;
+    chatWin.close();
 }
 
 function createWindow() {
@@ -1371,6 +1443,8 @@ if (!gotLock) {
     });
 
     app.on("window-all-closed", () => {
+        // Fermer seulement la fenêtre du chat ne doit pas quitter l'application.
+        if (win && !win.isDestroyed()) return;
         appClosing = true;
         const cleanup = [() => projectStudio.stopAll(), () => require("../src/tools/browse").stopAll(),
             () => require("../src/tools/rojo-server").stopServer(),

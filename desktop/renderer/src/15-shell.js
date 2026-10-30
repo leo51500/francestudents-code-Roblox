@@ -35,7 +35,9 @@ window.addEventListener("keydown", (ev) => {
     }
     const key = ev.key.toLowerCase();
     let action = null;
-    if ((ev.code === "Backquote" || key === "`" || key === "²") && ev.shiftKey) action = () => {
+    // Ctrl+Alt+A : masquer ou rétablir le chat, sans chercher le bouton.
+    if (ev.ctrlKey && ev.altKey && key === "a") action = typeof toggleAgent === "function" ? toggleAgent : null;
+    else if ((ev.code === "Backquote" || key === "`" || key === "²") && ev.shiftKey) action = () => {
         selectPanel("terminal", false);
         createTerminal(true);
     };
@@ -89,10 +91,18 @@ const LAYOUT_VARS = ["--left", "--right", "--bottom"];
 
 function saveLayout() {
     try {
-        const data = { noPanel: $("app").classList.contains("no-panel") };
+        const app = $("app");
+        // Les trois panneaux sont mémorisés : rouvrir l'application retrouve la même
+        // disposition, qu'une colonne soit masquée ou non.
+        const data = {
+            noPanel: app.classList.contains("no-panel"),
+            noSidebar: app.classList.contains("no-sidebar"),
+            noAgent: app.classList.contains("no-agent")
+        };
         for (const v of LAYOUT_VARS) {
-            const value = document.documentElement.style.getPropertyValue(v).trim();
-            if (value) data[v] = value;
+            const custom = document.documentElement.style.getPropertyValue(`${v}-custom`).trim();
+            const value = custom || document.documentElement.style.getPropertyValue(v).trim();
+            if (/^[0-9]+px$/.test(value)) data[v] = value;
         }
         localStorage.setItem(LAYOUT_KEY, JSON.stringify(data));
     } catch {
@@ -105,7 +115,10 @@ try {
     for (const v of LAYOUT_VARS) {
         if (/^[0-9]+px$/.test(saved[v] || "")) document.documentElement.style.setProperty(v, saved[v]);
     }
+    // Le panneau du bas et la colonne des fichiers se rouvrent comme ils étaient fermés ;
+    // le chat n'est pas mémorisé masqué (il porte la conversation et le mode compact).
     if (saved.noPanel) $("app").classList.add("no-panel");
+    if (saved.noSidebar && !window.matchMedia("(max-width: 900px)").matches) $("app").classList.add("no-sidebar");
 } catch {
     // disposition par défaut
 }
@@ -121,6 +134,9 @@ function toggleAgent() {
     const app = $("app");
     app.classList.toggle("no-agent");
     if (!app.classList.contains("no-agent")) input.focus();
+    saveLayout();
+    // La colonne revient avec sa largeur réglée (ou la place disponible), sans attente.
+    if (typeof scheduleClampLayout === "function") scheduleClampLayout();
 }
 
 function syncTitlebar() {

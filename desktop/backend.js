@@ -373,7 +373,9 @@ function createDesktopBackend(send) {
                 autoApproveCommands: Boolean(state.autoApproveCommands),
                 webSearch: Boolean(state.webSearch),
                 jobs,
-                usage
+                usage,
+                // Fenêtre du chat détachée ouverte : la grande fenêtre masque sa colonne.
+                chatPinned: (() => { try { return require("../src/settings").load().chatWindowPinned === true; } catch { return false; } })()
             };
         },
 

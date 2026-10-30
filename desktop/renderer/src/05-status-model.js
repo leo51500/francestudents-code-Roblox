@@ -8,6 +8,8 @@ function applyStatus(s) {
     if (typeof updateChatAccess === "function") updateChatAccess(s);
     if (typeof updateChatReasoning === "function") updateChatReasoning(s);
     if (typeof updateWslProject === "function") updateWslProject(s);
+    // Chat ouvert dans sa propre fenêtre : la colonne de cette fenêtre s'efface.
+    if (typeof setChatPinned === "function" && typeof s.chatPinned === "boolean") setChatPinned(s.chatPinned);
     const ecoButton = $("eco-mode-toggle");
     if (ecoButton) {
         ecoButton.disabled = Boolean(s.busy);

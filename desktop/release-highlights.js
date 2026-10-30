@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.27":{headline:"Le chat va où vous voulez, et sa taille s’affiche en direct.",items:[
+        {icon:"chat",title:"Chat dans sa propre fenêtre",text:"Détachez le chat : une vraie fenêtre, déplaçable et redimensionnable librement, à sa position mémorisée. La grande fenêtre lui laisse alors toute la place, sans doublon."},
+        {icon:"tools",title:"Pas de palier imposé",text:"Les colonnes vont de leur minimum à toute la place libre de la fenêtre ; l’éditeur garde toujours sa largeur utile."},
+        {icon:"spark",title:"Taille en direct",text:"Pendant le glisser, une bulle affiche la largeur réelle (« Chat · 642 px »). Les superpositions près des poignées sont corrigées, et la disposition se retrouve au redémarrage."}
+    ]},
     "1.5.26":{headline:"Un agent chef d’orchestre et deux spécialistes : interfaces et 3D.",items:[
         {icon:"chat",title:"Il délègue",text:"L’assistant garde la conversation et confie le travail au bon spécialiste avec un brief clair, puis récupère son compte rendu pour vous présenter le résultat."}, 
         {icon:"spark",title:"Sous-agent Interfaces",text:"HUD, menus, boutiques et inventaires en Luau typé, lisibles au doigt comme à la manette, animés avec TweenService et intégrés au projet Rojo."},

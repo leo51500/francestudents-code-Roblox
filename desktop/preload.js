@@ -16,6 +16,9 @@ function call(name, ...args) {
 
 contextBridge.exposeInMainWorld("frst", {
     platform: process.platform,
+    // Vrai dans la petite fenêtre du chat détaché (chargée avec ?chat=1).
+    chatWindow: process.argv.includes("--frst-chat-window"),
+    chatWindowAction: (action) => call("chatWindow", String(action || "state")),
     chatContext: () => call("chatContext"),
     reasoning: (action = "get", payload = {}) => call("reasoning", action, payload),
     dictate: (action, payload) => call("dictate", action, payload),
@@ -165,5 +168,10 @@ contextBridge.exposeInMainWorld("frst", {
         const listener = (_event, message) => handler(message.channel, message.data);
         ipcRenderer.on("frst:event", listener);
         return () => ipcRenderer.removeListener("frst:event", listener);
+    },
+    // Fenêtre de chat détachée : "pinned" tant qu'elle est ouverte.
+    setChatWindowPinned(pinned) {
+        ipcRenderer.send("frst:chatWindowPinned", pinned === true);
+        return pinned === true;
     }
 });

@@ -195,6 +195,29 @@
 .favorite-row button:first-child { flex: 1; }
 .favorite-row button:hover { background: var(--bg-hover); }
 #app.focus-agent { grid-template-columns: 0 0 0 0 0 minmax(0,1fr); grid-template-rows:var(--titlebar) minmax(0,1fr) 0; }
+
+/* Chat détaché dans sa propre fenêtre : le panneau agent reste la seule colonne, les
+   autres sont retirées pour qu'aucun élément ne déborde ni ne se superpose. */
+#app.chat-detached { grid-template-columns: 0 0 0 0 0 minmax(0,1fr); grid-template-rows: var(--titlebar) minmax(0,1fr) 24px; }
+#app.chat-detached #center,
+#app.chat-detached #sidebar,
+#app.chat-detached #sidebar-tabs,
+#app.chat-detached #activity-bar,
+#app.chat-detached #resizer-left,
+#app.chat-detached #resizer-right { display: none; }
+#app.chat-detached #agent { display: flex !important; padding: 0; }
+
+/* Fenêtre secondaire du chat : barre de fenêtre native, pas de titre custom à décaler. */
+#app.chat-only { grid-template-rows: 0 minmax(0,1fr) 0; }
+#app.chat-only #titlebar,
+#app.chat-only #statusbar { display: none !important; }
+#app.chat-only #agent { grid-row: 1 / -1; }
+
+.agent-navigation-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; }
+.agent-navigation-actions button { width: 26px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--fg-dim); cursor: pointer; }
+.agent-navigation-actions button:hover { background: var(--hover, rgba(255,255,255,.06)); color: var(--fg-strong); }
+.agent-navigation-actions button.active { background: var(--accent-soft); color: var(--fg-strong); }
+.agent-navigation-actions .i { width: 15px; height: 15px; }
 #app.focus-agent #center, #app.focus-agent #sidebar, #app.focus-agent .resizer, #app.focus-agent #resizer-right { display: none; }
 #app.focus-agent #agent { display: flex !important; padding:0; }
 #app.focus-agent #activity-bar,#app.focus-agent #sidebar-tabs,#app.focus-agent #statusbar { display:none; }

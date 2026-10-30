@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.27] — Placez le chat où vous voulez, et voyez sa taille en direct
+- **Chat détaché dans sa propre fenêtre** : le bouton « détacher » du panneau agent ouvre le chat dans une vraie fenêtre système. On la place et on la redimensionne librement (bords, multi-écrans), sa position et sa taille sont mémorisées, et la grande fenêtre masque alors sa colonne pour qu’aucun affichage ne se superpose. La fermer la rétablit.
+- **Chat masquable** : bouton « masquer » dans l’en-tête et raccourci **Ctrl+Alt+A** ; la colonne revient avec sa largeur réglée.
+- **Aucun palier imposé** : les bornes fixes (150-600 px, 280-900 px, 60-600 px) sont remplacées par les vraies limites de la fenêtre. Une colonne va de son minimum utile à toute la place libre, l’éditeur conservant toujours sa largeur minimale. La place restante est mesurée sur l’élément réellement affiché, plus une constante supposée.
+- **Bulle de taille corrigée** : elle n’apparaissait jamais car l’élément était cherché avant d’être créé. Pendant un glisser, un double-clic ou un ajustement clavier, elle affiche la largeur réelle de la zone (« Chat · 642 px ») près du curseur, puis s’efface.
+- **Chevauchement poignée/boutons** : la zone de saisie de ±5 px est maintenant au-dessus du bouton voisin, donc un clic près du trait saisit la poignée au lieu du bouton de l’en-tête du chat. La poignée affiche aussi trois points au survol.
+- **Disposition retrouvée** : panneaux masqués inclus, la disposition est restaurée au redémarrage, et le glissement s’applique même sans pose intermédiaire du pointeur.
+- **Contrôle visuel** : nouveau test Electron qui glisse la poignée, vérifie la bulle, l’élargissement et la restauration après redémarrage.
+
 ## [1.5.26] — Sous-agents spécialisés : Interfaces et 3D
 - **L’agent principal orchestre.** Il garde la conversation, choisit le sous-agent, lui écrit un brief autonome, récupère son compte rendu et présente le résultat. Le prompt principal reçoit un catalogue généré et la consigne de découpage (produire d’abord ce dont l’autre dépend, reprendre les chemins réels du premier compte rendu, puis assembler et vérifier).
 - **Nouveau sous-agent « Interfaces »** (`roblox-interface`) : ScreenGui, HUD, menus, boutiques et inventaires en Luau `--!strict`, adaptation tactile/manette/clavier, animations `TweenService`, intégration Rojo (`src/client`, `src/shared`), remotes validés côté serveur. Skills réutilisés : `roblox-luau`, `roblox-ui`, `roblox-server-authority`, `roblox-monetization`.
