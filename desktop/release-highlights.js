@@ -1,6 +1,10 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.36":{headline:"Le redimensionnement suit la souris en direct, avec des largeurs entières.",items:[
+        {icon:"tools",title:"Panneau qui suit la souris",text:"En disposition personnalisée, la grille lisait l'ancienne variable : la colonne ne bougeait plus pendant le glisser. La largeur choisie est désormais publiée en direct, image par image, comme dans VS Code."},
+        {icon:"spark",title:"Calcul sur la taille réelle",text:"Le glisser, les flèches clavier et le double-clic partent de la largeur réellement rendue du panneau, plus jamais d'une valeur périmée : la poignée reste collée au bord et la bulle annonce la vraie taille."}
+    ]},
     "1.5.35":{headline:"Le choix de projet reste possible même quand la liste ne se rafraîchit pas.",items:[
         {icon:"chat",title:"Plus de sélecteur bloqué",text:"Après un échec d'actualisation (session expirée, hors ligne), les projets déjà affichés restent sélectionnables dans « Discussions dans »."},
         {icon:"spark",title:"Liste qui revient toute seule",text:"Après une reconnexion ou une minute d'attente, la liste des projets se recharge automatiquement, sans appuyer sur ↻."}
