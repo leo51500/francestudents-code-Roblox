@@ -1,5 +1,10 @@
 ﻿# Changelog
 
+## [1.5.34] — Poignee flottante, raccourci du chat en plein écran
+- **Sash flottant style VS Code** : pendant le glisser, une poignée détachée suit le curseur via `transform`, sans attendre le recalcul de la grille ; la ligne d'accent est désormais un pseudo-element `::before` centré, visible au survol et au focus clavier.
+- **Raccourci Ctrl+Maj+M** : bascule le plein écran du chat, comme le bouton ⤢ ; Échap le quitte toujours.
+- BOM UTF-8 retiré à nouveau de `10-actions.js` (réintroduit par une édition concurrente) et accolade excédentaire corrigée.
+
 ## [1.5.33] — Glisser plus précis, messages d'échec plus clairs
 - **Tailles sans décimales** : pendant le redimensionnement, la valeur appliquée aux panneaux et la bulle de taille sont arrondies au pixel ; plus de largeur impaire ni de bulle avec des décimales.
 - **Session expirée, message simplifié** : quand la liste des projets FranceStudent échoue pour raison de session, le texte invite simplement à se reconnecter ou à reprendre un projet déjà chargé, sans formulation technique.

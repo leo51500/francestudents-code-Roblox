@@ -578,16 +578,30 @@ kbd {
 .resizer {
     grid-row: 1 / span 2;
     cursor: col-resize;
-    background: var(--bg);
+    background: transparent;
     position: relative;
     z-index: 10;
 }
 
+/* Zone de clic elargie : 4 px visible + 4 px de chaque cote = 12 px total */
 .resizer::after {
     content: "";
     position: absolute;
     inset: 0 -4px;
     cursor: col-resize;
+}
+
+/* Ligne d'accent fine au survol, centree, comme le sash de VS Code */
+.resizer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: transparent;
+    transition: background 0.1s;
 }
 
 #resizer-left {
@@ -598,10 +612,12 @@ kbd {
     grid-column: 5;
 }
 
-/* Ligne fine doree au survol : alignee sur la charte visuelle */
-.resizer:hover,
+.resizer:hover::before,
+.resizer:focus-visible::before {
+    background: var(--accent, #f5a623);
+}
+
 .resizer:focus-visible {
-    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 2px 100% no-repeat, var(--bg);
     outline: none;
 }
 
@@ -611,14 +627,33 @@ kbd {
     outline: none;
 }
 
-/* La poignee active prend la couleur d'accent pendant le glisser. */
+/* Pendant le glisser : la poignee de la grille s'efface, le sash flottant prend le relais */
 html.layout-dragging #resizer-left,
 html.layout-dragging #resizer-right {
-    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 2px 100% no-repeat;
+    background: transparent;
 }
 
 html.layout-dragging #resizer-bottom {
     background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 100% 2px no-repeat;
+}
+
+/* Sash flottant style VS Code : suit le curseur via transform (position: fixed),
+   independant de la grille CSS. Invisible par defaut, visible seulement active. */
+.resizer-sash-overlay {
+    position: fixed;
+    top: 0;
+    left: -2px;
+    width: 4px;
+    pointer-events: none;
+    z-index: 100000;
+    background: var(--accent, #f5a623);
+    opacity: 0;
+    will-change: transform;
+    transform: translateX(0);
+}
+
+.resizer-sash-overlay.active {
+    opacity: 1;
 }
 
 .resizer-h {

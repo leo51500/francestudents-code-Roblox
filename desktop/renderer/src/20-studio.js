@@ -379,6 +379,16 @@ function setAgentFocus(active){
 }
 $("agent-focus").onclick = () => setAgentFocus(!$("app").classList.contains("focus-agent"));
 setAgentFocus(false);
+// Raccourci clavier du plein écran du chat : Ctrl+Maj+M bascule, comme le bouton ⤢.
+window.addEventListener("keydown", (event) => {
+    if (!(event.ctrlKey || event.metaKey) || !event.shiftKey || event.altKey) return;
+    if (event.key.toLowerCase() !== "m") return;
+    if (document.querySelector("dialog[open], :popover-open")) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    event.preventDefault();
+    setAgentFocus(!$("app").classList.contains("focus-agent"));
+});
 
 /* ---------- Fenêtre du chat détachée ----------
  * Une vraie fenêtre système : on la place, on la redimensionne et on la déplace où l'on
