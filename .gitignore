@@ -43,3 +43,8 @@ probe_*
 qa/
 qa2/
 qa3/
+
+# Fichiers temporaires de debug et de tests
+.tmp-debug*.js
+e2e/.tmp-shots.js
+
