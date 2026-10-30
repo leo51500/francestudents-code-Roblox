@@ -2,7 +2,9 @@
 
 [← Les guides](README.md) · [Premiers pas](guide-utilisation.md)
 
-L'espace Code de FranceStudent Code Roblox est spécialisé pour **Roblox Studio (Luau, Rojo)** et **Blender** (modèles 3D destinés à Roblox). L'assistant reçoit systématiquement les instructions de spécialisation ; le studio Motion design et EffectCraft restent un espace séparé et n'y ont pas accès.
+L'espace Code de FranceStudent Code Roblox est spécialisé pour **Roblox Studio (Luau, Rojo)** et **Blender** (modèles 3D destinés à Roblox).
+
+> **Règle du projet : tout modèle 3D passe par Blender.** Prop, décor, accessoire, arme ou personnage statique : l'assistant écrit un script Blender, l'exécute, vérifie le GLB puis l'importe. Il ne livre pas un empilement de Parts à construire à la main. Deux exceptions, annoncées avant de continuer : une géométrie volontairement en Parts pour rester modifiable et alignée à la grille, ou une demande explicite. L'assistant reçoit systématiquement les instructions de spécialisation ; le studio Motion design et EffectCraft restent un espace séparé et n'y ont pas accès.
 
 ## Ce que l'assistant fait
 
@@ -102,6 +104,8 @@ Pour agir directement dans Studio ou Blender, configure un serveur MCP dans `mcp
 | `boolean_cut(target, cutter)` | creuser une fenêtre, une porte, une fente. |
 | `noise(obj, strength, seed)` | déformation déterministe : rochers, pierres. |
 | `palette([...])`, `assign_material`, `assign_palette` | plusieurs couleurs sans texture (bois, métal, feuillage, pierre…). |
+
+Le rendu de contrôle est vérifié par un test d'intégration qui lance réellement Blender (ignoré si Blender est absent) : il lit le PNG produit, contrôle les quatre quarts et la présence des couleurs.
 
 Roblox : l'importeur 3D (`Avatar → Import 3D`) crée un sous-mesh par matériau. Une palette de trois à cinq couleurs reste donc légère et visible ; au-delà de cinq, `inspect` le signale. Une texture remplace les couleurs de base dans Studio : ne mélange pas couleurs et texture dans le même mesh. Voir `src/blender/templates/prop_palette.py`.
 

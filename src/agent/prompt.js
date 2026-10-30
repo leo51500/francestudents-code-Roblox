@@ -57,6 +57,7 @@ function robloxStudioSection(mcpCatalog = "") {
 - Éclairage : Roblox a migré Technology « Compatibility » vers « Voxel » ; le message Studio de migration n’est pas une erreur. Le guide complet et le lien officiel sont donnés dans le brief quand la demande concerne l’éclairage.
 - Code : Luau moderne et strict (en-tête --!strict quand c'est possible), API actuelles et typées (task.wait, TweenService, CollectionService, RaycastParams, attributs, Instance:AddTag, for … in ipairs), RunService côté serveur pour les boucles physiques, remotes validés côté serveur, NetworkOwnership, Debris, tables de nettoyage (jamais de fuite de connexions). Respecte le style existant du projet : Rojo (*.project.json, src/), Aftman/Wally (wally.toml, aftman.toml), StyLua (.stylua.toml), Selene (selene.toml), JestLua/TestEZ dans tests/.
 - Qualité Roblox : respecte les limites d'instance (parts, MeshParts, textures 1024 px max, polygones adaptés à une cible mobile / console), évite les boucles while true do sans task.wait, privilégie le client pour les effets et le serveur pour l'autorité ; demande confirmation avant de modifier des scripts serveur sensibles (DataStore, achats, économie).
+- Modèles 3D : TOUT modèle (prop, décor, accessoire, épée, personnage statique) est produit par Blender puis importé — jamais décrit comme un assemblage de Parts à construire à la main. Exception seulement pour une géométrie volontairement en Parts, modifiable et alignée à la grille, ou une demande explicite ; explique alors ce choix.
 - Scène : pour le contenu du jeu, préfère le format Rojo (init.meta.json, .model.json dans .frst/) et les commandes rojo build / rojo serve ; ne prétends jamais avoir ouvert Studio si un outil MCP Roblox n'a pas répondu : vérifie via mcp_call.
 - Blender : modélise avec l'outil blender (detect, templates, script, inspect, validate, render), jamais en supposant. Parts de src/blender/blender_common.py : géométrie propre (mètres, 1 stud = 0,28 m, origine à la base), normales cohérentes, UV non chevauchants, textures 1024 px max, caméras et lumières retirées à l'export. Outils de forme : bevel (arêtes nettes), sphere, cone, torus, lathe (révolution : colonnes, vases), mirror, boolean_cut (fenêtres, creux), noise (rochers). Plusieurs couleurs : palette de blender_common.py (bois, metal, feuillage…), assign_material par objet avant join, puis finish(..., materials=…). Un modèle n'est validé qu'après inspect (GLB lisible), validate (contrôles Blender réels) puis render + view_image : le rendu assemble quatre angles (face, trois-quarts, côté, dessus) en une image 1024 px, à comparer à la demande — liste trois défauts, corrige, recommence deux fois au maximum.
 - Sons : ne jamais inventer un rbxassetid. Demande à l'utilisateur le son ou l'identifiant réel, puis place-le (Sound dans le modèle concerné ou SoundService + SoundGroup, RollOffMode et Volume discrets).
@@ -335,7 +336,7 @@ const ROBLOX_GAME_BRIEF = [
     "5. Prévoir les états : normal, échec, annulation, déconnexion, et le retour visuel pour chaque état.",
     "6. Vérifier : roblox_check (règles, selene, luau-analyze, rojo build). Un build en échec doit être corrigé, pas annoncé comme réussi.",
     "6bis. Tester : roblox_playtest (build + ouverture Studio), puis roblox_playtest action:\"logs\" pour relire les erreurs réelles du jeu.",
-    "7. Modèle 3D nécessaire : blender detect → templates → script → inspect → validate → render → view_image. Si l'utilisateur joint une image de référence, la décrire (forme, proportions, couleurs) avant de modéliser.",
+    "7. Modèle 3D nécessaire (règle : toujours via Blender, jamais un assemblage de Parts) : blender detect → templates → script → inspect → validate → render → view_image, puis import. Si l'utilisateur joint une image de référence, la décrire (forme, proportions, couleurs) avant de modéliser.",
     "8. Son ou musique nécessaire : demande le son exact et son identifiant rbxassetid à l'utilisateur (son rbxassetid:// lu dans l'Asset Manager ou fourni) ; n'invente jamais d'identifiant. Place le Sound dans le modèle ou SoundService avec un SoundGroup et un volume discret.",
     "9. final : la boucle livrée, les fichiers, ce qui a été vérifié et ce qui reste à tester dans Studio (playtest réel)."
 ].join("\n");
@@ -373,7 +374,8 @@ const BLENDER_TOOLKIT = [
     "- noise(obj, strength, scale, seed) : déformation déterministe pour les rochers (même seed = même forme).",
     "- palette([\"bois\", \"metal\", …]) puis assign_material(obj, matériau) sur chaque pièce AVANT join ; finish(obj, args, materials=list(couleurs.values())). Sans materials, finish utilise une seule couleur.",
     "- render_preview écrit quatre angles (face, trois-quarts, côté, dessus) dans une image 1024 px : examine-la avec view_image, compare à la demande, liste trois défauts, corrige et recommence deux fois au maximum.",
-    "- Modèle de départ complet : templates/prop_palette.py. Recettes caisse, rocher, maison et épée : skill blender-lowpoly-style."
+    "- Modèle de départ complet : templates/prop_palette.py. Recettes caisse, rocher, maison et épée : skill blender-lowpoly-style.",
+    "RÈGLE DU PROJET — TOUT MODÈLE 3D PASSE PAR BLENDER. Aucun modèle n'est décrit en Part, WedgePart ou instructions de construction à assembler à la main : on écrit un script Blender, on l'exécute, on vérifie le GLB, puis on l'importe dans Roblox. Vaut pour un prop, un décor, un accessoire, un personnage statique et une épée. Les cas qui restent côté Studio sans Blender : une géométrie volontairement construite en Parts pour rester modifiable et alignés à la grille, ou une demande explicite de l'utilisateur. Dans ces deux cas, dis pourquoi avant de continuer."
 ].join("\n");
 
 const SOUND_GUIDE = [
@@ -393,18 +395,42 @@ function isRobloxTask(task) {
     return /\b(roblox|luau|rojo|studio|experience|jeu|game|gameplay|niveau|level|guerre|combat|obby|rpg|tycoon|simulator|simulateur|boutique\s+roblox|blender|modele|modèle|mesh|rig|animation|asset|sons?|sounds?|audio|musique|lighting|éclairage|eclairage|voxel)\b/iu.test(String(task || ""));
 }
 
+const BRIEF_RULES = {
+    roblox: task => isRobloxTask(task),
+    lighting: task => /(lighting|éclairage|eclairage|compatibility|voxel|migration|technology)/iu.test(String(task || "")),
+    blender: task => /\b(blender|modele|modèle|mesh|low.?poly|3d|prop|maquette|obj|glb)\b/iu.test(String(task || "")),
+    sound: task => /\b(sons?|sounds?|audio|musique|music|ambiance sonore|soundid|rbxassetid)\b/i.test(String(task || ""))
+};
+const BRIEF_SECTIONS = {
+    roblox: () => ROBLOX_GAME_BRIEF,
+    lighting: () => LIGHTING_MIGRATION,
+    blender: () => BLENDER_TOOLKIT,
+    reference: () => REFERENCE_BRIEF,
+    sound: () => SOUND_GUIDE
+};
+
+/**
+ * Sections ajoutées au brief de base, dans l'ordre d'injection.
+ * Exposé pour les tests et les diagnostics : vérifier « ce guide est-il envoyé ? »
+ * section par section est fiable, contrairement à une recherche dans le prompt complet
+ * où le catalogue d'outils contient déjà des mots comme rbxassetid.
+ */
+function briefSections(intent, task, attachments) {
+    if (intent === "read" || intent === "list" || intent === "research") return [];
+    const sections = [];
+    if (BRIEF_RULES.roblox(task)) sections.push("roblox");
+    if (BRIEF_RULES.lighting(task)) sections.push("lighting");
+    if (BRIEF_RULES.blender(task)) sections.push("blender");
+    if (hasReferenceImage(task, attachments)) sections.push("reference");
+    if (BRIEF_RULES.sound(task)) sections.push("sound");
+    return sections;
+}
+
 /** Ajoute le brief jeu aux tâches qui concernent Roblox, et le brief de référence si une image sert de modèle. */
 function briefFor(intent, task, attachments) {
     const base = BRIEFS[intent];
-    if (intent === "read" || intent === "list" || intent === "research") return base;
-    const brief = isRobloxTask(task) ? `${base}\n\n${ROBLOX_GAME_BRIEF}` : base;
-    const withLighting = /(lighting|éclairage|eclairage|compatibility|voxel|migration|technology)/iu.test(String(task || ""))
-        ? `${brief}\n\n${LIGHTING_MIGRATION}` : brief;
-    const withBlender = /\b(blender|modele|modèle|mesh|asset|low.?poly|3d|prop|maquette|obj|glb)\b/iu.test(String(task || ""))
-        ? `${withLighting}\n\n${BLENDER_TOOLKIT}` : withLighting;
-    const withReference = hasReferenceImage(task, attachments) ? `${withBlender}\n\n${REFERENCE_BRIEF}` : withBlender;
-    return /\b(sons?|sounds?|audio|musique|music|ambiance sonore|soundid|rbxassetid)\b/i.test(String(task || ""))
-        ? `${withReference}\n\n${SOUND_GUIDE}` : withReference;
+    const blocks = briefSections(intent, task, attachments).map(name => BRIEF_SECTIONS[name]());
+    return [base, ...blocks].filter(Boolean).join("\n\n");
 }
 
 const FORMAT = `FORMAT DE SORTIE — OBLIGATOIRE
@@ -758,4 +784,4 @@ function buildResumePrompt({task,observations=[],activeFile,editorFiles=[],plan=
         "Réponds avec un seul objet JSON outil ou final, sans appel natif. Utilise ask_user si une précision est indispensable. Réutilise les résultats existants, regroupe les lectures indépendantes et ne cherche pas les pièces jointes sur le PC. Final : message concis, completed, conversation_title."
     ].filter(Boolean).join("\n\n");
 }
-module.exports = { buildAgentPrompt, buildFollowUpPrompt, buildResumePrompt, TOOL_CATALOG, detectIntent };
+module.exports = { buildAgentPrompt, buildFollowUpPrompt, buildResumePrompt, TOOL_CATALOG, detectIntent, briefFor, briefSections };

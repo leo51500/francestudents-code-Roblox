@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.5.25] — Tout modèle 3D passe par Blender, et le code respire
+- **Règle du projet : tout modèle 3D passe par Blender.** Prop, décor, accessoire, arme, personnage statique : l’agent écrit un script Blender, l’exécute, vérifie le GLB puis l’importe. Il ne livre plus un empilement de Parts à construire à la main. Exceptions annoncées : géométrie volontairement en Parts (modifiable, alignée à la grille) ou demande explicite. Règle appliquée dans le prompt, le brief jeu, les skills `roblox-building`, `blender-model` et la documentation.
+- **`desktop/main.js` allégé** : les terminaux (spawn et session interactive node-pty) sont extraits dans `desktop/terminals.js` (276 lignes retirées du fichier principal, comportement inchangé). Les dépendances du module sont injectées, sans cycle de `require`.
+- **Style** : `mcpAttemptKey` et les contrôles les plus denses de la boucle agent sont découpés en fonctions nommées et blocs lisibles. Aucun changement de comportement, vérifié par les tests existants.
+- **Budget des guides du prompt** : nouveau test qui mesure la taille de chaque guide (Roblox, éclairage, Blender, référence, sons) et échoue si l’un dépasse sa borne. Pire cas mesuré : 7 344 caractères.
+- **Nom du produit clarifié** : un tableau dans `CONTRIBUTING.md` explique pourquoi `package.name` reste `project-frstcli` (dossier de profil Electron), face à `build.productName` et `build.appId` ; commentaire `//name` dans `package.json`.
+- **Caches Python retirés de Git** : `__pycache__/` et `*.pyc` ignorés, le fichier versionné est déréférencé (le fichier local reste).
+- Vérifié : `npm test` (868 tests), `npm run lint`, build du renderer, et rendu Blender réel.
+
+## [1.5.24] — Le rendu quatre angles vérifié pour de vrai
+- **Rendu Blender contrôlé réellement** : nouveau test d'intégration qui lance Blender, rend `prop_palette.py` et lit le PNG produit (taille 1024, contenu de chacun des quatre quarts, présence des couleurs de la palette). Il est ignoré proprement si Blender n'est pas installé.
+- **Trois bugs trouvés par ce rendu, corrigés** :
+  - `_mesh_from_bmesh` utilisait `bpy` sans l'importer (`NameError` à la première sphère) ;
+  - les couleurs se répartissaient en diagonales après la triangulation, car les faces étaient réindexées par position ; elles suivent maintenant le matériau de chaque sommet ;
+  - le bruit des rochers pouvait creuser le modèle sous le sol ; la base reste plate.
+- **Le rendu utilise EEVEE** (repli Workbench) pour montrer les matériaux, au lieu d'un modèle gris.
+- **Guides du prompt mesurés par section** : `briefSections` expose les guides réellement ajoutés (Roblox, éclairage, Blender, référence, sons). Les tests ne cherchent plus un mot dans le prompt complet, où `rbxassetid` et « tourne » donnaient de faux positifs. Le mot `asset` seul ne déclenche plus les outils Blender.
+- **Fichier verrouillé vérifié de bout en bout** : nouveau test `runAgent` qui simule un `EBUSY` et confirme qu’une écriture verrouillée n’est **jamais** rejouée à l’identique, que le fichier d’origine reste intact et que l’agent reçoit la consigne de sortie.
+- Vérifié : `npm test`, `npm run lint`, build du renderer, et le test d’intégration Blender avec un rendu réel examiné.
+
 ## [1.5.23] — Blender low-poly, sons, éclairage Voxel et fin des tours en rond
 - **L’agent ne s’arrête plus sur « Je tourne en rond »** : une action identique déjà réussie est ignorée et relancée avec une consigne de changement de démarche, au lieu de couper la tâche au deuxième avertissement. Une action qui vient d’échouer peut être rejouée (relire après correction, relancer un build) ; seule une répétition persistante arrête l’agent, avec un compte rendu des dernières étapes. Les commandes de vérification (`npm test`, `rojo build`, rendu Blender) ont droit à deux fois plus de répétitions. Nouveau module `src/agent/stuck-guard.js`.
 - **Fichier utilisé par une autre instance du Studio / en lecture seule** : ce n’est plus une boucle sans fin. `write_file` et `edit_file` reconnaissent le verrou (EBUSY, EPERM, « autre instance », « lecture seule »), expliquent que le contenu n’est pas perdu et proposent un enregistrement sous un autre nom ou la fermeture de la session qui garde le fichier. L’agent ne prétend jamais avoir enregistré.
