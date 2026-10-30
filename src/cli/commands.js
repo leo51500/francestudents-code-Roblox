@@ -125,13 +125,21 @@ async function handleCommand(input) {
       const frProjects = require("../api/fr-projects");
       const name = unquote(value);
 
+      // Sans argument : la liste réelle des projets du compte, aucun n'est créé ici.
       if (!name) {
-        const current = state.frProject || (await frProjects.loadSelected());
-        ui.info(
-          current
-            ? `Projet FranceStudent : ${current.name} (${current.id})`
-            : "Aucun projet FranceStudent. Usage : /fr-project <nom> | /fr-project off",
-        );
+        try {
+          const projects = await frProjects.listProjects();
+          const current = state.frProject || (await frProjects.loadSelected());
+          ui.info(current ? `Projet FranceStudent actif : ${current.name} (${current.id})` : "Aucun projet FranceStudent sélectionné.");
+          if (projects.length) {
+            ui.print(["Projets du compte :", ...projects.map(p => `  ${p.name === current?.name ? "→" : " "} ${p.name} (${p.id})`)]);
+            ui.info("Choisir : /fr-project <nom> ; les nouvelles conversations y seront rattachées.");
+          } else {
+            ui.info("Aucun projet sur le site. Créer avec : /fr-project <nom> --creer");
+          }
+        } catch (error) {
+          ui.warn(`Liste des projets FranceStudent indisponible : ${error.message}`);
+        }
         break;
       }
 
@@ -142,7 +150,17 @@ ui.info("Projet FranceStudent retiré : les nouvelles conversations ne sont plus
       }
 
       try {
-        const { project, created } = await frProjects.findOrCreateProject(name);
+        // Le projet est choisi parmi ceux du site : aucun n'est créé sans --creer.
+        const allowCreate = /\s--creer\b/i.test(String(value || ""));
+        const wanted = name.replace(/\s--creer\b/i, "").trim();
+        const projects = await frProjects.listProjects();
+        const found = projects.find(project => String(project?.name || "").trim().toLocaleLowerCase("fr-FR") === wanted.toLocaleLowerCase("fr-FR"));
+        if (!found && !allowCreate) {
+          ui.warn(`Projet FranceStudent inconnu : ${wanted}. Projets du compte : ${projects.map(p => p.name).join(", ") || "aucun"}.`);
+          ui.info(`Pour en créer un : /fr-project "${wanted}" --creer`);
+          break;
+        }
+        const { project, created } = found ? { project: found, created: false } : await frProjects.findOrCreateProject(wanted);
         await frProjects.saveSelected(project);
         resetConversation();
         ui.info(

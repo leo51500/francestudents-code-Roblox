@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.28":{headline:"Vos discussions rejoignent vos projets FranceStudent, sans chats en série.",items:[
+        {icon:"chat",title:"Projets reconnus",text:"L’application liste les projets de votre compte et ne crée plus rien au hasard : choisissez le projet, les nouvelles discussions y sont rattachées."},
+        {icon:"tools",title:"Fin des « Tour 28/40 »",text:"Une conversation occupée n’engendre plus une série de nouveaux fils : une seule reprise, puis l’application reprend le fil d’origine."},
+        {icon:"spark",title:"Titres clairs",text:"Chaque discussion porte le titre de votre demande réelle, au lieu d’un numéro de tour interne."}
+    ]},
     "1.5.27":{headline:"Le chat va où vous voulez, et sa taille s’affiche en direct.",items:[
         {icon:"chat",title:"Chat dans sa propre fenêtre",text:"Détachez le chat : une vraie fenêtre, déplaçable et redimensionnable librement, à sa position mémorisée. La grande fenêtre lui laisse alors toute la place, sans doublon."},
         {icon:"tools",title:"Pas de palier imposé",text:"Les colonnes vont de leur minimum à toute la place libre de la fenêtre ; l’éditeur garde toujours sa largeur utile."},

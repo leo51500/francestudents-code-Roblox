@@ -338,6 +338,26 @@ test("après un 409 agent, le message complet remplace le message « suite »", 
     assert.deepEqual(sent, ["suite courte", "message complet"]);
 });
 
+test("un second 409 ne forme pas une chaîne de nouveaux chats", { concurrency: false }, async () => {
+    prepareAuth();
+    state.chatId = "agent-7";
+    state.chatIds.agent = "agent-7";
+    const chatIds = [];
+    global.fetch = async (url, init) => {
+        chatIds.push(JSON.parse(init.body).chatId);
+        return new Response("A stream is already active for this chat", { status: 409 });
+    };
+
+    const started = Date.now();
+    await assert.rejects(requestModel("bonjour", { conversationMode: "agent" }), /409|already active/);
+    // Bien moins que les trois délais d'attente : aucune file de chats créés en série.
+    assert.ok(Date.now() - started < 10_000, "un second 409 doit s'arrêter après une courte attente");
+    // Un seul nouveau fil, puis une seule nouvelle tentative sur le fil d'origine :
+    // jamais la série de chats « Tour 28/40 », « Tour 29/40 »…
+    assert.deepEqual(chatIds, ["agent-7", null, "agent-7"]);
+    assert.equal(state.chatIds.agent, "agent-7");
+});
+
 test("un 429 « budget épuisé » n'est pas relancé et indique l'heure de reprise", { concurrency: false }, async () => {
     prepareAuth();
     let calls = 0;

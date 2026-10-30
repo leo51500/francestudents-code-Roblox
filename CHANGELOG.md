@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.28] — Les discussions rejoignent le projet FranceStudent, et fin des chats en série
+- **Projets FranceStudent dans l’application** : `/fr-project` sans argument liste les projets réels du compte (aucun n’est créé au passage) et indique le projet actif. Le nom choisi est recherché parmi eux ; `/fr-project "Nom" --creer` est la seule façon d’en créer un.
+- **Fin des chats « Tour 28/40 », « Tour 29/40 »…** : un second 409 (fil occupé) ne reconstruit plus un nouveau fil à chaque tentative. L’application revient au fil d’origine, retente une seule fois après une courte attente, puis s’arrête en gardant le travail déjà fait. Un seul nouveau fil au maximum par demande.
+- **Titres lisibles** : un fil repris reçoit un titre tiré de la demande réelle (« Ajoute une boutique d’armes. ») et non du tour d’agent ; un tour de suivi ne donne jamais de titre.
+- **Rattachement fiable** : les nouveaux fils restent rattachés au projet choisi, dès la première réponse, sans jamais dupliquer la conversation.
+- Vérifié : `npm run lint`, `npm test` (886 tests, 883 réussis, 3 ignorés dont les parcours nécessitant une clé réelle), nouveaux tests sur le titre des chats et sur la reprise 409.
+
 ## [1.5.27] — Placez le chat où vous voulez, et voyez sa taille en direct
 - **Chat détaché dans sa propre fenêtre** : le bouton « détacher » du panneau agent ouvre le chat dans une vraie fenêtre système. On la place et on la redimensionne librement (bords, multi-écrans), sa position et sa taille sont mémorisées, et la grande fenêtre masque alors sa colonne pour qu’aucun affichage ne se superpose. La fermer la rétablit.
 - **Chat masquable** : bouton « masquer » dans l’en-tête et raccourci **Ctrl+Alt+A** ; la colonne revient avec sa largeur réglée.
