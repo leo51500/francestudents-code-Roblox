@@ -126,11 +126,70 @@ async function ensureAttached(chatId) {
     }
 }
 
+/*
+ * Chats créés automatiquement (reprise après 409, rattachement tardif) : le site ne doit
+ * pas accumuler des fils « Tour 28/40 » invisibles. On les rattache et on les nomme
+ * d'après la demande réelle, une seule fois par identifiant.
+ */
+const named = new Set();
+
+/** PATCH /chats/{id} { title } : renomme un fil. Ne lève jamais. */
+async function renameChat(chatId, title) {
+    const clean = String(title || "").replace(/\s+/g, " ").trim().slice(0, 100);
+    if (!chatId || !clean) return false;
+    const key = `${chatId}:${clean}`;
+    if (named.has(key)) return true;
+    try {
+        await requestJson("PATCH", `/chats/${encodeURIComponent(chatId)}`, { title: clean });
+        named.add(key);
+        return true;
+    } catch {
+        // Un titre refusé par le service ne bloque jamais la conversation.
+        return false;
+    }
+}
+
+/**
+ * Titre lisible d'après la demande : court, sans consigne d'outil ni numéro de tour.
+ * Retourne "" quand la demande ne donne rien d'exploitable.
+ */
+function chatTitleFrom(text) {
+    const raw = String(text || "");
+    // Les tours de suivi ne décrivent pas le sujet : on ne leur invente pas de titre.
+    if (!raw.trim() || /^\s*(tour\s+\d+\s*\/|CORRECTION|RAPPEL|RÉSULTATS DES OUTILS|CONTEXTE TEXTUEL PRÉCÉDENT)/i.test(raw)) return "";
+    // Une demande peut arriver dans un message complet (consignes + demande) : on garde
+    // la demande dès qu'elle est nommée, plus besoin d'être au tout début du message.
+    const asked = /DEMANDE(?: DE L['’]UTILISATEUR| À POURSUIVRE)?\s*:?\s*([\s\S]+)/i.exec(raw);
+    const source = asked ? asked[1] : raw;
+    const first = source.split(/\n\s*\n/)[0].replace(/[`*_#>]/g, " ").replace(/\s+/g, " ").trim();
+    const title = first.split(/(?<=[.!?])\s/)[0].trim();
+    return title.length > 80 ? `${title.slice(0, 77).trimEnd()}…` : title;
+}
+
+/**
+ * Appelé dès qu'un identifiant de chat est connu (premier ou nouveau fil) : rattache au
+ * projet choisi et donne un vrai titre. Sans projet choisi, choisit le projet de
+ * l'espace de travail si un seul porte ce nom, sans jamais en créer.
+ */
+async function adoptChat(chatId, prompt) {
+    if (!chatId) return { attached: false, named: false };
+    const title = chatTitleFrom(prompt);
+    // Un seul renommage par fil dans la vie du processus : les tours suivants ne
+    // redemandent pas le réseau pour un titre déjà posé.
+    const shouldName = Boolean(title) && ![...named].some(key => key.startsWith(`${chatId}:`));
+    const namedOk = shouldName ? await renameChat(chatId, title) : false;
+    const attachedOk = await ensureAttached(chatId);
+    return { attached: attachedOk, named: namedOk };
+}
+
 module.exports = {
     listProjects,
     createProject,
     attachChat,
     ensureAttached,
+    renameChat,
+    chatTitleFrom,
+    adoptChat,
     findOrCreateProject,
     loadSelected,
     saveSelected,

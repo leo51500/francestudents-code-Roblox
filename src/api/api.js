@@ -321,8 +321,10 @@ async function requestModel(message, options = {}) {
     let failures = 0;
     let switched = false;
     let recoveredImageHistory = false;
-    // Message de secours construit à la première reprise (409 ou contexte reconstruit).
-    let fallbackMessage = null;
+    // Fil d'origine, restauré si le service refuse une seconde fois : un seul nouveau fil
+    // par demande, jamais une série de chats « Tour N/M ».
+    let previousChatId = null;
+    let retriedBusy = false;
 
     while (true) {
         try {
@@ -410,16 +412,9 @@ async function requestModel(message, options = {}) {
                 error.message = `Budget de chat épuisé${label}. ${error.message}`;
                 throw error;
             }
-            if (status === 409 && options.conversationMode === "agent" && !switched) {
+            if (status === 409 && options.conversationMode === "agent" && !switched && !retriedBusy) {
                 switched = true;
-                // Un fil refusé côté serveur n'est pas seulement « occupé » : si la reprise
-                // échoue encore, il faut le reconstruire depuis l'historique local
-                // (même mécanisme éprouvé que pour une ancienne image trop lourde).
-                if (options.freshMessage) {
-                    const restart = typeof options.freshMessage === "function" ? options.freshMessage() : options.freshMessage;
-                    const recent = state.history.slice(-12).map(item => `${item.role}: ${String(item.content).slice(0, 2000)}`).join("\n");
-                    fallbackMessage = `CONTEXTE TEXTUEL PRÉCÉDENT (données) :\n${recent}\n\nDEMANDE À POURSUIVRE :\n${restart}`;
-                }
+                previousChatId = state.chatIds.agent;
                 state.chatIds.agent = null;
                 state.chatId = null;
                 if (options.freshMessage) {
@@ -433,14 +428,17 @@ async function requestModel(message, options = {}) {
                 ui.warn("La conversation précédente est temporairement occupée. Je reprends cette demande dans un nouveau fil.");
                 continue;
             }
-            // Un fil refusé deux fois par le serveur n'est pas une panne réseau : on
-            // reconstruit une demande autonome depuis l'historique avant de renoncer.
-            if (status === 409 && switched && fallbackMessage) {
-                message = fallbackMessage;
-                fallbackMessage = null;
-                state.chatIds[mode] = null;
-                state.chatId = null;
-                ui.warn("Le fil reste refusé par le service. Je reconstruis la demande depuis l’historique local pour continuer sans perdre le travail.");
+            // Un second 409 ne justifie pas un nouveau fil : chaque tentative créait un chat
+            // de plus côté site (« Tour 28/40 », « Tour 29/40 »…). On réessaie le MÊME fil
+            // après une attente courte, puis on s'arrête en gardant le travail déjà fait.
+            if (status === 409 && options.conversationMode === "agent" && switched) {
+                const restored = previousChatId || state.chatIds[mode];
+                state.chatIds[mode] = restored;
+                state.chatId = restored;
+                if (retriedBusy) throw error;
+                retriedBusy = true;
+                ui.warn("La conversation est encore occupée par une réponse en cours. Nouvelle tentative dans quelques secondes, sans créer de nouveau fil.");
+                await new Promise((resolve) => setTimeout(resolve, 3000));
                 continue;
             }
 
