@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.5.30] — Le chat s’agrandit et revient à sa place
+- **Agrandissement corrigé** : le chat s’étend maintenant sur toute la fenêtre, même après avoir redimensionné les panneaux ou personnalisé la disposition. Le bouton et `Échap` rétablissent ensuite l’affichage précédent.
+- **Connexion expliquée simplement** : si la session FranceStudent manque ou a expiré, la liste des projets invite à se reconnecter puis à actualiser, sans afficher de détail de session technique.
+- Vérifié : `npm run lint`, `npm run build:renderer`, `npm run check:renderer`, `npm test` et parcours Electron ciblé du chat.
+
 ## [1.5.29] — La taille du chat marche partout, et vos projets FranceStudent se choisissent dans le chat
 - **Redimensionnement réparé sous 1100 px** : la classe `.layout-custom` n'était appliquée qu'au-dessus de 1001 px, et elle était retirée juste après chaque glisser (`syncLayoutCustom` ignorait `--left-custom` / `--right-custom`). La largeur choisie est conservée à toutes les tailles, dès l'appui sur la poignée. La hauteur du panneau du bas suit les mêmes règles.
 - **Chevauchements corrigés** : le menu « Outils du chat » (popover) restait positionné au centre de la fenêtre, donc au milieu de la conversation ; il est désormais ancré à son bouton et masqué tant qu'il n'est pas ouvert. La grille réservait deux fois la hauteur de la barre de titre, ce qui coupait le haut du panneau : corrigé.
@@ -570,4 +575,3 @@ L’historique du [projet de Gab-Desing](https://github.com/Gab-Desing/francestu
 - `workflow_dispatch` permet de relancer depuis `main` ; la version est contrôlée contre `package.json`.
 - Les préreleases sont détectées par leur suffixe de version.
 - La procédure de diagnostic distingue l’absence de déclenchement d’un run en échec.
-

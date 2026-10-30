@@ -17,13 +17,16 @@ test("chat fullscreen uses the whole workspace while secondary tools stay availa
         assert.equal(await page.locator("#conversation-import").isVisible(), false);
         await page.locator("#chat-more-tools").click(); assert.equal(await page.locator("#conversation-import").isVisible(), true);
         await page.keyboard.press("Escape");
+        await page.locator("#app").evaluate(el => { el.style.gridTemplateColumns = "168px 36px 240px 6px minmax(0,1fr) 340px"; });
         await page.locator("#agent-focus").click();
-        const fills = await page.locator("#agent").evaluate(el => { const r = el.getBoundingClientRect(); return r.left <= 1 && r.right >= innerWidth - 1 && r.bottom >= innerHeight - 1; });
-        assert.equal(fills, true);
+        const fills = await page.locator("#agent").evaluate(el => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: innerWidth, height: innerHeight, rows: getComputedStyle(document.querySelector("#app")).gridTemplateRows }; });
+        assert.equal(fills.left <= 1 && fills.right >= fills.width - 1 && fills.top <= 1 && fills.bottom >= fills.height - 1, true, JSON.stringify(fills));
         assert.equal(await page.locator("#sidebar-tabs").isVisible(), false); assert.equal(await page.locator("#statusbar").isVisible(), false);
         await page.locator("#input").fill("Prépare une page claire et agréable à utiliser.");
         await page.screenshot({ path: path.join(root, "release/chat-fullscreen-next.png") });
         await page.keyboard.press("Escape"); assert.equal(await page.locator("#sidebar-tabs").isVisible(), true);
+        assert.equal(await page.locator("#app").evaluate(el => el.classList.contains("focus-agent")), false);
+        assert.equal(await page.locator("#agent").evaluate(el => { const r = el.getBoundingClientRect(); return r.width < innerWidth - 1 && r.left > 0; }), true);
         // Le motion design n'est plus exposé dans FranceStudent Code Roblox : aucun bouton de bascule.
         assert.equal(await page.locator("#btn-motion").count(), 0);
         await page.locator("#agent-focus").click();

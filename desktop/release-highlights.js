@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.30":{headline:"Le chat s’agrandit vraiment, puis retrouve sa place.",items:[
+        {icon:"chat",title:"Le chat prend toute la fenêtre",text:"Le mode agrandi remplit la fenêtre même après avoir personnalisé les panneaux, et le bouton ou Échap ramène à la disposition d’avant."},
+        {icon:"tools",title:"Disposition préservée",text:"Les largeurs choisies pour les panneaux restent intactes quand tu agrandis puis réduis le chat."},
+        {icon:"spark",title:"Connexion expliquée simplement",text:"Si ta session FranceStudent manque, l’application t’invite à te connecter puis à actualiser les projets, sans afficher de détails techniques."}
+    ]},
     "1.5.29":{headline:"La taille du chat fonctionne partout, et vos projets se choisissent dans le chat.",items:[
         {icon:"tools",title:"Redimensionnement réparé",text:"Le chat s'élargit et se rétrécit à toutes les tailles de fenêtre : la largeur choisie n'est plus écrasée par les règles d'écran."},
         {icon:"chat",title:"Vos projets dans le chat",text:"Un sélecteur « Discussions dans » liste les projets de votre compte : chaque nouvelle discussion est classée dans celui que vous choisissez."},

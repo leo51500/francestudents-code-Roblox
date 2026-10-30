@@ -3588,3 +3588,14 @@ dialog,
         font-size: 24px;
     }
 }
+
+/* Le plein écran du chat neutralise les colonnes personnalisées sans les effacer. */
+#app.focus-agent, #app.layout-custom.focus-agent,
+#app.layout-custom.no-agent.focus-agent, #app.layout-custom.no-sidebar.focus-agent,
+#app.layout-custom.no-sidebar.no-agent.focus-agent {
+    grid-template-columns: 0 0 0 0 0 minmax(0, 1fr) !important;
+    grid-template-rows: 1fr 0 !important;
+    height: 100vh;
+}
+#app.chat-detached.focus-agent { grid-template-rows: 1fr 24px !important; }
+#app.focus-agent #statusbar { display: none !important; }

@@ -6631,7 +6631,12 @@ async function refreshFrProjects(message = "") {
     try {
         renderFrProjects(await api.frProjects("list"), message);
     } catch (error) {
-        if (state) { state.classList.add("error"); state.textContent = `Projets FranceStudent indisponibles : ${error.message}`; }
+        if (state) {
+            state.classList.add("error");
+            state.textContent = /Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(error.message)
+                ? "Connecte-toi à FranceStudent pour afficher tes projets, puis actualise la liste."
+                : `Projets FranceStudent indisponibles : ${error.message}`;
+        }
         if (select) select.disabled = true;
     }
 }
@@ -6674,10 +6679,41 @@ $("fr-project-open")?.addEventListener("click", () => {
 });
 refreshFrProjects();
 function setAgentFocus(active){
-    $("app").classList.toggle("focus-agent",active);
-    const button=$("agent-focus"),label=active?"Quitter le plein écran du chat":"Agrandir le chat";
-    button.setAttribute("aria-pressed",String(active));button.setAttribute("aria-label",label);button.title=label;
-    button.textContent=active?"⤡":"⤢";
+    const app = $("app"), button = $("agent-focus");
+    const focused = active === true;
+    if (focused) {
+        app.dataset.focusGridColumns = app.style.gridTemplateColumns;
+        app.dataset.focusGridRows = app.style.gridTemplateRows;
+        app.dataset.focusTitlebar = app.style.getPropertyValue("--titlebar");
+        app.dataset.focusLeft = app.style.getPropertyValue("--left");
+        app.dataset.focusRight = app.style.getPropertyValue("--right");
+        app.dataset.focusRail = app.style.getPropertyValue("--rail");
+        app.style.gridTemplateColumns = "0 0 0 0 0 minmax(0, 1fr)";
+        app.style.gridTemplateRows = "minmax(0, 1fr) 0";
+        app.style.setProperty("--left", "0px"); app.style.setProperty("--right", "0px"); app.style.setProperty("--rail", "0px");
+    }
+    app.classList.toggle("focus-agent", focused);
+    if (focused) {
+        app.style.gridTemplateRows = app.classList.contains("chat-detached") ? "minmax(0, 1fr) 24px" : "minmax(0, 1fr) 0";
+        app.style.setProperty("--titlebar", "0px");
+    }
+    const label = focused ? "Quitter le plein écran du chat" : "Agrandir le chat";
+    button.setAttribute("aria-pressed",String(focused));button.setAttribute("aria-label",label);button.title=label;
+    button.textContent=focused?"⤡":"⤢";
+    if (!focused) {
+        const columns = app.dataset.focusGridColumns || "";
+        const rows = app.dataset.focusGridRows || "";
+        const left = app.dataset.focusLeft || "", right = app.dataset.focusRight || "", rail = app.dataset.focusRail || "";
+        delete app.dataset.focusGridColumns; delete app.dataset.focusGridRows;
+        delete app.dataset.focusLeft; delete app.dataset.focusRight; delete app.dataset.focusRail;
+        if (app.dataset.focusTitlebar) app.style.setProperty("--titlebar", app.dataset.focusTitlebar);
+        else app.style.removeProperty("--titlebar");
+        delete app.dataset.focusTitlebar;
+        if (left) app.style.setProperty("--left", left); else app.style.removeProperty("--left");
+        if (right) app.style.setProperty("--right", right); else app.style.removeProperty("--right");
+        if (rail) app.style.setProperty("--rail", rail); else app.style.removeProperty("--rail");
+        app.style.gridTemplateColumns = columns; app.style.gridTemplateRows = rows;
+    }
 }
 $("agent-focus").onclick = () => setAgentFocus(!$("app").classList.contains("focus-agent"));
 setAgentFocus(false);
