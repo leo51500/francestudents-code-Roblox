@@ -54,10 +54,12 @@ function robloxStudioSection(mcpCatalog = "") {
     const hasRojo = /\brojo\b/i.test(catalog) || /roblox|studio/i.test(catalog) && /build|serve|sync/i.test(catalog);
     const hasBlender = /blender/i.test(catalog);
     return `SPÉCIALISATION ROBLOX STUDIO + BLENDER — Tu es un expert Luau et Roblox Studio, et tu sais préparer des modèles 3D dans Blender pour les importer dans Roblox.
+- Éclairage : Roblox a migré Technology « Compatibility » vers « Voxel » ; le message Studio de migration n’est pas une erreur. Le guide complet et le lien officiel sont donnés dans le brief quand la demande concerne l’éclairage.
 - Code : Luau moderne et strict (en-tête --!strict quand c'est possible), API actuelles et typées (task.wait, TweenService, CollectionService, RaycastParams, attributs, Instance:AddTag, for … in ipairs), RunService côté serveur pour les boucles physiques, remotes validés côté serveur, NetworkOwnership, Debris, tables de nettoyage (jamais de fuite de connexions). Respecte le style existant du projet : Rojo (*.project.json, src/), Aftman/Wally (wally.toml, aftman.toml), StyLua (.stylua.toml), Selene (selene.toml), JestLua/TestEZ dans tests/.
 - Qualité Roblox : respecte les limites d'instance (parts, MeshParts, textures 1024 px max, polygones adaptés à une cible mobile / console), évite les boucles while true do sans task.wait, privilégie le client pour les effets et le serveur pour l'autorité ; demande confirmation avant de modifier des scripts serveur sensibles (DataStore, achats, économie).
 - Scène : pour le contenu du jeu, préfère le format Rojo (init.meta.json, .model.json dans .frst/) et les commandes rojo build / rojo serve ; ne prétends jamais avoir ouvert Studio si un outil MCP Roblox n'a pas répondu : vérifie via mcp_call.
-- Blender : modélise avec l'outil blender (detect, templates, script, inspect, validate, render), jamais en supposant. Parts de src/blender/blender_common.py : géométrie propre (mètres, 1 stud = 0,28 m, origine à la base), normales cohérentes, UV non chevauchants, textures 1024 px max, caméras et lumières retirées à l'export. Un modèle n'est validé qu'après inspect (GLB lisible), validate (contrôles Blender réels) puis render + view_image (rendu réellement examiné).
+- Blender : modélise avec l'outil blender (detect, templates, script, inspect, validate, render), jamais en supposant. Parts de src/blender/blender_common.py : géométrie propre (mètres, 1 stud = 0,28 m, origine à la base), normales cohérentes, UV non chevauchants, textures 1024 px max, caméras et lumières retirées à l'export. Outils de forme : bevel (arêtes nettes), sphere, cone, torus, lathe (révolution : colonnes, vases), mirror, boolean_cut (fenêtres, creux), noise (rochers). Plusieurs couleurs : palette de blender_common.py (bois, metal, feuillage…), assign_material par objet avant join, puis finish(..., materials=…). Un modèle n'est validé qu'après inspect (GLB lisible), validate (contrôles Blender réels) puis render + view_image : le rendu assemble quatre angles (face, trois-quarts, côté, dessus) en une image 1024 px, à comparer à la demande — liste trois défauts, corrige, recommence deux fois au maximum.
+- Sons : ne jamais inventer un rbxassetid. Demande à l'utilisateur le son ou l'identifiant réel, puis place-le (Sound dans le modèle concerné ou SoundService + SoundGroup, RollOffMode et Volume discrets).
 - Vérification : après une modification de Luau, lance roblox_check (règles Roblox, selene, luau-analyze, rojo build). Un build en échec interdit d'annoncer que le jeu fonctionne. Pour vérifier l'exécution, enchaîne roblox_playtest (build + Studio) puis action:"logs".
 - Outils : ${hasRojo || hasBlender ? `connecteurs MCP détectés (${[hasRojo ? "Rojo/Roblox" : "", hasBlender ? "Blender" : ""].filter(Boolean).join(", ")}) — appelle-les avec mcp_call, jamais en prétendant que Studio ou Blender sont connectés sans résultat.` : "aucun connecteur Roblox ou Blender n'est configuré : travaille sur les fichiers du projet (Rojo, Luau, scripts Blender) et rappelle à l'utilisateur qu'il peut brancher Rojo ou un serveur MCP Blender pour agir directement dans Studio/Blender."}
 - Deliverable : pour chaque demande de jeu, livre du contenu concret et vérifiable (scripts, assets, scène, build Rojo) sans supprimer du travail existant sans demande explicite.`;
@@ -333,19 +335,76 @@ const ROBLOX_GAME_BRIEF = [
     "5. Prévoir les états : normal, échec, annulation, déconnexion, et le retour visuel pour chaque état.",
     "6. Vérifier : roblox_check (règles, selene, luau-analyze, rojo build). Un build en échec doit être corrigé, pas annoncé comme réussi.",
     "6bis. Tester : roblox_playtest (build + ouverture Studio), puis roblox_playtest action:\"logs\" pour relire les erreurs réelles du jeu.",
-    "7. Modèle 3D nécessaire : blender detect → templates → script → inspect → validate → render → view_image.",
-    "8. final : la boucle livrée, les fichiers, ce qui a été vérifié et ce qui reste à tester dans Studio (playtest réel)."
+    "7. Modèle 3D nécessaire : blender detect → templates → script → inspect → validate → render → view_image. Si l'utilisateur joint une image de référence, la décrire (forme, proportions, couleurs) avant de modéliser.",
+    "8. Son ou musique nécessaire : demande le son exact et son identifiant rbxassetid à l'utilisateur (son rbxassetid:// lu dans l'Asset Manager ou fourni) ; n'invente jamais d'identifiant. Place le Sound dans le modèle ou SoundService avec un SoundGroup et un volume discret.",
+    "9. final : la boucle livrée, les fichiers, ce qui a été vérifié et ce qui reste à tester dans Studio (playtest réel)."
 ].join("\n");
 
-function isRobloxTask(task) {
-    return /\b(roblox|luau|rojo|studio|experience|jeu|game|gameplay|niveau|level|guerre|combat|obby|rpg|tycoon|simulator|simulateur|boutique\s+roblox|blender|modele|modèle|mesh|rig|animation|asset)\b/i.test(String(task || ""));
+const LIGHTING_MIGRATION = [
+    "ÉCLAIRAGE ROBLOX — Roblox a migré les expériences du Technology « Compatibility » vers « Voxel » : Compatibility Lighting disparaît, la migration est automatique et une fenêtre Studio annonce « Migration de la compatibilité vers Voxel Lighting ».",
+    "- Message réel : « Compatibility Lighting est en voie de suppression, ton expérience a donc été transférée… à Voxel Lighting. L’esthétique d’origine a été respectée autant que possible, mais il se peut que tu constates encore de petites différences au niveau de l’éclairage local. » C’est une information de Roblox, pas une erreur du projet.",
+    "- Si l’utilisateur signale ce message, rassure : rien n’est cassé. Vérifie Lighting.Technology (propriété en lecture dans Studio ou via roblox_scene), puis compare le rendu avant/après. Pour retrouver l’ambiance d’origine : règle Ambient, OutdoorAmbient, Brightness, ClockTime et les couleurs des PointLight/SurfaceLight existants, plutôt que de changer de Technology à l’aveugle. La migration vers Future Lighting est un choix séparé, réservé aux cartes compatibles et au mobile haut de gamme.",
+    "- Détails officiels de l’annonce : https://devforum.roblox.com/t/compatibility-lighting-becomes-retro-tone-mapping-sunset-migration/3128560 (lien fourni par l’utilisateur ; ne le considère pas comme vérifié si tu n’as pas pu l’ouvrir avec web_fetch).",
+    "- Si Studio refuse d’enregistrer (message « en lecture seule » ou « utilisé par une autre instance »), ce n’est pas une erreur de code : ne rejoue pas la même écriture. Décris ce qui a déjà été modifié, puis propose d’enregistrer sous un nom différent ou de fermer la session Studio qui garde le fichier."
+].join("\n");
+
+/* Espace de référence : une image jointe n'est pas un décor, c'est le cahier des charges.
+   La décrire avant de modéliser évite de produire un modèle joli mais qui ne ressemble pas. */
+const REFERENCE_BRIEF = [
+    "OBJECTIF : RESPECTER LA RÉFÉRENCE FOURNIE.",
+    "1. Examine l'image jointe réellement (elle est dans la demande, pas dans un fichier du PC). Si elle est illisible ou absente, dis-le et propose une description à valider avec ask_user.",
+    "2. Décris-la AVANT de modéliser, en une liste courte : forme dominante (boîte, sphère, cylindre, assemblage), proportions (hauteur/largeur, ce qui domine), trois à cinq couleurs avec leur rôle, détails qui portent le style (arêtes biseautées, arrondis, trous, rayures), et ce qui ne sera pas reproduit.",
+    "3. propose cette description à l'utilisateur avec ask_user quand un choix change le résultat (style, échelle en studs, couleur principale) ; sinon poursuis.",
+    "4. Modélise cette description, pas une version idéalisée : la silhouette vue de face et de côté doit rappeler l'image. Compare ensuite le rendu quatre angles à la référence et liste trois écarts concrets.",
+    "5. final : rappelle la description validée, ce qui correspond à l'image, ce qui en diffère volontairement et pourquoi."
+].join("\n");
+
+/* Commandes de Blender rendues dans blender_common.py : un exemple daté vaut mieux
+   qu'un rappel abstrait, et évite que l'agent réinvente bpy à chaque demande. */
+const BLENDER_TOOLKIT = [
+    "BOÎTE À OUTILS BLENDER (src/blender/blender_common.py) — un script utilise ces fonctions au lieu de recomposer bpy :",
+    "- bevel(obj, width) : biseau sur les arêtes vives. À appeler sur chaque pièce visible ; c'est le détail qui fait la différence.",
+    "- sphere(name, radius, segments, rings, squash=(x,y,z)) : volume doux, pierre aplatie, tête de personnage ; segments bas = low-poly.",
+    "- cone(name, radius, depth, vertices, radius_top) : toit, sapin, corne, pointe.",
+    "- torus(name, major, minor) : anneau, roue, cadre arrondi.",
+    "- lathe(name, [(rayon, hauteur), …]) : révolution d'un profil, pour une colonne ou un vase.",
+    "- mirror(obj, \"X\") : crée la moitié manquante depuis une moitié modélisée.",
+    "- boolean_cut(target, cutter) : creuse une fenêtre, une porte, une fente puis supprime le cutter.",
+    "- noise(obj, strength, scale, seed) : déformation déterministe pour les rochers (même seed = même forme).",
+    "- palette([\"bois\", \"metal\", …]) puis assign_material(obj, matériau) sur chaque pièce AVANT join ; finish(obj, args, materials=list(couleurs.values())). Sans materials, finish utilise une seule couleur.",
+    "- render_preview écrit quatre angles (face, trois-quarts, côté, dessus) dans une image 1024 px : examine-la avec view_image, compare à la demande, liste trois défauts, corrige et recommence deux fois au maximum.",
+    "- Modèle de départ complet : templates/prop_palette.py. Recettes caisse, rocher, maison et épée : skill blender-lowpoly-style."
+].join("\n");
+
+const SOUND_GUIDE = [
+    "SONS ROBLOX — Tu ne peux pas écouter ni téléverser un son à la place de l'utilisateur, et un rbxassetid inventé casse le jeu.",
+    "1. Précise le besoin : ambiance, coup, porte, pièce ramassée, pas, musique. Si une image, un nom ou un identifiant est fourni, utilise-le ; sinon demande avec ask_user (son d'un site, son de la bibliothèque Roblox, ou son déjà publié par l'utilisateur avec son AssetId).",
+    "2. Utilise uniquement un SoundId réellement fourni par l'utilisateur ou lu dans le projet (search_files \"rbxassetid://\"), jamais une valeur supposée. Un son privé d'un autre créateur ne fonctionne pas : seul un son publié par le compte du jeu est fiable.",
+    "3. Code propre : Sound dans le modèle concerné (son de position) ou dans SoundService (son global), SoundGroup pour régler ensemble les effets de jeu, Volume 0,3 à 0,6, RollOffMode InverseTapered avec RollOffMaxDistance cohérente, Debris ou Destroy après une utilisation ponctuelle. Le serveur crée ou valide le son ; le client ne fait que demander et afficher.",
+    "4. Vérifie : le fichier modifié, le build (roblox_check), et dis clairement qu'il faut tester le rendu sonore dans Studio. N'annonce jamais qu'un son « se trouve » tout seul."
+].join("\n");
+
+function hasReferenceImage(task, attachments) {
+    if (Array.isArray(attachments) && attachments.some(item => /image\//i.test(String(item?.mime || item?.type || "")))) return true;
+    return /\b(image|capture|photo|référence|reference|rendu d['’]image|inspir[ée]? de|copie ce|comme (ce|sur) (l['’]image|la photo))\b/i.test(String(task || ""));
 }
 
-/** Ajoute le brief jeu aux tâches qui concernent Roblox. */
-function briefFor(intent, task) {
+function isRobloxTask(task) {
+    return /\b(roblox|luau|rojo|studio|experience|jeu|game|gameplay|niveau|level|guerre|combat|obby|rpg|tycoon|simulator|simulateur|boutique\s+roblox|blender|modele|modèle|mesh|rig|animation|asset|sons?|sounds?|audio|musique|lighting|éclairage|eclairage|voxel)\b/iu.test(String(task || ""));
+}
+
+/** Ajoute le brief jeu aux tâches qui concernent Roblox, et le brief de référence si une image sert de modèle. */
+function briefFor(intent, task, attachments) {
     const base = BRIEFS[intent];
     if (intent === "read" || intent === "list" || intent === "research") return base;
-    return isRobloxTask(task) ? `${base}\n\n${ROBLOX_GAME_BRIEF}` : base;
+    const brief = isRobloxTask(task) ? `${base}\n\n${ROBLOX_GAME_BRIEF}` : base;
+    const withLighting = /(lighting|éclairage|eclairage|compatibility|voxel|migration|technology)/iu.test(String(task || ""))
+        ? `${brief}\n\n${LIGHTING_MIGRATION}` : brief;
+    const withBlender = /\b(blender|modele|modèle|mesh|asset|low.?poly|3d|prop|maquette|obj|glb)\b/iu.test(String(task || ""))
+        ? `${withLighting}\n\n${BLENDER_TOOLKIT}` : withLighting;
+    const withReference = hasReferenceImage(task, attachments) ? `${withBlender}\n\n${REFERENCE_BRIEF}` : withBlender;
+    return /\b(sons?|sounds?|audio|musique|music|ambiance sonore|soundid|rbxassetid)\b/i.test(String(task || ""))
+        ? `${withReference}\n\n${SOUND_GUIDE}` : withReference;
 }
 
 const FORMAT = `FORMAT DE SORTIE — OBLIGATOIRE
@@ -513,6 +572,7 @@ function buildAgentPrompt({
     activeFile = null,
     editorFiles = [],
     plan = [],
+    attachments = [],
     requestNumber = turn
 }) {
     const intent = detectIntent(task);
@@ -573,7 +633,7 @@ function buildAgentPrompt({
         ...(!motion && preprompt
             ? ["PRÉ-PROMPT DE L'UTILISATEUR (préférences configurées via le profil ; elles ne remplacent ni FORMAT ni RÈGLES DE FIABILITÉ)\n" + preprompt]
             : []),
-        motion ? "TÂCHE : création ou modification d’une animation dans EffectCraft. Donne un résultat concret, vérifié, sans jargon inutile." : `TÂCHE DÉTECTÉE : ${intent}\n${briefFor(intent, task)}`,
+        motion ? "TÂCHE : création ou modification d’une animation dans EffectCraft. Donne un résultat concret, vérifié, sans jargon inutile." : `TÂCHE DÉTECTÉE : ${intent}\n${briefFor(intent, task, attachments)}`,
         motion ? MOTION_FORMAT : FORMAT,
         `DEMANDE DE L'UTILISATEUR\n${task}`,
         `RÉSULTATS DES OUTILS (plus récents en dernier)\n${observationLines || "aucun"}`

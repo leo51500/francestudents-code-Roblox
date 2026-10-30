@@ -96,11 +96,20 @@ function inspectGlb(file) {
     try {
         json = JSON.parse(buffer.subarray(20, 20 + Math.min(chunkLength, MAX_GLB_JSON)).toString("utf8").replace(/\u0000+$/g, "").trim());
     } catch (error) {
-        return { valid: false, error: `JSON de scène illisible : ${error.message}` };
+        // Une fenêtre de lecture limitée peut couper le JSON : on retente sur le chunk entier.
+        try {
+            json = JSON.parse(buffer.subarray(20, 20 + Math.min(chunkLength, buffer.length - 20)).toString("utf8").replace(/\u0000+$/g, "").trim());
+        } catch {
+            return { valid: false, error: `JSON de scène illisible : ${error.message}` };
+        }
     }
 
     const accessors = Array.isArray(json.accessors) ? json.accessors : [];
     const meshes = Array.isArray(json.meshes) ? json.meshes : [];
+    // Collections glTF lues une fois : servent à la fois aux problèmes et au rapport.
+    const images = Array.isArray(json.images) ? json.images : [];
+    const textures = Array.isArray(json.textures) ? json.textures : [];
+    const materials = Array.isArray(json.materials) ? json.materials : [];
     let primitives = 0;
     let triangles = 0;
     let unindexedPoints = 0;
@@ -124,9 +133,17 @@ function inspectGlb(file) {
         problems.push("Lumières exportées : inutiles dans Roblox, à retirer.");
     }
 
-    const images = Array.isArray(json.images) ? json.images : [];
-    const textures = Array.isArray(json.textures) ? json.textures : [];
     if (textures.length > 4) problems.push(`${textures.length} textures : Roblox préfère peu de matériaux par modèle.`);
+    if (materials.length > 5) problems.push(`${materials.length} matériaux : limite-toi à 5 couleurs (Roblox crée un sous-mesh par matériau).`);
+    // L'importeur 3D de Roblox (Avatar → Import 3D) crée un MeshPart par surface :
+    // plusieurs matériaux sans texture deviennent des couleurs distinctes du même mesh.
+    // Avec texture, la couleur de base est remplacée par la texture dans Studio :
+    // on le signale pour que l'agent ne promette pas des couleurs préservées.
+    // Une texture déclarée mais sans image n'a aucun contenu : ce n'est pas une vraie texture.
+    const realTextures = images.length ? textures.length : 0;
+    if (materials.length > 1 && realTextures > 0) {
+        problems.push("Plusieurs matériaux avec textures : l'importeur 3D de Roblox peut remplacer les couleurs de base par la texture. Pour garder la palette, exporte des couleurs sans texture, ou une seule texture cuite.");
+    }
 
     // Taille en studs : glTF est en mètres, 1 stud = 0,28 m. Lue dans min/max de POSITION.
     let sizeStuds = null;
@@ -159,7 +176,11 @@ function inspectGlb(file) {
         primitives,
         triangles,
         unindexedPoints,
-        materials: Array.isArray(json.materials) ? json.materials.length : 0,
+        materials: materials.length,
+        multiMaterial: materials.length > 1 && realTextures === 0,
+        materialNames: materials.map(material => material?.name).filter(Boolean).slice(0, 12),
+        multi_material: materials.length > 1 && realTextures === 0,
+        material_names: materials.map(material => material?.name).filter(Boolean).slice(0, 12),
         textures: textures.length,
         images: images.length,
         animated: Array.isArray(json.animations) && json.animations.length > 0,
@@ -181,6 +202,7 @@ function describeGlb(report) {
     ];
     if (report.animated) parts.push("animations incluses");
     if (report.size_studs) parts.push(`${report.size_studs.x}×${report.size_studs.y}×${report.size_studs.z} studs`);
+    if (report.multi_material) parts.push(`palette de ${report.materials} couleurs importée comme surfaces du même MeshPart`);
     const problems = report.problems.length ? ` Points à corriger : ${report.problems.join(" ")}` : "";
     return `GLB valide (glTF ${report.version}) : ${parts.join(", ")}.${problems}`;
 }
