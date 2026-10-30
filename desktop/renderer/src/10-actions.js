@@ -247,6 +247,27 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     let activeDrag = null;
     let activeDragCleanup = null;
 
+    // Sash flottant style VS Code : pendant le glisser la poignée quitte la grille
+    // et suit le curseur via transform, sans attendre le recalcul de la grille CSS.
+    // C'est ce qui donne l'impression que la poignée colle exactement au doigt.
+    let sash = null;
+
+    function showSash(clientX, clientY) {
+        if (axis !== "x") return; // sash vertical seulement pour l'instant
+        if (!sash) {
+            sash = document.createElement("div");
+            sash.className = "resizer-sash-overlay";
+            document.body.appendChild(sash);
+        }
+        sash.style.transform = `translateX(${Math.round(clientX)}px)`;
+        sash.style.height = `${window.innerHeight}px`;
+        sash.classList.add("active");
+    }
+
+    function hideSash() {
+        if (sash) sash.classList.remove("active");
+    }
+
     // Double-clic : largeur par défaut de la colonne, tout de suite visible.
     handle.addEventListener("dblclick", (ev) => {
         ev.preventDefault();
@@ -268,30 +289,22 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         } catch {
             // capture indisponible
         }
-        // Le suivi démarre dès l'appui, y compris pour un glisser très court.
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
         document.documentElement.classList.add("layout-dragging");
         const start = axis === "x" ? ev.clientX : ev.clientY;
         activeDrag = { pointerId: ev.pointerId, start, last: start, finished: false };
         const initial = layoutPx(cssVar);
         const min = LAYOUT_LIMITS[cssVar].min;
-        let frame = 0;
-        // Un appui direct jusqu'au bord peut ne produire aucune pose intermédiaire : la
-        // bulle montre tout de suite la taille tenue.
+        // Afficher le sash flottant dès l'appui, à la position exacte du curseur.
+        if (axis === "x") showSash(ev.clientX, ev.clientY);
         showLayoutBadge({ label: describe(), clientX: ev.clientX, clientY: ev.clientY }, true);
-        const apply = (animate) => {
-            frame = 0;
+        const apply = () => {
             const drag = activeDrag;
             if (!drag) return;
             const delta = drag.last - drag.start;
             const nextLimit = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
             const value = Math.round(Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta))));
-            // La classe layout-dragging neutralise la transition pendant toute la prise :
-            // la taille réellement rendue suit la position du curseur, sans rattrapage après.
-            if (animate && value === layoutPx(cssVar)) animate = false;
-            if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
-            // La bulle affiche la taille de la valeur visée, disponible dès la frame suivante.
             showLayoutBadge({ label: `${label} · ${value} px`, clientX: Math.round(pointer.x), clientY: Math.round(pointer.y) });
         };
         const pointer = { x: ev.clientX, y: ev.clientY };
@@ -302,19 +315,16 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             activeDrag.last = axis === "x" ? e.clientX : e.clientY;
             pointer.x = e.clientX;
             pointer.y = e.clientY;
-            // Prise exclusive sur le séparateur : les événements capturés sont cohérents
-            // avec le déplacement, et la grille est recalculée avant l’image suivante.
-            if (frame) cancelAnimationFrame(frame);
-            frame = 0;
-            apply(false);
+            // Sash flottant : il suit le curseur immédiatement, sans attendre la grille.
+            if (axis === "x") showSash(e.clientX, e.clientY);
+            apply();
         };
         const up = () => {
             const drag = activeDrag;
             if (!drag || drag.finished) return;
             drag.finished = true;
-            if (frame) cancelAnimationFrame(frame);
-            frame = 0;
-            apply(false);
+            apply();
+            hideSash();
             // La valeur finale reste visible un court instant après le relâchement.
             showLayoutBadge({ label: describe(), clientX: pointer.x, clientY: pointer.y }, true);
             layoutBadgeTimer = setTimeout(hideLayoutBadge, 900);
@@ -323,15 +333,9 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             document.body.classList.remove("resizing-x", "resizing-y");
             document.documentElement.classList.remove("layout-dragging");
             delete layoutPreferred[cssVar];
-            // --bottom reste une variable de hauteur (le panneau la lit) : il ne passe pas
-            // par --left-custom / --right-custom, réservés aux colonnes de la grille.
-            // La classe .layout-custom est posée AVANT de placer la valeur : les règles de
-            // taille de fenêtre ne peuvent plus écraser la largeur choisie.
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
             $("app").classList.add("layout-custom");
             syncLayoutCustom();
-            // Réévalue la place disponible après le geste (largeur enregistrée, classes de
-            // disposition) sans attendre le prochain redimensionnement de la fenêtre.
             if (layoutFrame) cancelAnimationFrame(layoutFrame);
             layoutFrame = requestAnimationFrame(() => {
                 layoutFrame = 0;
@@ -375,10 +379,9 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         const keys = axis === "x" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
         if (!keys.includes(ev.key)) return;
         ev.preventDefault();
-        // Flèche vers le bord de la fenêtre = agrandir cette zone.
         const grow = axis === "x" ? ev.key === "ArrowRight" : ev.key === "ArrowDown";
         const step = (ev.shiftKey ? 40 : 8) * (grow === !invert ? 1 : -1) * (invert ? -1 : 1);
-        const next = Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutPx(cssVar) + step));
+        const next = Math.round(Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutPx(cssVar) + step)));
         document.documentElement.style.setProperty(cssVar, `${next}px`);
         delete layoutPreferred[cssVar];
         if (cssVar !== "--bottom") publishCustomWidth(cssVar);

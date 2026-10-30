@@ -1,6 +1,10 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.34":{headline:"Le séparateur suit le curseur au pixel, et le chat passe en plein écran au clavier.",items:[
+        {icon:"tools",title:"Poignée flottante",text:"Pendant le glisser, un sash détaché style VS Code suit le curseur immédiatement, sans attendre le recalcul de la grille. La ligne d'accent reste visible au survol et au focus clavier."},
+        {icon:"spark",title:"Ctrl+Maj+M",text:"Nouveau raccourci : bascule le plein écran du chat comme le bouton ⤢. Échap revient à la disposition d'avant."}
+    ]},
     "1.5.33":{headline:"Glisser plus précis et liste de projets plus tolérante.",items:[
         {icon:"tools",title:"Tailles arrondies au pixel",text:"Le redimensionnement applique et affiche des valeurs entières : la bulle (« Chat · 420 px ») ne montre plus de décimales et le panneau ne garde aucune largeur impaire."},
         {icon:"chat",title:"Projets encore utilisables",text:"Si l'actualisation échoue, les projets déjà chargés restent sélectionnables et le message en cas de session expirée est plus simple."}
