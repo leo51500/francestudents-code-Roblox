@@ -99,6 +99,8 @@ contextBridge.exposeInMainWorld("frst", {
     extensionAction: (action, payload) => call("extensionAction", String(action || "list"), payload || {}),
     mcpManage: (action, payload) => call("mcpManage", String(action || ""), payload || {}),
     preferences: (action, payload) => call("preferences", String(action || "get"), payload || {}),
+    // Projets FranceStudent : "list" (projets du compte + projet actif) ou "select" {id}.
+    frProjects: (action, payload) => call("frProjects", String(action || "list"), payload || {}),
     customProviders: (action, payload) => call("customProviders", String(action || "list"), payload || {}),
     marketplace: (action, payload) => call("marketplace", String(action || "search"), payload || {}),
     marketplaceKey: (action, key) => call("marketplaceKey", String(action || "status"), String(key || "")),

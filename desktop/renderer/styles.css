@@ -110,13 +110,16 @@ kbd {
     /* Le thème fixe 24 px (--titlebar, 1fr, 24 px) : une valeur plus basse ici couperait
        la dernière ligne de la barre d'état. */
     grid-template-rows: 1fr 24px;
-    height: 100vh;
+    /* La grille couvre l'écran sous la barre de titre native (titleBarOverlay). Avec
+       height: 100vh elle démarrait à 0 et la première ligne passait sous la barre :
+       en-tête du chat et poignées étaient coupés. */
+    height: calc(100vh - var(--titlebar, 34px));
     overflow: hidden;
 }
 
 /* Barre latérale gauche : onglets Roblox Studio / Blender lisibles, sans le chrome d'éditeur générique */
 #sidebar-tabs {
-    grid-row: 2;
+    grid-row: 1;
     grid-column: 1;
     background: var(--bg-activity);
     display: flex;

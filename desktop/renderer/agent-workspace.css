@@ -1,5 +1,8 @@
 /* Agent workspace: reuse the existing Dark Modern theme and its tokens. */
-.agent-navigation { display: flex; align-items: center; justify-content: space-between; padding: 5px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.agent-navigation { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+/* En petite fenêtre, le sélecteur de projet passe à la ligne plutôt que d'écraser les
+   onglets ou de sortir de la colonne (aucun élément ne se chevauche). */
+@media (max-width: 1100px) { .agent-navigation .agent-fr-project { order: 3; flex-basis: 100%; } }
 .agent-tabs { display: flex; align-items: center; gap: 6px; }
 .agent-tabs button { color: var(--fg-dim); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 7px 11px; min-height: 32px; font-size: 11px; line-height: 16px; position: relative; cursor: pointer; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
 .agent-tabs button:hover { color: var(--fg-strong); background: var(--bg-hover); }
@@ -11,6 +14,19 @@
 #agent-project-name { text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
 #agent-access { font-size: 10px; border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; background: transparent; color: var(--fg-dim); white-space: nowrap; }
 #agent-access.full-access { color: var(--link); border-color: var(--accent); background: var(--accent-soft); }
+
+/* Projet FranceStudent des nouvelles discussions : visible en haut du chat, sans
+   pousser la navigation ni serrer les onglets sur une petite fenêtre. */
+.agent-fr-project { display: flex; align-items: center; gap: 5px; flex: 1 1 150px; min-width: 120px; font-size: 10px; color: var(--fg-dim); }
+.agent-fr-project label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#fr-project-select { flex: 1 1 90px; min-width: 0; max-width: 100%; height: 24px; padding: 0 4px; background: var(--bg-input); color: var(--fg); border: 1px solid var(--border-strong); border-radius: 6px; font: inherit; font-size: 11px; text-overflow: ellipsis; }
+#fr-project-select:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.agent-fr-project button { width: 24px; height: 24px; flex: 0 0 24px; display: inline-grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--fg-dim); cursor: pointer; }
+.agent-fr-project button:hover { background: var(--bg-hover, rgba(255,255,255,.06)); color: var(--fg-strong); }
+.agent-fr-project .i { width: 14px; height: 14px; }
+.fr-project-state { display: block; padding: 0 12px 6px; font-size: 10px; color: var(--fg-faint); overflow-wrap: anywhere; flex-shrink: 0; }
+.fr-project-state:empty { display: none; }
+.fr-project-state.error { color: var(--error, #ff7b72); }
 .agent-starter { padding: 26px 18px; flex: 1; overflow: auto; min-height: 100px; box-sizing: border-box; }
 .starter-eyebrow { font-size: 9px; letter-spacing: .08em; color: var(--fg-dim); font-weight: 600; }
 .agent-starter h2 { color: var(--fg-strong); font-size: 16px; font-weight: 600; margin: 8px 0; }
@@ -214,6 +230,8 @@
 #app.chat-only #agent { grid-row: 1 / -1; }
 
 .agent-navigation-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; }
+/* Les onglets gardent leur place quand le sélecteur de projet est présent. */
+.agent-navigation .agent-tabs { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .agent-navigation-actions button { width: 26px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--fg-dim); cursor: pointer; }
 .agent-navigation-actions button:hover { background: var(--hover, rgba(255,255,255,.06)); color: var(--fg-strong); }
 .agent-navigation-actions button.active { background: var(--accent-soft); color: var(--fg-strong); }

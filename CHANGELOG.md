@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.29] — La taille du chat marche partout, et vos projets FranceStudent se choisissent dans le chat
+- **Redimensionnement réparé sous 1100 px** : la classe `.layout-custom` n'était appliquée qu'au-dessus de 1001 px, et elle était retirée juste après chaque glisser (`syncLayoutCustom` ignorait `--left-custom` / `--right-custom`). La largeur choisie est conservée à toutes les tailles, dès l'appui sur la poignée. La hauteur du panneau du bas suit les mêmes règles.
+- **Chevauchements corrigés** : le menu « Outils du chat » (popover) restait positionné au centre de la fenêtre, donc au milieu de la conversation ; il est désormais ancré à son bouton et masqué tant qu'il n'est pas ouvert. La grille réservait deux fois la hauteur de la barre de titre, ce qui coupait le haut du panneau : corrigé.
+- **Projets FranceStudent dans le chat** : nouveau sélecteur « Discussions dans » en haut du panneau. Il liste les projets du compte (aucun n'est créé), indique le projet actif, actualise la liste (↻) et ouvre le site (↗). Chaque nouvelle discussion y est rattachée ; « Aucun projet » la laisse dans l'historique général.
+- **Aucun projet fantôme** : un projet supprimé sur le site est retiré du sélecteur et du rattachement au démarrage.
+- Vérifié : `npm run lint`, `npm run check:renderer`, `npm test` (886 tests, 883 réussis, 3 ignorés), et contrôles Electron réels (projets affichés, poignée fonctionnelle à 1000 px et 900 px, bulle de taille).
+
 ## [1.5.28] — Les discussions rejoignent le projet FranceStudent, et fin des chats en série
 - **Projets FranceStudent dans l’application** : `/fr-project` sans argument liste les projets réels du compte (aucun n’est créé au passage) et indique le projet actif. Le nom choisi est recherché parmi eux ; `/fr-project "Nom" --creer` est la seule façon d’en créer un.
 - **Fin des chats « Tour 28/40 », « Tour 29/40 »…** : un second 409 (fil occupé) ne reconstruit plus un nouveau fil à chaque tentative. L’application revient au fil d’origine, retente une seule fois après une courte attente, puis s’arrête en gardant le travail déjà fait. Un seul nouveau fil au maximum par demande.

@@ -3188,7 +3188,13 @@ function publishCustomWidth(cssVar) {
 }
 
 function syncLayoutCustom() {
-    $("app").classList.toggle("layout-custom", ["--left", "--right", "--bottom"].some(v => document.documentElement.style.getPropertyValue(v).trim()));
+    // Les largeurs choisies vivent dans --left-custom / --right-custom (voir
+    // publishCustomWidth) : les ignorer ici retirait .layout-custom juste après un
+    // glisser, et la règle de taille de fenêtre réécrivait la colonne (« ça ne marche pas »).
+    const custom = ["--left", "--right", "--bottom"].some(v =>
+        document.documentElement.style.getPropertyValue(v).trim() ||
+        document.documentElement.style.getPropertyValue(`${v}-custom`).trim());
+    $("app").classList.toggle("layout-custom", custom);
 }
 
 let layoutFrame = 0;
@@ -3330,7 +3336,10 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             delete layoutPreferred[cssVar];
             // --bottom reste une variable de hauteur (le panneau la lit) : il ne passe pas
             // par --left-custom / --right-custom, réservés aux colonnes de la grille.
+            // La classe .layout-custom est posée AVANT de placer la valeur : les règles de
+            // taille de fenêtre ne peuvent plus écraser la largeur choisie.
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
+            $("app").classList.add("layout-custom");
             syncLayoutCustom();
             // Réévalue la place disponible après le geste (largeur enregistrée, classes de
             // disposition) sans attendre le prochain redimensionnement de la fenêtre.
@@ -5131,12 +5140,15 @@ function saveLayout() {
 try {
     const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "{}");
     for (const v of LAYOUT_VARS) {
-        if (/^[0-9]+px$/.test(saved[v] || "")) document.documentElement.style.setProperty(v, saved[v]);
+        // Reprise telle quelle de la largeur enregistrée : elle redevient une largeur
+        // choisie au démarrage, sinon la règle de taille de fenêtre l'écrasait.
+        if (/^[0-9]+px$/.test(saved[v] || "")) document.documentElement.style.setProperty(v === "--bottom" ? v : `${v}-custom`, saved[v]);
     }
     // Le panneau du bas et la colonne des fichiers se rouvrent comme ils étaient fermés ;
     // le chat n'est pas mémorisé masqué (il porte la conversation et le mode compact).
     if (saved.noPanel) $("app").classList.add("no-panel");
     if (saved.noSidebar && !window.matchMedia("(max-width: 900px)").matches) $("app").classList.add("no-sidebar");
+    if (typeof syncLayoutCustom === "function") syncLayoutCustom();
 } catch {
     // disposition par défaut
 }
@@ -6380,6 +6392,9 @@ let studioTab = "conversation";
 let studioActivitySeq = 0;
 let favoritePrompts = readStudioStorage("frst.prompt-favorites", []);
 if (!Array.isArray(favoritePrompts)) favoritePrompts = [];
+// "Outils du chat" est un menu : fermé au lancement, sinon il recouvre la conversation
+// et masque l'en-tête (onglets, projet des discussions) tant qu'on ne l'a pas fermé.
+document.getElementById("agent-favorites")?.classList.add("hidden");
 const starterFavorites = [
     { title: "Revue des changements", prompt: "Inspecte le diff Git local et recherche les bugs et régressions. Donne les fichiers et lignes concernés, le niveau de gravité et les vérifications utiles, sans modifier le code." },
     { title: "Corriger un bug", prompt: "Reproduis le problème suivant, identifie sa cause, corrige-le puis vérifie la correction : " },
@@ -6414,6 +6429,8 @@ function setAgentTab(tab) {
 function updateStudioStatus(status) {
     const workspace = status.workspace || null;
     updateAgentProjectLabel(workspace);
+    // Projet FranceStudent : chaque nouvelle discussion part dans le projet choisi.
+    if (typeof syncFrProject === "function") syncFrProject(status.frProject || null);
     $("agent-access").textContent = status.fullAccess ? "Full accès" : status.autoApprove && status.autoApproveCommands ? "Automatique" : "Sur approbation";
     $("agent-access").classList.toggle("full-access", Boolean(status.fullAccess));
     if (studioWorkspace !== workspace) {
@@ -6569,6 +6586,93 @@ for (const button of document.querySelectorAll("[data-agent-tab]")) {
 }
 for (const button of document.querySelectorAll("[data-starter]")) button.onclick = () => { input.value = button.dataset.starter; autosizeInput(); saveStudioDraft(); input.focus(); };
 $("agent-access").onclick = () => showSideView("settings");
+
+/* ---------- Projet FranceStudent des discussions ----------
+ * Chaque nouvelle discussion est rattachée au projet choisi ici (même réglage que
+ * /fr-project dans le CLI). La liste vient du compte : rien n'est inventé ni créé, et
+ * un projet supprimé sur le site disparaît du sélecteur. */
+let frProjectSelected = null;
+
+function renderFrProjects(data, message = "") {
+    const select = $("fr-project-select"), state = $("fr-project-state");
+    if (!select) return;
+    const projects = Array.isArray(data?.projects) ? data.projects : [];
+    frProjectSelected = data?.selected ? { id: String(data.selected.id), name: String(data.selected.name) } : null;
+    select.replaceChildren();
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = projects.length ? "Aucun projet" : "Aucun projet sur le site";
+    select.appendChild(none);
+    for (const project of projects) {
+        const option = document.createElement("option");
+        option.value = String(project.id);
+        option.textContent = String(project.name || project.id);
+        option.title = `Les nouvelles discussions iront dans « ${option.textContent} »`;
+        select.appendChild(option);
+    }
+    select.value = frProjectSelected?.id || "";
+    select.disabled = !projects.length;
+    select.dataset.loaded = "1";
+    if (state) {
+        state.classList.toggle("error", /impossible|erreur|refus/i.test(message));
+        state.textContent = message || (frProjectSelected
+            ? `Les nouvelles discussions sont classées dans « ${frProjectSelected.name} ».`
+            : "Sans projet : les discussions restent dans l’historique général.");
+    }
+    select.title = frProjectSelected
+        ? `Nouvelles discussions dans « ${frProjectSelected.name} »`
+        : "Choisis le projet FranceStudent des nouvelles discussions";
+}
+
+async function refreshFrProjects(message = "") {
+    const select = $("fr-project-select"), state = $("fr-project-state");
+    if (select) select.disabled = true;
+    if (state && !message) state.textContent = "Chargement de vos projets…";
+    try {
+        renderFrProjects(await api.frProjects("list"), message);
+    } catch (error) {
+        if (state) { state.classList.add("error"); state.textContent = `Projets FranceStudent indisponibles : ${error.message}`; }
+        if (select) select.disabled = true;
+    }
+}
+
+function syncFrProject(project) {
+    // Tant que la liste n'est pas chargée, le statut ne dit rien de plus qu'« aucun
+    // projet » : inutile de relancer une requête à chaque poussée de statut.
+    const select = $("fr-project-select");
+    if (!select || !select.dataset.loaded) return;
+    const next = project ? String(project.id) : "";
+    if (select.value !== next) {
+        refreshFrProjects();
+        return;
+    }
+    frProjectSelected = project ? { id: next, name: String(project.name) } : null;
+    if ($("fr-project-state")) {
+        $("fr-project-state").classList.remove("error");
+        $("fr-project-state").textContent = frProjectSelected
+            ? `Les nouvelles discussions sont classées dans « ${frProjectSelected.name} ».`
+            : "Sans projet : les discussions restent dans l’historique général.";
+    }
+}
+
+$("fr-project-select")?.addEventListener("change", async (event) => {
+    const id = event.target.value;
+    const name = event.target.selectedOptions[0]?.textContent || "";
+    try {
+        const data = await api.frProjects("select", { id });
+        renderFrProjects(data, id ? `Les nouvelles discussions iront dans « ${name} ».` : "Nouveau : plus de rattachement à un projet.");
+    } catch (error) {
+        $("fr-project-state").classList.add("error");
+        $("fr-project-state").textContent = `Choix non enregistré : ${error.message}`;
+        refreshFrProjects();
+    }
+});
+
+$("fr-project-refresh")?.addEventListener("click", () => refreshFrProjects());
+$("fr-project-open")?.addEventListener("click", () => {
+    api.openExternal(typeof connectionOrigin === "string" ? `${connectionOrigin.replace(/\/$/, "")}/projects` : "https://ia.francestudent.org/projects").catch((error) => studioFeedback(error.message));
+});
+refreshFrProjects();
 function setAgentFocus(active){
     $("app").classList.toggle("focus-agent",active);
     const button=$("agent-focus"),label=active?"Quitter le plein écran du chat":"Agrandir le chat";
@@ -6618,7 +6722,22 @@ if (api.chatWindow) {
 }
 
 $("activity-refresh").onclick = refreshStudioActivity;
-$("favorite-open").onclick = () => { renderFavoritePrompts(); $("agent-favorites").classList.toggle("hidden"); };
+// « Outils du chat » : le panneau ne s'ouvre qu'au clic explicite (bouton ⋯ ou "…").
+// Il était visible au lancement et recouvrait la conversation, l'en-tête et le sélecteur
+// de projet — d'où les superpositions signalées.
+const favoritesPanel = $("agent-favorites");
+favoritesPanel?.classList.add("hidden");
+function closeFavorites() { favoritesPanel?.classList.add("hidden"); }
+$("favorite-open").addEventListener("click", () => {
+    renderFavoritePrompts();
+    favoritesPanel.classList.toggle("hidden");
+});
+document.addEventListener("pointerdown", (event) => {
+    if (!favoritesPanel || favoritesPanel.classList.contains("hidden")) return;
+    if (favoritesPanel.contains(event.target) || event.target.closest("#favorite-open")) return;
+    closeFavorites();
+}, true);
+window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeFavorites(); }, true);
 $("favorite-close").onclick = () => $("agent-favorites").classList.add("hidden");
 $("draft-save-favorite").onclick = () => {
     const prompt = input.value.trim();
@@ -9177,7 +9296,10 @@ moreChatTools.innerHTML = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"
 $("btn-attach").after(moreChatTools);
 const moreChatMenu = document.createElement("div");
 moreChatMenu.id = "chat-tools-menu"; moreChatMenu.className = "chat-access-menu chat-tools-menu";
-moreChatMenu.setAttribute("popover", "auto"); moreChatMenu.setAttribute("aria-label", "Outils du chat");
+// Popover MANUEL : un popover "auto" s'ouvre seul quand il reçoit le focus au démarrage,
+// et recouvrait alors la conversation, l'en-tête et les poignées. Manuel, il ne s'ouvre
+// que par le bouton « Outils du chat » ; Échap et un clic extérieur le referment.
+moreChatMenu.setAttribute("popover", "manual"); moreChatMenu.setAttribute("aria-label", "Outils du chat");
 moreChatMenu.setAttribute("role", "dialog");
 const moreChatHeading = document.createElement("div"); moreChatHeading.className = "chat-access-heading"; moreChatHeading.textContent = "Outils du chat";
 moreChatMenu.append(moreChatHeading, document.querySelector(".composer-topline"));
@@ -9190,17 +9312,51 @@ document.body.append(moreChatMenu);
 for (const [id, label] of [["favorite-open", "Prompts favoris"], ["draft-save-favorite", "Enregistrer le brouillon en favori"], ["conversation-export", "Exporter la conversation"]]) {
     const text = document.createElement("span"); text.textContent = label; $(id).append(text);
 }
+/*
+ * Le menu est ancré à son bouton (position: fixed, calcul en pixels) : un popover non
+ * positionné s'affiche au centre de la fenêtre, c'est-à-dire au milieu du chat qu'il
+ * recouvrait. On réserve sa hauteur réelle avant de le placer, puis on corrige après
+ * le rendu (le contenu peut encore changer de taille).
+ */
 function positionMoreChatMenu() {
-    const rect = moreChatTools.getBoundingClientRect(), width = Math.min(320, window.innerWidth - 24);
-    moreChatMenu.style.width = `${width}px`; moreChatMenu.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))}px`;
-    moreChatMenu.style.maxHeight = `${Math.max(80, rect.top - 20)}px`;
-    moreChatMenu.style.top = `${Math.max(12, rect.top - moreChatMenu.getBoundingClientRect().height - 8)}px`;
+    const anchor = moreChatTools.getBoundingClientRect();
+    const margin = 8;
+    const width = Math.max(220, Math.min(320, window.innerWidth - margin * 2));
+    moreChatMenu.style.width = `${width}px`;
+    // Au-dessus du bouton, jamais hors de la fenêtre.
+    const maxTop = Math.max(margin, anchor.top - 8 - 40);
+    moreChatMenu.style.maxHeight = `${Math.min(window.innerHeight - margin * 2, maxTop)}px`;
+    const height = moreChatMenu.getBoundingClientRect().height || 0;
+    const left = Math.max(margin, Math.min(anchor.right - width, window.innerWidth - width - margin));
+    const top = Math.max(margin, Math.min(anchor.top - height - 8, window.innerHeight - height - margin));
+    moreChatMenu.style.left = `${Math.round(left)}px`;
+    moreChatMenu.style.top = `${Math.round(top)}px`;
 }
 moreChatTools.onclick = () => {
     if (moreChatMenu.matches(":popover-open")) { moreChatMenu.hidePopover(); return; }
-    hideModelMenu(); moreChatMenu.showPopover(); positionMoreChatMenu(); moreChatMenu.querySelector("button:not(:disabled)")?.focus();
+    hideModelMenu();
+    // Position calculée AVANT l'affichage : le navigateur centre sinon le popover.
+    moreChatMenu.style.visibility = "hidden";
+    moreChatMenu.showPopover();
+    positionMoreChatMenu();
+    requestAnimationFrame(() => {
+        positionMoreChatMenu();
+        moreChatMenu.style.visibility = "";
+        moreChatMenu.querySelector("button:not(:disabled)")?.focus();
+    });
 };
-moreChatMenu.addEventListener("toggle", () => moreChatTools.setAttribute("aria-expanded", String(moreChatMenu.matches(":popover-open"))));
+moreChatMenu.addEventListener("toggle", () => {
+    const open = moreChatMenu.matches(":popover-open");
+    moreChatTools.setAttribute("aria-expanded", String(open));
+    // Fermé : aucune position ne doit rester dans le flux du chat.
+    if (!open) { moreChatMenu.style.visibility = ""; }
+});
+// Un popover manuel ne se ferme pas comme un popover auto : on gère Échap et le clic dehors.
+document.addEventListener("pointerdown", (event) => {
+    if (moreChatMenu.matches(":popover-open") && !moreChatMenu.contains(event.target) && event.target !== moreChatTools && !moreChatTools.contains(event.target)) moreChatMenu.hidePopover();
+}, true);
+document.addEventListener("keydown", (event) => { if (event.key === "Escape" && moreChatMenu.matches(":popover-open")) moreChatMenu.hidePopover(); }, true);
+moreChatMenu.hidePopover?.();
 moreChatMenu.addEventListener("click", event => { if (event.target.closest("button") && moreChatMenu.matches(":popover-open")) moreChatMenu.hidePopover(); });
 window.addEventListener("resize", () => { if (moreChatMenu.matches(":popover-open")) positionMoreChatMenu(); });
 // Fenêtre étroite : le modèle reste lisible et les actions conservent leur cible de clic.

@@ -121,8 +121,12 @@ dialog::backdrop { background: #080b12b3; backdrop-filter: blur(4px); }
 #chat-dictation.recording {color:#ff8585;background:rgba(230,70,70,.15);box-shadow:0 0 0 1px rgba(230,70,70,.35);}
 #chat-access-button {font-size:11px;white-space:nowrap;}
 #chat-access-button.full-access {color:#e6c54c;background:rgba(214,180,48,.10);}
-.chat-access-menu {position:fixed;inset:auto;margin:0;box-sizing:border-box;padding:8px;border:1px solid var(--border-strong,#45464d);border-radius:14px;background:var(--bg,#202127);color:var(--fg,#ddd);box-shadow:0 16px 50px #0007;overflow:auto;}
+.chat-access-menu {position:fixed;inset:auto;top:0;left:0;margin:0;box-sizing:border-box;padding:8px;border:1px solid var(--border-strong,#45464d);border-radius:14px;background:var(--bg,#202127);color:var(--fg,#ddd);box-shadow:0 16px 50px #0007;overflow:auto;}
 .chat-access-menu::backdrop {background:transparent;}
+/* Un popover fermé reste dans le flux tant que le navigateur ne l'a pas retiré du rendu :
+ * il pendait alors au milieu du chat et recouvrait la conversation au lancement. Il n'est
+ * visible que lorsqu'il est réellement ouvert. */
+.chat-access-menu:not(:popover-open) {display:none !important;}
 .chat-access-heading {font-size:12px;font-weight:600;padding:6px 9px 10px;color:var(--muted,#a4a8b2);}
 .chat-access-choices {display:grid;gap:3px;}
 .chat-access-choices button {display:flex;align-items:center;gap:10px;text-align:left;width:100%;padding:10px;border:1px solid transparent;border-radius:9px;background:transparent;color:inherit;cursor:pointer;}
