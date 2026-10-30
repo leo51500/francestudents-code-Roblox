@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.31":{headline:"Le chat suit ta souris et tes projets FranceStudent remontent enfin.",items:[
+        {icon:"chat",title:"Redimensionnement en direct",text:"Le chat, les fichiers et le panneau bas suivent le pointeur pendant le glisser ; la bulle donne la taille actuelle et le réglage reste mémorisé."},
+        {icon:"tools",title:"Projets personnels et partagés",text:"L’application récupère aussi les projets partagés et distingue l’absence de session d’une route de service indisponible."},
+        {icon:"spark",title:"Actualisation et reconnexion",text:"Le bouton Actualiser reste disponible après un échec ; si le service refuse la session, le guide de connexion s’ouvre directement."}
+    ]},
     "1.5.30":{headline:"Le chat s’agrandit vraiment, puis retrouve sa place.",items:[
         {icon:"chat",title:"Le chat prend toute la fenêtre",text:"Le mode agrandi remplit la fenêtre même après avoir personnalisé les panneaux, et le bouton ou Échap ramène à la disposition d’avant."},
         {icon:"tools",title:"Disposition préservée",text:"Les largeurs choisies pour les panneaux restent intactes quand tu agrandis puis réduis le chat."},

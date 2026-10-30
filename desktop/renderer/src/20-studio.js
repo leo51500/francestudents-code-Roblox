@@ -208,11 +208,14 @@ $("agent-access").onclick = () => showSideView("settings");
 let frProjectSelected = null;
 
 function renderFrProjects(data, message = "") {
-    const select = $("fr-project-select"), state = $("fr-project-state");
+    const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (!select) return;
     const projects = Array.isArray(data?.projects) ? data.projects : [];
     frProjectSelected = data?.selected ? { id: String(data.selected.id), name: String(data.selected.name) } : null;
     select.replaceChildren();
+    if (state && data?.sharedUnavailable) {
+        state.textContent = "Projets partagés indisponibles sur ce serveur ; seuls les projets personnels sont listés.";
+    }
     const none = document.createElement("option");
     none.value = "";
     none.textContent = projects.length ? "Aucun projet" : "Aucun projet sur le site";
@@ -236,22 +239,45 @@ function renderFrProjects(data, message = "") {
     select.title = frProjectSelected
         ? `Nouvelles discussions dans « ${frProjectSelected.name} »`
         : "Choisis le projet FranceStudent des nouvelles discussions";
+    if (refresh) refresh.disabled = false;
 }
 
 async function refreshFrProjects(message = "") {
-    const select = $("fr-project-select"), state = $("fr-project-state");
+    const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (select) select.disabled = true;
+    if (refresh) refresh.disabled = true;
     if (state && !message) state.textContent = "Chargement de vos projets…";
     try {
-        renderFrProjects(await api.frProjects("list"), message);
+        const result = await api.frProjects("list");
+        renderFrProjects(result, message);
+        if (state && Array.isArray(result?.projects) && result.projects.length === 0 && !result.sharedUnavailable && !result.selected) {
+            state.textContent = "Aucun projet retourné par l’API. Vérifie le compte FranceStudent connecté et la liste sur le site.";
+        }
     } catch (error) {
         if (state) {
             state.classList.add("error");
-            state.textContent = /Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(error.message)
-                ? "Connecte-toi à FranceStudent pour afficher tes projets, puis actualise la liste."
-                : `Projets FranceStudent indisponibles : ${error.message}`;
+            const detail = String(error.message || "");
+            const status = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
+            if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) {
+                state.textContent = "Session de l’application refusée ou expirée. Vérifie ton compte dans les paramètres, puis réessaie ou reconnecte-toi.";
+                if (typeof openConnectionGuide === "function") {
+                    const login = document.createElement("button");
+                    login.type = "button"; login.className = "fr-project-login"; login.textContent = "Se reconnecter";
+                    login.addEventListener("click", () => openConnectionGuide());
+                    state.append(" ", login);
+                }
+            } else if (status === "404") {
+                state.textContent = "Le service des projets FranceStudent n’a pas été trouvé (HTTP 404).";
+            } else if (status === "400" || status === "422") {
+                state.textContent = `La requête des projets a été refusée (HTTP ${status}) : ${detail.slice(0, 180)}`;
+            } else if (status) {
+                state.textContent = `Le service des projets répond HTTP ${status}. Réessaie plus tard.`;
+            } else {
+                state.textContent = `Impossible de joindre le service des projets : ${detail.slice(0, 180)}`;
+            }
         }
         if (select) select.disabled = true;
+        if (refresh) refresh.disabled = false;
     }
 }
 

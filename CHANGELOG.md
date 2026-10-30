@@ -575,3 +575,9 @@ L’historique du [projet de Gab-Desing](https://github.com/Gab-Desing/francestu
 - `workflow_dispatch` permet de relancer depuis `main` ; la version est contrôlée contre `package.json`.
 - Les préreleases sont détectées par leur suffixe de version.
 - La procédure de diagnostic distingue l’absence de déclenchement d’un run en échec.
+
+## [1.5.31] — Le chat suit le pointeur, projets personnels et partagés
+- **Redimensionnement réellement en direct** : le chat, l’explorateur et le panneau inférieur suivent la souris pendant le geste, sans attendre une animation de rattrapage ; la bulle affiche la taille et la préférence reste mémorisée.
+- **Projets FranceStudent** : liste également les projets partagés. Si le endpoint partagé est absent sur une instance, les projets personnels restent affichés et l’état l’indique.
+- **Connexion et actualisation** : le message distingue session refusée, endpoint absent, refus de requête, erreur du service et panne réseau. L’actualisation se réactive après une erreur et le guide de reconnexion est accessible depuis le chat.
+- Vérifié : `npm run build:renderer`, `npm run check:renderer`, tests ciblés API projets et Electron du chat/redimensionnement, `npm run lint`.

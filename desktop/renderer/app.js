@@ -3259,6 +3259,8 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     // Libellé et zone mesurée : on lit la taille réellement occupée par le panneau.
     const label = cssVar === "--left" ? "Fichiers" : cssVar === "--right" ? "Chat" : "Bas";
     const describe = () => `${label} · ${layoutSizeOf(zoneId, axis)} px`;
+    let activeDrag = null;
+    let activeDragCleanup = null;
 
     // Double-clic : largeur par défaut de la colonne, tout de suite visible.
     handle.addEventListener("dblclick", (ev) => {
@@ -3274,35 +3276,33 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     });
 
     handle.addEventListener("pointerdown", (ev) => {
-        if (ev.button !== 0) return;
+        if (ev.button !== 0 || activeDrag) return;
         ev.preventDefault();
         try {
             handle.setPointerCapture(ev.pointerId);
         } catch {
             // capture indisponible
         }
-        // Retour immédiat : la classe est posée dès l'appui, même si aucune pose du
-        // pointeur ne survient avant le relâchement (test automatique, glisser très court).
+        // Le suivi démarre dès l'appui, y compris pour un glisser très court.
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
         document.documentElement.classList.add("layout-dragging");
         const start = axis === "x" ? ev.clientX : ev.clientY;
+        activeDrag = { pointerId: ev.pointerId, start, last: start, finished: false };
         const initial = layoutPx(cssVar);
         const min = LAYOUT_LIMITS[cssVar].min;
-        // La place libre dépend de l'autre colonne telle qu'elle est affichée maintenant,
-        // et non de sa valeur mémorisée (qui peut être plus grande que la place réelle).
-        const max = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
-        let last = start;
         let frame = 0;
         // Un appui direct jusqu'au bord peut ne produire aucune pose intermédiaire : la
         // bulle montre tout de suite la taille tenue.
         showLayoutBadge({ label: describe(), clientX: ev.clientX, clientY: ev.clientY }, true);
         const apply = (animate) => {
             frame = 0;
-            const delta = last - start;
-            const value = Math.max(min, Math.min(max, initial + (invert ? -delta : delta)));
-            // Au relâchement, la classe de glisser est retirée avant d'écrire la valeur
-            // finale : la dernière petite distance parcourue depuis la dernière image
-            // s'anime au lieu d'être perdue (transition coupée uniquement pendant le geste).
+            const drag = activeDrag;
+            if (!drag) return;
+            const delta = drag.last - drag.start;
+            const nextLimit = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
+            const value = Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta)));
+            // La classe layout-dragging neutralise la transition pendant toute la prise :
+            // la taille réellement rendue suit la position du curseur, sans rattrapage après.
             if (animate && value === layoutPx(cssVar)) animate = false;
             if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
@@ -3311,26 +3311,30 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         };
         const pointer = { x: ev.clientX, y: ev.clientY };
         const move = (e) => {
-            last = axis === "x" ? e.clientX : e.clientY;
+            if (!activeDrag || activeDrag.finished || (e.pointerId !== undefined && e.pointerId !== activeDrag.pointerId)) return;
+            document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
+            document.documentElement.classList.add("layout-dragging");
+            activeDrag.last = axis === "x" ? e.clientX : e.clientY;
             pointer.x = e.clientX;
             pointer.y = e.clientY;
-            if (!frame) frame = requestAnimationFrame(apply);
+            // Prise exclusive sur le séparateur : les événements capturés sont cohérents
+            // avec le déplacement, et la grille est recalculée avant l’image suivante.
+            if (frame) cancelAnimationFrame(frame);
+            frame = 0;
+            apply(false);
         };
         const up = () => {
-            if (frame) {
-                cancelAnimationFrame(frame);
-                apply(true);
-            } else if (last !== start) {
-                // Aucune pose intermédiaire (glisser très court) : la position relâchée
-                // compte quand même, au lieu de perdre le geste.
-                apply(true);
-            }
+            const drag = activeDrag;
+            if (!drag || drag.finished) return;
+            drag.finished = true;
+            if (frame) cancelAnimationFrame(frame);
+            frame = 0;
+            apply(false);
             // La valeur finale reste visible un court instant après le relâchement.
             showLayoutBadge({ label: describe(), clientX: pointer.x, clientY: pointer.y }, true);
             layoutBadgeTimer = setTimeout(hideLayoutBadge, 900);
-            handle.removeEventListener("pointermove", move);
-            handle.removeEventListener("pointerup", up);
-            handle.removeEventListener("pointercancel", up);
+            activeDrag = null;
+            activeDragCleanup?.();
             document.body.classList.remove("resizing-x", "resizing-y");
             document.documentElement.classList.remove("layout-dragging");
             delete layoutPreferred[cssVar];
@@ -3351,9 +3355,30 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             });
             if (typeof saveLayout === "function") saveLayout();
         };
+        const cleanup = () => {
+            handle.removeEventListener("pointermove", move);
+            document.removeEventListener("pointermove", move);
+            handle.removeEventListener("pointerup", finish);
+            handle.removeEventListener("pointercancel", finish);
+            document.removeEventListener("pointerup", finish);
+            document.removeEventListener("pointercancel", finish);
+            handle.removeEventListener("lostpointercapture", finish);
+            if (activeDragCleanup === cleanup) activeDragCleanup = null;
+        };
+        const finish = (e) => {
+            if (!activeDrag || (e.pointerId !== undefined && e.pointerId !== activeDrag.pointerId)) return;
+            cleanup();
+            up();
+        };
+        activeDragCleanup?.();
+        activeDragCleanup = cleanup;
         handle.addEventListener("pointermove", move);
-        handle.addEventListener("pointerup", up);
-        handle.addEventListener("pointercancel", up);
+        document.addEventListener("pointermove", move);
+        handle.addEventListener("pointerup", finish);
+        handle.addEventListener("pointercancel", finish);
+        document.addEventListener("pointerup", finish);
+        document.addEventListener("pointercancel", finish);
+        handle.addEventListener("lostpointercapture", finish);
     });
 
     // Accessibilité clavier : flèches pour ajuster, Maj pour un pas de 40 px.
@@ -6594,11 +6619,14 @@ $("agent-access").onclick = () => showSideView("settings");
 let frProjectSelected = null;
 
 function renderFrProjects(data, message = "") {
-    const select = $("fr-project-select"), state = $("fr-project-state");
+    const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (!select) return;
     const projects = Array.isArray(data?.projects) ? data.projects : [];
     frProjectSelected = data?.selected ? { id: String(data.selected.id), name: String(data.selected.name) } : null;
     select.replaceChildren();
+    if (state && data?.sharedUnavailable) {
+        state.textContent = "Projets partagés indisponibles sur ce serveur ; seuls les projets personnels sont listés.";
+    }
     const none = document.createElement("option");
     none.value = "";
     none.textContent = projects.length ? "Aucun projet" : "Aucun projet sur le site";
@@ -6622,22 +6650,45 @@ function renderFrProjects(data, message = "") {
     select.title = frProjectSelected
         ? `Nouvelles discussions dans « ${frProjectSelected.name} »`
         : "Choisis le projet FranceStudent des nouvelles discussions";
+    if (refresh) refresh.disabled = false;
 }
 
 async function refreshFrProjects(message = "") {
-    const select = $("fr-project-select"), state = $("fr-project-state");
+    const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (select) select.disabled = true;
+    if (refresh) refresh.disabled = true;
     if (state && !message) state.textContent = "Chargement de vos projets…";
     try {
-        renderFrProjects(await api.frProjects("list"), message);
+        const result = await api.frProjects("list");
+        renderFrProjects(result, message);
+        if (state && Array.isArray(result?.projects) && result.projects.length === 0 && !result.sharedUnavailable && !result.selected) {
+            state.textContent = "Aucun projet retourné par l’API. Vérifie le compte FranceStudent connecté et la liste sur le site.";
+        }
     } catch (error) {
         if (state) {
             state.classList.add("error");
-            state.textContent = /Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(error.message)
-                ? "Connecte-toi à FranceStudent pour afficher tes projets, puis actualise la liste."
-                : `Projets FranceStudent indisponibles : ${error.message}`;
+            const detail = String(error.message || "");
+            const status = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
+            if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) {
+                state.textContent = "Session de l’application refusée ou expirée. Vérifie ton compte dans les paramètres, puis réessaie ou reconnecte-toi.";
+                if (typeof openConnectionGuide === "function") {
+                    const login = document.createElement("button");
+                    login.type = "button"; login.className = "fr-project-login"; login.textContent = "Se reconnecter";
+                    login.addEventListener("click", () => openConnectionGuide());
+                    state.append(" ", login);
+                }
+            } else if (status === "404") {
+                state.textContent = "Le service des projets FranceStudent n’a pas été trouvé (HTTP 404).";
+            } else if (status === "400" || status === "422") {
+                state.textContent = `La requête des projets a été refusée (HTTP ${status}) : ${detail.slice(0, 180)}`;
+            } else if (status) {
+                state.textContent = `Le service des projets répond HTTP ${status}. Réessaie plus tard.`;
+            } else {
+                state.textContent = `Impossible de joindre le service des projets : ${detail.slice(0, 180)}`;
+            }
         }
         if (select) select.disabled = true;
+        if (refresh) refresh.disabled = false;
     }
 }
 
