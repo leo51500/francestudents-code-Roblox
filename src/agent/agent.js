@@ -22,6 +22,7 @@ const {
     listDirectory
 } = require("../tools/tools");
 const { execFile } = require("node:child_process");
+const { repeatLimitFor, repeatSteering, stuckSummary, lockedFileHint } = require("./stuck-guard");
 function mcpAttemptKey(args){
     const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==="object"?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
     return JSON.stringify(canonical(args));
@@ -596,6 +597,9 @@ async function runAgent(task, options = {}) {
     let deferredSteering = [];
     let requestNumber = 0;
     let recoveredMcpDenial = false;
+    // Dernière action en échec : la même action peut être rejouée (relire après correction,
+    // relancer un build après un changement) sans être prise pour une boucle infinie.
+    let lastActionFailed = false;
 
     for (let turn = 1; ; turn++) {
         if (maxTurns && turn > maxTurns) {
@@ -638,6 +642,8 @@ async function runAgent(task, options = {}) {
                     skillsCatalog,
                     observations,
                     plan: state.agentPlan,
+                    // Images et fichiers joints : le brief de référence s'applique dès qu'une image sert de modèle.
+                    attachments: [...(state.pendingImages || []), ...(state.pendingFiles || [])],
                     requestNumber,
                     turn,
                     maxTurns,
@@ -803,14 +809,17 @@ async function runAgent(task, options = {}) {
         if (action.reason) ui.reason(action.reason);
 
         // Garde-fou : la même action, ou le même lot de lectures, répétée en boucle n'est plus exécutée.
+        // Les commandes de vérification (build, test, rendu) ont le droit d'être relancées :
+        // c'est leur but. Seules les actions sans effet de bord évident sont limitées.
         const signature = action.calls
             ? `calls:${JSON.stringify(action.calls)}`
             : `${action.name}:${JSON.stringify(action.args)}`;
+        const repeatLimit = repeatLimitFor(action);
         const seen = (signatures.get(signature) || 0) + 1;
 
         signatures.set(signature, seen);
 
-        if (seen >= 3) {
+        if (seen >= repeatLimit && !lastActionFailed) {
             stuck++;
             ui.result("Action répétée : ignorée", { tone: "error" });
 
@@ -820,9 +829,14 @@ async function runAgent(task, options = {}) {
                 ok: false,
                 error: "Action déjà exécutée plusieurs fois avec les mêmes arguments. Change de démarche ou termine avec final."
             });
+            lastActionFailed = true; // la répétition elle-même échoue : les lectures d'inspection restent permises
 
-            if (stuck >= 2) {
-                await finish("Je tourne en rond : j'arrête ici. Précise ta demande ou le fichier concerné.");
+            // L'action précédente avait réussi : la rejouer à l'identique ne peut rien apporter.
+            // On relance l'agent avec une consigne de changement de démarche au lieu d'abandonner.
+            deferredSteering.push(repeatSteering(action, seen, stuck));
+            if (stuck >= 3) {
+                const message = stuckSummary(observations);
+                await finish(message);
                 return { completed: false, message: "L’agent s’est arrêté car il répétait les mêmes actions." };
             }
 
@@ -908,6 +922,7 @@ async function runAgent(task, options = {}) {
                 ok: results.every(item => item.ok),
                 result: { results }
             });
+            lastActionFailed = results.some(item => !item.ok);
 
             continue;
         }
@@ -956,14 +971,23 @@ async function runAgent(task, options = {}) {
             const sources = action.name === "web_fetch" && result.status >= 200 && result.status < 300
                 ? [{ url: result.final_url || result.url, title: result.title || result.final_url || result.url, consulted: true }]
                 : ["web_search","web_search_result"].includes(action.name) ? (result.results || []).map(s => ({ url: s.url, title: s.title, consulted: false })) : [];
-            ui.result(summarizeResult(action.name, result), { sources, tone: result.denied || result.interrupted || result.is_error || (typeof result.exit_code === "number" && result.exit_code !== 0) ? "error" : null });
+            const failed = Boolean(result.denied || result.interrupted || result.is_error || (typeof result.exit_code === "number" && result.exit_code !== 0));
+            ui.result(summarizeResult(action.name, result), { sources, tone: failed ? "error" : null });
 
             observations.push({
                 tool: action.name,
                 args: recorded,
-                ok: !result.denied&&!result.interrupted&&!result.is_error&&!(typeof result.exit_code==="number"&&result.exit_code!==0),
+                ok: !failed,
                 result
             });
+            lastActionFailed = failed;
+            // Un fichier verrouillé ou en lecture seule n'est pas un bug à réessayer :
+            // la même action échouerait encore. On oriente vers le vrai plan de sortie.
+            const locked = failed ? lockedFileHint(action, result) : null;
+            if (locked) {
+                deferredSteering.push(locked);
+                signatures.delete(signature);
+            }
             if(action.name==="list_directory"&&recoveredWorkspaceAccess&&(result.denied||result.interrupted||result.is_error||result.error)){
                 const detail=result.message||result.error||"l’accès a été refusé ou interrompu";
                 const message=`La vérification locale du dossier de projet n’a pas abouti : ${clip(detail,240)}. Je n’ai pas relancé l’agent et aucun refus n’a été contourné.`;
@@ -988,6 +1012,9 @@ async function runAgent(task, options = {}) {
                 ok: false,
                 error: error.message
             });
+            lastActionFailed = true;
+            const locked = lockedFileHint(action, { error: error.message });
+            if (locked) deferredSteering.push(locked);
         }
     }
 }

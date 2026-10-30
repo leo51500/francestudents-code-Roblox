@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.23":{headline:"Des modèles Blender plus beaux, des sons et un agent qui ne tourne plus en rond.",items:[
+        {icon:"spark",title:"Agent débloqué",text:"« Je tourne en rond » n'arrête plus la tâche : l'agent change de démarche, et un fichier verrouillé par Studio est expliqué au lieu d'être réessayé sans fin."},
+        {icon:"tools",title:"Biseaux, tores et palette",text:"Biseaux, sphères, cônes, tores, symétrie, creux booléens et colonnes en révolution donnent tout de suite un aspect soigné ; plusieurs couleurs par modèle, et un rendu quatre angles pour juger le résultat."},
+        {icon:"chat",title:"Sons et éclairage Voxel",text:"Un guide pour ajouter de vrais sons sans identifiant inventé, et la migration Compatibility → Voxel Lighting expliquée calmement, avec les réglages pour retrouver l'ambiance."}
+    ]},
     "1.5.22":{headline:"Les panneaux se redimensionnent sans à-coups.",items:[
         {icon:"tools",title:"Poignées faciles à attraper",text:"La colonne des fichiers, le chat et le panneau du bas se redimensionnent depuis une zone de 3 px de chaque côté du trait : plus besoin de viser un pixel."},
         {icon:"spark",title:"Glisser fluide",text:"Pendant un glisser, la mise en page suit le curseur sans transition ni barre de défilement parasite, puis reprend son mouvement normal relâché."},

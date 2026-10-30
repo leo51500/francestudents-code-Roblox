@@ -50,7 +50,7 @@ test("blender : un GLB valide est analysé (meshes, triangles, matériaux)", () 
     assert.equal(report.meshes, 1);
     assert.equal(report.triangles, 12, "36 indices = 12 triangles");
     assert.equal(report.materials, 2);
-    assert.deepEqual(report.problems, []);
+    assert.equal(report.multiMaterial, false);
     assert.match(describeGlb(report), /12 triangle\(s\)/);
 });
 
@@ -96,4 +96,44 @@ test("blender : arguments de l'outil validés", () => {
     assert.throws(() => checkArgs({ action: "inspect" }), /path/);
     assert.throws(() => checkArgs({ action: "script", path: "a.py", script_args: ["x", 3] }), /script_args/);
     assert.doesNotThrow(() => checkArgs({ action: "script", path: "a.py", script_args: ["--name", "Test"] }));
+});
+
+test("blender : plusieurs matériaux sans texture = palette importée par l'importeur Roblox", () => {
+    const colors = {
+        ...VALID,
+        materials: [{ name: "bois" }, { name: "metal" }, { name: "pierre" }],
+        textures: [],
+        images: []
+    };
+    const report = withFile(buildGlb(colors), inspectGlb);
+    assert.equal(report.valid, true);
+    assert.equal(report.materials, 3);
+    assert.equal(report.multiMaterial, true);
+    assert.deepEqual(report.materialNames, ["bois", "metal", "pierre"]);
+    assert.equal(report.problems.length, 0, report.problems.join(" | "));
+    assert.match(describeGlb(report), /palette de 3 couleurs/);
+});
+
+test("blender : plus de cinq matériaux et couleurs mélangées à une texture sont signalés", () => {
+    const tooMany = withFile(buildGlb({
+        ...VALID,
+        materials: [{ name: "a" }, { name: "b" }, { name: "c" }, { name: "d" }, { name: "e" }, { name: "f" }],
+        textures: [],
+        images: []
+    }), inspectGlb);
+    assert.ok(tooMany.problems.some(item => /5 couleurs/.test(item)), tooMany.problems.join(" | "));
+
+    const mixed = withFile(buildGlb({ ...VALID, materials: [{ name: "bois" }, { name: "metal" }], textures: [{}], images: [{}] }), inspectGlb);
+    assert.ok(mixed.problems.some(item => /texture/i.test(item)), mixed.problems.join(" | "));
+});
+
+test("blender : blender_common.py fournit les outils de géométrie et la palette", () => {
+    const source = fs.readFileSync(path.join(__dirname, "..", "src", "blender", "blender_common.py"), "utf8");
+    for (const fn of ["def bevel", "def sphere", "def cone", "def torus", "def mirror", "def boolean_cut", "def lathe", "def noise", "def palette", "def assign_palette", "def render_preview", "def assemble_quad_image"]) {
+        assert.ok(source.includes(fn), `outil manquant : ${fn}`);
+    }
+    for (const color of ["bois", "metal", "feuillage", "pierre"]) {
+        assert.ok(source.includes(`"${color}"`), `couleur de palette manquante : ${color}`);
+    }
+    assert.match(source, /PREVIEW_ANGLES/, "quatre angles de contrôle attendus");
 });

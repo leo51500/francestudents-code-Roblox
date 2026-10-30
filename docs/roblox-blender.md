@@ -27,7 +27,7 @@ Le nom du projet affiché vient du champ `name` du premier fichier `*.project.js
 
 ## Skills intégrés
 
-La bibliothèque embarquée contient 16 skills Roblox/Blender, disponibles hors ligne dans **Outils supplémentaires → Skills** :
+La bibliothèque embarquée contient 18 skills Roblox/Blender, disponibles hors ligne dans **Outils supplémentaires → Skills** :
 
 | Skill | Sujet |
 | --- | --- |
@@ -43,10 +43,12 @@ La bibliothèque embarquée contient 16 skills Roblox/Blender, disponibles hors 
 | `roblox-monetization` | Boutique et receipts |
 | `roblox-debug` | Débogage dans Studio |
 | `roblox-scene-graph` | Inspection d'une scène |
+| `roblox-sound` | Choisir, importer et jouer des sons (identifiants réels) |
 | `blender-model` | Modèle 3D prêt pour Roblox |
 | `blender-script` | Script Blender robuste |
 | `blender-optimize` | Optimisation d'asset |
-| `blender-texture` | Textures et matériaux |
+| `blender-lowpoly-style` | Style low-poly : silhouette, palette, biseaux, recettes caisse/rocher/maison/épée |
+| `blender-texture` | Textures et matériaux (couleurs ou texture, pas les deux) |
 
 ## Outils Roblox de l’agent
 
@@ -69,7 +71,7 @@ La barre d’état affiche `Rojo <port> · Studio connecté` (en vert) ou `· en
 | `script` | Exécute un script Python du projet en `--background`. |
 | `inspect` | Lit le GLB (en-tête, meshes, triangles, matériaux, taille en studs, manifeste). |
 | `validate` | Analyse réelle dans Blender : triangles par mesh, UV, normales, arêtes non-manifold, faces dégénérées, transformations, textures. |
-| `render` | Rendu PNG à examiner avec `view_image`. |
+| `render` | Rendu PNG à examiner avec `view_image` : quatre angles (face, trois-quarts, côté, dessus) assemblés en une image 1024 px. |
 | `manifest` | Écrit `<modele>.manifest.json` (nom, taille en studs, catégorie). |
 | `import_roblox` | Copie le GLB et son manifeste dans `src/ReplicatedStorage/Assets` et donne les étapes Studio. |
 | `export_blender` | Part d’un `.blend` pour produire un GLB propre (caméras et lumières retirées). |
@@ -86,4 +88,28 @@ Pour agir directement dans Studio ou Blender, configure un serveur MCP dans `mcp
 - Textures **1024 px maximum**, UV non chevauchants, normales cohérentes.
 - Aucune lumière ni caméra exportée avec le modèle.
 - Export **glTF/GLB** ; n'annoncer le fichier qu'après vérification réelle de sa création.
+
+## Géométrie, palette et contrôle visuel
+
+`src/blender/blender_common.py` fournit des primitives qui évitent les cubes nus :
+
+| Fonction | Usage |
+| --- | --- |
+| `bevel(obj, width)` | biseau sur les arêtes vives ; le détail qui « finit » un modèle. |
+| `sphere`, `cone`, `torus` | volumes doux, toits et sapins, anneaux et roues. |
+| `lathe(profile)` | révolution d'un profil : colonnes, vases. |
+| `mirror(obj, axis)` | symétrie appliquée depuis une moitié. |
+| `boolean_cut(target, cutter)` | creuser une fenêtre, une porte, une fente. |
+| `noise(obj, strength, seed)` | déformation déterministe : rochers, pierres. |
+| `palette([...])`, `assign_material`, `assign_palette` | plusieurs couleurs sans texture (bois, métal, feuillage, pierre…). |
+
+Roblox : l'importeur 3D (`Avatar → Import 3D`) crée un sous-mesh par matériau. Une palette de trois à cinq couleurs reste donc légère et visible ; au-delà de cinq, `inspect` le signale. Une texture remplace les couleurs de base dans Studio : ne mélange pas couleurs et texture dans le même mesh. Voir `src/blender/templates/prop_palette.py`.
+
+Contrôle : `render_preview` écrit quatre angles dans une seule image 1024 px. La consigne de l'agent est de comparer au rendu à la demande, lister trois défauts, corriger et recommencer deux fois au maximum.
+
+## Référence, sons et éclairage
+
+- **Référence** : quand une image est jointe, l'agent la décrit (silhouette, proportions, couleurs) avant de modéliser, puis compare le rendu quatre angles à cette description.
+- **Sons** : un `rbxassetid` n'est jamais inventé. L'agent demande le son ou l'identifiant réel, puis l'intègre avec `SoundGroup`, `RollOffMode` et un volume discret.
+- **Éclairage** : Roblox a migré `Technology = Compatibility` vers `Voxel` (Compatibility Lighting supprimé). La fenêtre « Migration de la compatibilité vers Voxel Lighting » n'est pas une erreur ; l'agent explique la migration et ajuste `Ambient`, `OutdoorAmbient`, `Brightness`, `ClockTime` pour retrouver l'ambiance. Voir [l'annonce DevForum](https://devforum.roblox.com/t/compatibility-lighting-becomes-retro-tone-mapping-sunset-migration/3128560).
 - Un prop mobile vise en général quelques centaines à quelques milliers de triangles ; ces cibles sont des ordres de grandeur, pas des règles officielles.

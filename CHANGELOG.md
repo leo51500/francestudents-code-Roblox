@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.23] — Blender low-poly, sons, éclairage Voxel et fin des tours en rond
+- **L’agent ne s’arrête plus sur « Je tourne en rond »** : une action identique déjà réussie est ignorée et relancée avec une consigne de changement de démarche, au lieu de couper la tâche au deuxième avertissement. Une action qui vient d’échouer peut être rejouée (relire après correction, relancer un build) ; seule une répétition persistante arrête l’agent, avec un compte rendu des dernières étapes. Les commandes de vérification (`npm test`, `rojo build`, rendu Blender) ont droit à deux fois plus de répétitions. Nouveau module `src/agent/stuck-guard.js`.
+- **Fichier utilisé par une autre instance du Studio / en lecture seule** : ce n’est plus une boucle sans fin. `write_file` et `edit_file` reconnaissent le verrou (EBUSY, EPERM, « autre instance », « lecture seule »), expliquent que le contenu n’est pas perdu et proposent un enregistrement sous un autre nom ou la fermeture de la session qui garde le fichier. L’agent ne prétend jamais avoir enregistré.
+- **Migration Compatibility → Voxel Lighting** : la fenêtre de Studio est expliquée comme une information Roblox, pas comme une erreur. L’agent compare le rendu et ajuste `Ambient`, `OutdoorAmbient`, `Brightness` et `ClockTime`, avec le lien de l’[annonce DevForum](https://devforum.roblox.com/t/compatibility-lighting-becomes-retro-tone-mapping-sunset-migration/3128560).
+- **Sons** : nouveau guide et skill `roblox-sound`. L’agent ne fabrique jamais un `rbxassetid` : il demande le son réel, puis l’intègre avec `SoundGroup`, `RollOffMode` et un volume discret.
+- **Géométrie Blender** : `blender_common.py` gagne biseau, sphère, cône, tore, symétrie, booléens (creuser), révolution (colonnes, vases) et bruit déterministe pour les rochers. Nouveau modèle `prop_palette.py` qui montre la chaîne complète.
+- **Plusieurs couleurs par modèle** : palette limitée (bois, métal, feuillage, pierre, or…) appliquée avant `join`. `inspect` explique le comportement réel de l’importeur 3D de Roblox (un sous-mesh par matériau, cinq couleurs maximum, texture qui remplace les couleurs de base).
+- **Contrôle visuel** : le rendu assemble quatre angles (face, trois-quarts, côté, dessus) dans une image 1024 px ; la consigne de l’agent est de comparer à la demande, lister trois défauts, corriger et recommencer deux fois au maximum.
+- **Espace de référence** : quand une image est jointe, l’agent décrit silhouette, proportions et couleurs avant de modéliser, puis compare le rendu à cette description.
+- **Skill `blender-lowpoly-style`** : silhouette d’abord, proportions exagérées, palette limitée, biseaux, et recettes caisse, rocher, maison et épée.
+- Vérifié : `node --test test/blender.test.js test/stuck-guard.test.js test/prompt-roblox-guides.test.js test/agent-context.test.js` au vert. La suite complète (`npm test`) et le rendu Blender réel quatre angles restent à contrôler avant publication.
 ## [1.5.22] — Séparateurs qui suivent le curseur
 
 - **Poignées de mise en page fiables** : les trois séparateurs (colonne des fichiers, chat, panneau du bas) captent le pointeur sur une zone élargie de 3 px de chaque côté du trait, au lieu d’un trait d’un pixel qu’il fallait viser. `touch-action` est neutralisé pour éviter que le geste soit détourné.
