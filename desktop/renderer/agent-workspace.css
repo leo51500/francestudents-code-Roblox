@@ -210,7 +210,6 @@
 .favorite-row button { background: transparent; border: 0; text-align: left; font-size: 11px; padding: 8px 5px; border-radius: 3px; }
 .favorite-row button:first-child { flex: 1; }
 .favorite-row button:hover { background: var(--bg-hover); }
-#app.focus-agent { grid-template-columns: 0 0 0 0 0 minmax(0,1fr); grid-template-rows:var(--titlebar) minmax(0,1fr) 0; }
 
 /* Chat détaché dans sa propre fenêtre : le panneau agent reste la seule colonne, les
    autres sont retirées pour qu'aucun élément ne déborde ni ne se superpose. */
@@ -237,7 +236,8 @@
 .agent-navigation-actions button.active { background: var(--accent-soft); color: var(--fg-strong); }
 .agent-navigation-actions .i { width: 15px; height: 15px; }
 #app.focus-agent #center, #app.focus-agent #sidebar, #app.focus-agent .resizer, #app.focus-agent #resizer-right { display: none; }
-#app.focus-agent #agent { display: flex !important; padding:0; }
+#app.focus-agent #agent { display: flex !important; padding:0; grid-column:1 / -1; grid-row:1 / -1; }
+#app.focus-agent #statusbar { display: none; }
 #app.focus-agent #activity-bar,#app.focus-agent #sidebar-tabs,#app.focus-agent #statusbar { display:none; }
 .hidden { display: none !important; }
 .startup-loading { position: fixed; inset: var(--titlebar, 34px) 0 0; z-index: 10000; display: grid; place-items: center; background: var(--bg); color: var(--fg); }
@@ -266,3 +266,7 @@
 #startup-update-now:disabled { opacity:.65;cursor:default; }
 #startup-update-progress { width:100%;height:5px;margin-top:14px;accent-color:var(--fg); }
 #startup-update-open { border:1px solid var(--border-strong);border-radius:999px;background:transparent;color:var(--fg);padding:3px 10px;font-size:10px;cursor:pointer;-webkit-app-region:no-drag; }
+
+/* Grille dédiée au plein écran : toutes les variantes de disposition conservent la colonne du chat. */
+#app.focus-agent { grid-template-columns: 0 0 0 0 0 minmax(0,1fr); grid-template-rows: var(--titlebar) minmax(0,1fr) 0; }
+#app.chat-detached.focus-agent { grid-template-rows: var(--titlebar) minmax(0,1fr) 24px; }
