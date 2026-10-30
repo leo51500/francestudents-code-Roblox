@@ -23,6 +23,8 @@
 #fr-project-select:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
 .agent-fr-project button { width: 24px; height: 24px; flex: 0 0 24px; display: inline-grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--fg-dim); cursor: pointer; }
 .agent-fr-project button:hover { background: var(--bg-hover, rgba(255,255,255,.06)); color: var(--fg-strong); }
+.agent-fr-project button:disabled { opacity: .5; cursor: progress; }
+.fr-project-login { display: inline; width: auto !important; height: auto !important; padding: 1px 4px !important; margin-left: 4px; border-color: var(--border-strong) !important; color: var(--fg-strong) !important; font: inherit; }
 .agent-fr-project .i { width: 14px; height: 14px; }
 .fr-project-state { display: block; padding: 0 12px 6px; font-size: 10px; color: var(--fg-faint); overflow-wrap: anywhere; flex-shrink: 0; }
 .fr-project-state:empty { display: none; }

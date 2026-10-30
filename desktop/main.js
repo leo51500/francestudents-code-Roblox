@@ -864,20 +864,22 @@ function registerIpc() {
         const name = String(action || "list");
         if (name === "select") {
             const id = String(payload?.id || "");
-            const projects = await fr.listProjects();
-            const project = id ? projects.find(item => String(item.id) === id) : null;
+            const result = await fr.listProjects();
+            const project = id ? result.projects.find(item => String(item.id) === id) : null;
             await fr.saveSelected(project || null);
             pushStatus();
-            return { selected: project ? { id: project.id, name: project.name } : null, projects: projects.map(item => ({ id: item.id, name: item.name })) };
+            return { selected: project ? { id: project.id, name: project.name } : null, projects: result.projects.map(item => ({ id: item.id, name: item.name })) };
         }
-        const projects = await fr.listProjects();
+        const result = await fr.listProjects();
+        const projects = result.projects;
         const saved = require("../src/state").state.frProject || (await fr.loadSelected());
         // Un projet supprimé sur le site ne doit pas rester « actif » sans le dire.
         const selected = saved && projects.some(item => String(item.id) === String(saved.id)) ? saved : null;
         if (saved && !selected) await fr.saveSelected(null);
         return {
             projects: projects.map(item => ({ id: item.id, name: item.name })),
-            selected: selected ? { id: selected.id, name: selected.name } : null
+            selected: selected ? { id: selected.id, name: selected.name } : null,
+            sharedUnavailable: result.sharedUnavailable
         };
     });
     handle("preferences", (action, payload) => {
