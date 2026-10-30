@@ -105,6 +105,18 @@ function createTuiBackend(store, {
             append({ type: "result", text: String(text ?? ""), tone: tone || null });
         },
 
+        /** Avancement d'un sous-agent : une ligne discrète par début, tour et fin. */
+        subagent(data = {}) {
+            const label = data.label || data.role || "Sous-agent";
+            if (data.phase === "step") return;
+            if (data.phase === "done") {
+                const files = Array.isArray(data.written) && data.written.length ? `, ${data.written.length} fichier(s) écrit(s)` : "";
+                append({ type: "info", text: `✓ Sous-agent ${label} terminé${files}` });
+                return;
+            }
+            append({ type: "info", text: `Sous-agent ${label} en cours…` });
+        },
+
         /** Ligne de sortie d'une commande, affichée en direct. */
         commandLine(text) {
             store.dispatch({ type: "commandLine", text: String(text ?? "") });

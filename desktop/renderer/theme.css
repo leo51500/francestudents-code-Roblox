@@ -185,6 +185,16 @@ html.layout-dragging #app.layout-custom {
     #app.no-sidebar {
         grid-template-columns: var(--rail) 0 0 minmax(320px, 1fr) 4px minmax(280px, var(--right));
     }
+
+    /* Une colonne redimensionnée doit gagner sur les dispositions par défaut de
+       #app.no-agent / #app.no-sidebar, sinon la poignée glisse sans rien déplacer,
+       et la règle "écran étroit" (rail réduit, sidebar masquée) doit rester plus forte. */
+    @media (min-width: 1001px) {
+        #app.layout-custom              { grid-template-columns: var(--rail) minmax(150px, var(--left)) 4px minmax(0, 1fr) 4px minmax(0, var(--right)); }
+        #app.layout-custom.no-agent     { grid-template-columns: var(--rail) minmax(150px, var(--left)) 4px minmax(320px, 1fr) 0 0; }
+        #app.layout-custom.no-sidebar   { grid-template-columns: var(--rail) 0 0 minmax(320px, 1fr) 4px minmax(0, var(--right)); }
+        #app.layout-custom.no-sidebar.no-agent { grid-template-columns: var(--rail) 0 0 minmax(320px, 1fr) 0 0; }
+    }
 }
 
 /* Fenêtre minimale (900 px) : la navigation latérale se réduit à ses icônes
@@ -1365,7 +1375,7 @@ body.resizing-y .xterm {
 .prompt-zone button.primary {
     background: var(--accent);
     border-color: transparent;
-    color: #fff;
+    color: var(--accent-ink);
 }
 
 /* Zone de saisie */
@@ -2900,7 +2910,7 @@ button.primary:active,
 .release-notes-item p { color: var(--fg-dim); font-size: 12px; line-height: 1.6; margin: 5px 0 0; }
 .release-notes-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 24px; }
 .release-notes-footer button { background: var(--bg-input); color: var(--fg); border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 14px; font: inherit; font-size: 12px; cursor: pointer; }
-.release-notes-footer button.primary { color: white; background: var(--accent); border-color: var(--accent); }
+.release-notes-footer button.primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
 .release-highlights button:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; }
 
 .entry.api-error-notice.chat-locked-notice { border-color: #f8514960; border-left-color: var(--danger); background: linear-gradient(135deg, #f8514914, var(--bg-panel)); }
@@ -3305,6 +3315,16 @@ dialog,
 
 ::backdrop {
     background: rgba(4, 5, 8, 0.72);
+}
+
+/* Redimensionnement : quand une largeur est choisie à la poignée (ou restaurée),
+   la colonne atteint sa nouvelle taille en douceur au lieu de sauter d'un coup.
+   La transition est coupée pendant le glisser (html.layout-dragging) pour que la
+   poignée reste collée au curseur. */
+@media (prefers-reduced-motion: no-preference) {
+    #app {
+        transition: grid-template-columns 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
 }
 
 /* Petites fenêtres : la navigation reste utilisable sans casser la grille. */

@@ -197,10 +197,15 @@ function dragResizer(id, cssVar, axis, invert) {
         // retarder la colonne, sinon la poignée décroche du curseur.
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
         document.documentElement.classList.add("layout-dragging");
-        const apply = () => {
+        const apply = (animate) => {
             frame = 0;
             const delta = last - start;
             const value = Math.max(min, Math.min(max, initial + (invert ? -delta : delta)));
+            // Au relâchement, la classe de glisser est retirée avant d'écrire la valeur
+            // finale : la dernière petite distance parcourue depuis la dernière image
+            // s'anime au lieu d'être perdue (transition coupée uniquement pendant le geste).
+            if (animate && value === layoutPx(cssVar)) animate = false;
+            if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
         };
         const move = (e) => {
@@ -210,7 +215,7 @@ function dragResizer(id, cssVar, axis, invert) {
         const up = () => {
             if (frame) {
                 cancelAnimationFrame(frame);
-                apply();
+                apply(true);
             }
             handle.removeEventListener("pointermove", move);
             handle.removeEventListener("pointerup", up);
@@ -218,8 +223,18 @@ function dragResizer(id, cssVar, axis, invert) {
             document.body.classList.remove("resizing-x", "resizing-y");
             document.documentElement.classList.remove("layout-dragging");
             delete layoutPreferred[cssVar];
+            // --bottom reste une variable de hauteur (le panneau la lit) : il ne passe pas
+            // par --left-custom / --right-custom, réservés aux colonnes de la grille.
             if (cssVar !== "--bottom") publishCustomWidth(cssVar);
             syncLayoutCustom();
+            // Réévalue la place disponible après le geste (largeur enregistrée, classes de
+            // disposition) sans attendre le prochain redimensionnement de la fenêtre.
+            if (layoutFrame) cancelAnimationFrame(layoutFrame);
+            layoutFrame = requestAnimationFrame(() => {
+                layoutFrame = 0;
+                if (appLayoutCustom()) return;
+                clampLayout();
+            });
             if (typeof saveLayout === "function") saveLayout();
         };
         handle.addEventListener("pointermove", move);

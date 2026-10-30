@@ -39,8 +39,8 @@ test("e2e : bibliothèque, profils, MCP réel et paramètres persistants", {time
         await page.evaluate(project => window.frst.openProject(project), project);
         await page.locator('[data-view="extensions"]').click();
         await page.waitForSelector('[data-library-id="web-quality"]');
-        // Bibliothèque générique + packs Roblox Studio et Blender (16 skills vérifiables).
-        assert.equal(await page.locator("#library-list .center-card").count(), 38);
+        // Bibliothèque générique + packs Roblox Studio et Blender (18 skills vérifiables).
+        assert.equal(await page.locator("#library-list .center-card").count(), 40);
         assert.match(await page.locator("#library-list").innerText(), /Roblox/);
         await page.locator("#library-search").fill("responsive et accessible");
         assert.equal(await page.locator("#library-list .center-card").count(), 1);

@@ -39,9 +39,12 @@ function summarizeResult(name, result) {
             return result.timed_out
                 ? `${result.command} : délai dépassé`
                 : `${result.command} : code ${result.exit_code}`;
-        case "task":
-            return `Sous-agent${result.role && result.role !== "general" ? ` (${result.role})` : ""} : ${result.turns} tour(s), ${(result.files_read || []).length} fichier(s) lu(s)` +
+        case "task": {
+            const written = (result.files_written || []).length;
+            return `Sous-agent${result.role && result.role !== "general" ? ` (${result.label || result.role})` : ""} : ${result.turns} tour(s), ${(result.files_read || []).length} fichier(s) lu(s)` +
+                (written ? `, ${written} fichier(s) écrit(s)` : "") +
                 (result.incomplete ? ", sans compte rendu final" : "");
+        }
         case "browse":
             return `Capture : ${result.screenshot}` +
                 (result.status !== null && result.status !== undefined ? ` (HTTP ${result.status})` : "") +

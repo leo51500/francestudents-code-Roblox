@@ -10,7 +10,7 @@
 .motion-pill{font-size:10px;padding:2px 6px;border-radius:5px;background:var(--accent-soft);color:var(--link);border:1px solid var(--border-strong)}
 .motion-page button{font-family:var(--sans);font-size:11px;line-height:1.4;padding:5px 9px;min-height:28px;background:var(--bg-input);border:1px solid var(--border-strong);border-radius:6px;color:var(--fg);white-space:nowrap}
 .motion-page button:hover{background:var(--bg-hover);color:var(--fg-strong)}
-.motion-page button.primary{background:var(--accent);color:white;border-color:transparent}
+.motion-page button.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
 .motion-commandbar{flex-wrap:wrap;gap:8px;min-height:38px;padding:5px 10px;border-bottom:1px solid var(--border);background:var(--bg)}
 .motion-commandbar>div{gap:4px}
 .motion-commandbar button{background:transparent;border-color:transparent}
@@ -70,7 +70,7 @@
 .motion-commandbar .motion-transport { gap: 5px; flex: 0 0 auto; }
 .motion-commandbar button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; padding: 7px 11px; border: 1px solid var(--border-strong); background: var(--bg); border-radius: 8px; font-size: 11px; }
 .motion-commandbar button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
-.motion-commandbar #motion-play { background: var(--accent); border-color: var(--accent); color: white; padding-inline: 14px; }
+.motion-commandbar #motion-play { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); padding-inline: 14px; }
 .motion-commandbar #motion-play:hover { background: var(--accent-hover); }
 #motion-play svg,#motion-stop svg { fill: currentColor; stroke-width: 0; }
 .motion-control-divider { height: 20px; width: 1px; background: var(--border-strong); margin: 0 4px; }

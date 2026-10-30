@@ -100,6 +100,20 @@ function renderAgentActivity(run) {
         const name = document.createElement("small"); name.textContent = label; stat.append(number, name); stats.appendChild(stat);
     }
     overview.append(title, line, stats);
+    // Bandeau des sous-agents : ils travaillent en parallèle avec leurs propres outils, donc
+    // leur place est au-dessus de la chronologie (qui ne montre que les actions du parent).
+    const team = document.createElement("div"); team.className = "activity-subagents";
+    for (const agent of run.subagents || []) {
+        const row = document.createElement("details"); row.className = `activity-action activity-subagent activity-action-${agent.state === "running" ? "running" : agent.state === "done" ? "done" : "failed"}`;
+        row.open = agent.state === "running";
+        const summary = document.createElement("summary");
+        const turns = agent.turns ? ` · ${agent.turns} tour(s)` : "";
+        summary.textContent = `${agent.state === "running" ? "◉" : agent.state === "done" ? "✓" : "!"} Sous-agent ${agent.label}${turns}`;
+        const body = document.createElement("pre");
+        body.textContent = [agent.brief && `Brief : ${agent.brief}`, agent.written?.length && `Fichiers : ${agent.written.join(", ")}`, agent.report].filter(Boolean).join("\n\n");
+        row.append(summary, body); team.appendChild(row);
+    }
+    if (team.childElementCount) overview.appendChild(team);
     for (const action of (run.actions || []).slice().reverse()) {
         const row = document.createElement("details"); row.className = `activity-action activity-action-${action.status}`;
         const summary = document.createElement("summary"); summary.textContent = `${action.status === "done" ? "✓" : action.status === "running" ? "◉" : "!"} ${toolLabel(action.name)} · ${humanDuration(action.startedAt, action.endedAt)}`;

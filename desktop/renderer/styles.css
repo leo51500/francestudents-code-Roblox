@@ -54,7 +54,7 @@ button:hover {
 
 button.primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
     padding: 5px 12px;
 }
 
@@ -588,7 +588,18 @@ kbd {
 
 .resizer:hover,
 .resizer-h:hover {
-    background: var(--accent);
+    background: var(--border-strong);
+}
+
+/* La poignée prend la couleur de saisie pendant le glisser : on voit qu'elle est tenue. */
+html.layout-dragging #resizer-left,
+html.layout-dragging #resizer-right,
+html.layout-dragging #resizer-bottom {
+    background: linear-gradient(var(--fg-faint), var(--fg-faint)) center / 2px 100% no-repeat;
+}
+
+html.layout-dragging #resizer-bottom {
+    background: linear-gradient(var(--fg-faint), var(--fg-faint)) center / 100% 2px no-repeat;
 }
 
 .resizer-h {
@@ -631,12 +642,12 @@ kbd {
 
 .tab.active {
     background: var(--bg);
-    color: #fff;
+    color: var(--fg-strong);
     border-top: 1px solid var(--accent);
 }
 
 .tab .dirty {
-    color: #fff;
+    color: var(--fg-strong);
 }
 
 .tab .close {
@@ -708,6 +719,18 @@ kbd {
     flex-direction: column;
     background: var(--bg-panel);
     min-height: 60px;
+}
+
+/* Hauteur choisie à la poignée : elle arrive avec un léger enchaînement au lieu de
+   sauter d'un coup, et suit le curseur sans transition pendant le glisser. */
+@media (prefers-reduced-motion: no-preference) {
+    .panel {
+        transition: height 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    html.layout-dragging .panel {
+        transition: none;
+    }
 }
 
 .output {
@@ -982,7 +1005,7 @@ kbd {
 .slash-menu div.active,
 .slash-menu div:hover {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
 }
 
 /* Barre d'état */
@@ -1692,7 +1715,7 @@ kbd {
 
 .palette-item.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
 }
 
 .palette-item .detail {
@@ -1731,7 +1754,7 @@ kbd {
 
 .context-menu .item:hover {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-ink);
 }
 
 .context-menu .sep {
