@@ -1,6 +1,10 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.35":{headline:"Le choix de projet reste possible même quand la liste ne se rafraîchit pas.",items:[
+        {icon:"chat",title:"Plus de sélecteur bloqué",text:"Après un échec d'actualisation (session expirée, hors ligne), les projets déjà affichés restent sélectionnables dans « Discussions dans »."},
+        {icon:"spark",title:"Liste qui revient toute seule",text:"Après une reconnexion ou une minute d'attente, la liste des projets se recharge automatiquement, sans appuyer sur ↻."}
+    ]},
     "1.5.34":{headline:"Le séparateur suit le curseur au pixel, et le chat passe en plein écran au clavier.",items:[
         {icon:"tools",title:"Poignée flottante",text:"Pendant le glisser, un sash détaché style VS Code suit le curseur immédiatement, sans attendre le recalcul de la grille. La ligne d'accent reste visible au survol et au focus clavier."},
         {icon:"spark",title:"Ctrl+Maj+M",text:"Nouveau raccourci : bascule le plein écran du chat comme le bouton ⤢. Échap revient à la disposition d'avant."}
