@@ -3300,14 +3300,14 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             if (!drag) return;
             const delta = drag.last - drag.start;
             const nextLimit = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
-            const value = Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta)));
+            const value = Math.round(Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta))));
             // La classe layout-dragging neutralise la transition pendant toute la prise :
             // la taille réellement rendue suit la position du curseur, sans rattrapage après.
             if (animate && value === layoutPx(cssVar)) animate = false;
             if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
             // La bulle affiche la taille de la valeur visée, disponible dès la frame suivante.
-            showLayoutBadge({ label: `${label} · ${value} px`, clientX: pointer.x, clientY: pointer.y });
+            showLayoutBadge({ label: `${label} · ${value} px`, clientX: Math.round(pointer.x), clientY: Math.round(pointer.y) });
         };
         const pointer = { x: ev.clientX, y: ev.clientY };
         const move = (e) => {
@@ -6688,7 +6688,7 @@ async function refreshFrProjects(message = "") {
             const detail = String(error.message || "");
             const status = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
             if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) {
-                state.textContent = "Session de l’application refusée ou expirée. Vérifie ton compte dans les paramètres, puis réessaie ou reconnecte-toi.";
+                state.textContent = "Session expirée. Reconnecte-toi pour actualiser la liste, ou choisis un projet déjà chargé ci-dessus.";
                 if (typeof openConnectionGuide === "function") {
                     const login = document.createElement("button");
                     login.type = "button"; login.className = "fr-project-login"; login.textContent = "Se reconnecter";
@@ -6705,7 +6705,7 @@ async function refreshFrProjects(message = "") {
                 state.textContent = `Impossible de joindre le service des projets : ${detail.slice(0, 180)}`;
             }
         }
-        if (select) select.disabled = true;
+        if (select && !select.dataset.loaded) select.disabled = true;
         if (refresh) refresh.disabled = false;
     }
 }

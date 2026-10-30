@@ -1,6 +1,10 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.33":{headline:"Glisser plus précis et liste de projets plus tolérante.",items:[
+        {icon:"tools",title:"Tailles arrondies au pixel",text:"Le redimensionnement applique et affiche des valeurs entières : la bulle (« Chat · 420 px ») ne montre plus de décimales et le panneau ne garde aucune largeur impaire."},
+        {icon:"chat",title:"Projets encore utilisables",text:"Si l'actualisation échoue, les projets déjà chargés restent sélectionnables et le message en cas de session expirée est plus simple."}
+    ]},
     "1.5.32":{headline:"Les poignées de redimensionnement sont plus faciles à attraper et la bulle de taille s'affiche correctement.",items:[
         {icon:"tools",title:"Zone de clic élargie",text:"Les poignées du chat, des fichiers et du panneau bas ont une zone d'accroche agrandie (±4 px) : plus besoin de viser le trait de 4 px pour redimensionner."},
         {icon:"spark",title:"Bulle de taille réparée",text:"La bulle qui affiche la taille en direct (« Chat · 420 px ») avait perdu son style et apparaissait n'importe où. Elle est maintenant bien positionnée et visible."},

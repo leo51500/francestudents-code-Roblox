@@ -285,14 +285,14 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             if (!drag) return;
             const delta = drag.last - drag.start;
             const nextLimit = layoutMax(cssVar, layoutSizeOf(cssVar === "--left" ? "agent" : "sidebar", "x"));
-            const value = Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta)));
+            const value = Math.round(Math.max(min, Math.min(nextLimit, initial + (invert ? -delta : delta))));
             // La classe layout-dragging neutralise la transition pendant toute la prise :
             // la taille réellement rendue suit la position du curseur, sans rattrapage après.
             if (animate && value === layoutPx(cssVar)) animate = false;
             if (animate) document.documentElement.classList.remove("layout-dragging");
             document.documentElement.style.setProperty(cssVar, `${value}px`);
             // La bulle affiche la taille de la valeur visée, disponible dès la frame suivante.
-            showLayoutBadge({ label: `${label} · ${value} px`, clientX: pointer.x, clientY: pointer.y });
+            showLayoutBadge({ label: `${label} · ${value} px`, clientX: Math.round(pointer.x), clientY: Math.round(pointer.y) });
         };
         const pointer = { x: ev.clientX, y: ev.clientY };
         const move = (e) => {
