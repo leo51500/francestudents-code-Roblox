@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.39":{headline:"La barre blanche du redimensionnement ne reste plus à l'écran.",items:[
+        {icon:"tools",title:"Plus de trait figé",text:"Un glisser interrompu (souris relâchée hors de la fenêtre, Alt+Tab, perte de focus) laissait un trait blanc en travers des panneaux. L'état de glisser est maintenant effacé dès qu'il ne peut plus être en cours, et le trait n'apparaît que pendant le geste."},
+        {icon:"spark",title:"Trait discret",text:"Pendant le glisser, la ligne fait 2 px, reste translucide et couvre seulement la hauteur des panneaux : elle ne traverse plus la barre de titre ni la barre d'état."},
+        {icon:"clock",title:"Publication rétablie",text:"Les scripts de diagnostic déposés à la racine avec la 1.5.38 faisaient échouer la vérification automatique ; ils sont retirés."}
+    ]},
     "1.5.38":{headline:"Le sélecteur de projets distingue session expirée, droits refusés et panne réseau.",items:[
         {icon:"chat",title:"Message juste",text:"Au lancement, la liste était demandée avant que la connexion soit prête : l'échec s'affichait comme une session expirée. Un refus d'accès ou une coupure réseau n'est plus annoncé de la même façon, et le détail exact reste lisible au survol."},
         {icon:"tools",title:"Projets personnels toujours là",text:"Si la liste des projets partagés est refusée ou absente, tes projets personnels restent affichés et sélectionnables au lieu de disparaître derrière un message de session."},

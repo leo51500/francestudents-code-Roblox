@@ -1,5 +1,11 @@
 ﻿# Changelog
 
+## [1.5.39] - La barre blanche du redimensionnement ne reste plus à l'écran
+- **Trait blanc figé corrigé** : quand un glisser de séparateur se terminait sans recevoir le relâchement de la souris (relâchement hors de la fenêtre, Alt+Tab, perte de focus), le trait de redimensionnement restait affiché en plein milieu des panneaux, sur toute la hauteur, et donnait l'impression que l'interface était cassée. L'état de glisser est maintenant effacé dès qu'il ne peut plus être en cours : perte de focus, fenêtre masquée, mouvement de souris sans bouton enfoncé, ou nouveau clic.
+- **Trait discret et à sa place** : 2 px, translucide, limité à la hauteur des panneaux ; il ne traverse plus la barre de titre ni la barre d'état, et n'apparaît que pendant un glisser actif.
+- **CI de nouveau verte** : les quatre scripts de diagnostic `scratch-*.e2e.cjs` déposés à la racine avec la 1.5.38 faisaient échouer `npm run lint` (variables de navigateur hors contexte). Ils sont supprimés et le motif est ajouté au `.gitignore`.
+- Vérifié : `npm run build:renderer`, `npm run check:renderer`, `npm run lint`, et parcours Electron réels (glisser actif, relâchement hors fenêtre, perte de focus, clic ailleurs, glisser terminé normalement). Suite complète à lancer avant publication.
+
 ## [1.5.38] - Le sélecteur de projets distingue session expirée, droits refusés et panne réseau
 - **Fausse « session expirée » au lancement** : la liste des projets était demandée avant que le statut de l'application soit connu, donc sans jeton ; l'échec s'affichait comme une session expirée et restait à l'écran. La requête attend maintenant le premier statut, et la ligne revient à son état normal dès qu'une liste arrive.
 - **Cause annoncée correctement** : un refus de droits (HTTP 403) n'est plus présenté comme une session expirée, et une coupure réseau devient « service injoignable ». Le détail exact de l'échec reste lisible au survol de la ligne, sans jargon à l'écran.

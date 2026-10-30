@@ -3252,6 +3252,30 @@ function layoutSizeOf(id, axis) {
     return Math.round(axis === "x" ? rect.width : rect.height);
 }
 
+/* Un glisser peut se terminer sans événement de relâchement : relâchement hors de la
+ * fenêtre, Alt+Tab, page masquée. Le trait de redimensionnement restait alors affiché
+ * par-dessus toute l'interface (barre blanche en plein milieu des panneaux). On efface
+ * systématiquement l'état de glisser dès qu'il ne peut plus être en cours. */
+let layoutDragOwner = null;
+function endLayoutDragUi() {
+    layoutDragOwner = null;
+    document.documentElement.classList.remove("layout-dragging");
+    document.body.classList.remove("resizing-x", "resizing-y");
+    for (const sash of document.querySelectorAll(".resizer-sash-overlay")) sash.classList.remove("active");
+    hideLayoutBadge();
+    // Chaque poignee libere ses ecouteurs et son etat de glisser.
+    window.dispatchEvent(new Event("layout-drag-cancel"));
+}
+window.addEventListener("blur", endLayoutDragUi);
+document.addEventListener("visibilitychange", () => { if (document.hidden) endLayoutDragUi(); });
+// Un nouveau clic repart d'un état propre, même si le précédent est resté bloqué.
+document.addEventListener("pointerdown", endLayoutDragUi, true);
+// Un mouvement de souris sans bouton enfoncé prouve qu'aucun glisser n'est en cours :
+// c'est le cas d'un relâchement survenu hors de la fenêtre, dont on n'a rien reçu.
+document.addEventListener("pointermove", (ev) => {
+    if (layoutDragOwner && ev.buttons === 0) endLayoutDragUi();
+}, true);
+
 function dragResizer(id, cssVar, axis, invert, zoneId) {
     const handle = $(id);
     if (!handle) return;
@@ -3274,14 +3298,27 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             sash.className = "resizer-sash-overlay";
             document.body.appendChild(sash);
         }
+        // Le trait couvre exactement la hauteur des panneaux : il ne traverse ni la
+        // barre de titre ni la barre d'état, sinon la fenêtre paraît cassée.
+        const zone = handle.getBoundingClientRect();
+        sash.style.top = `${Math.round(zone.top)}px`;
+        sash.style.height = `${Math.round(zone.height)}px`;
         sash.style.transform = `translateX(${Math.round(clientX)}px)`;
-        sash.style.height = `${window.innerHeight}px`;
         sash.classList.add("active");
     }
 
     function hideSash() {
         if (sash) sash.classList.remove("active");
     }
+
+    // Abandon global (perte de focus, clic, souris sans bouton) : on relâche tout.
+    window.addEventListener("layout-drag-cancel", () => {
+        if (!activeDrag) return;
+        activeDrag.finished = true;
+        activeDrag = null;
+        activeDragCleanup?.();
+        hideSash();
+    });
 
     // Double-clic : largeur par défaut de la colonne, tout de suite visible.
     handle.addEventListener("dblclick", (ev) => {
@@ -3301,7 +3338,9 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     });
 
     handle.addEventListener("pointerdown", (ev) => {
-        if (ev.button !== 0 || activeDrag) return;
+        if (ev.button !== 0) return;
+        // Un glisser abandonné (perte de focus) garde son état : on le remplace.
+        if (activeDrag) { activeDragCleanup?.(); activeDrag = null; }
         ev.preventDefault();
         try {
             handle.setPointerCapture(ev.pointerId);
@@ -3310,6 +3349,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         }
         document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
         document.documentElement.classList.add("layout-dragging");
+        layoutDragOwner = cssVar;
         const start = axis === "x" ? ev.clientX : ev.clientY;
         activeDrag = { pointerId: ev.pointerId, start, last: start, finished: false };
         const initial = layoutSizeOf(zoneId, axis) || layoutPx(cssVar);
@@ -3335,6 +3375,8 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         };
         const pointer = { x: ev.clientX, y: ev.clientY };
         const move = (e) => {
+            // Glisser abandonné entre-temps (perte de focus) : on n'applique plus rien.
+            if (layoutDragOwner !== cssVar) return;
             if (!activeDrag || activeDrag.finished || (e.pointerId !== undefined && e.pointerId !== activeDrag.pointerId)) return;
             document.body.classList.add(axis === "x" ? "resizing-x" : "resizing-y");
             document.documentElement.classList.add("layout-dragging");
@@ -3349,6 +3391,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             const drag = activeDrag;
             if (!drag || drag.finished) return;
             drag.finished = true;
+            if (layoutDragOwner === cssVar) layoutDragOwner = null;
             apply();
             hideSash();
             // La valeur finale reste visible un court instant après le relâchement.
@@ -3371,6 +3414,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             if (typeof saveLayout === "function") saveLayout();
         };
         const cleanup = () => {
+            if (layoutDragOwner === cssVar) layoutDragOwner = null;
             handle.removeEventListener("pointermove", move);
             document.removeEventListener("pointermove", move);
             handle.removeEventListener("pointerup", finish);

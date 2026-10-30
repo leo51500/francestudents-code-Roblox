@@ -638,12 +638,14 @@ html.layout-dragging #resizer-bottom {
 }
 
 /* Sash flottant style VS Code : suit le curseur via transform (position: fixed),
-   independant de la grille CSS. Invisible par defaut, visible seulement active. */
+   independant de la grille CSS. Fin et translucide, et jamais laisse a l'ecran :
+   des qu'un glisser n'est plus en cours, il disparait (voir aussi la regle
+   ci-dessous, qui couvre un etat bloque). */
 .resizer-sash-overlay {
     position: fixed;
     top: 0;
     left: -2px;
-    width: 4px;
+    width: 2px;
     pointer-events: none;
     z-index: 100000;
     background: var(--accent, #f5a623);
@@ -653,7 +655,13 @@ html.layout-dragging #resizer-bottom {
 }
 
 .resizer-sash-overlay.active {
-    opacity: 1;
+    opacity: .55;
+}
+
+/* Filet de securite : sans glisser en cours, aucun sash ne reste visible, meme si
+   son etat avait survecu a un relachement hors fenetre (Alt+Tab, perte de focus). */
+html:not(.layout-dragging) .resizer-sash-overlay {
+    opacity: 0 !important;
 }
 
 .resizer-h {
