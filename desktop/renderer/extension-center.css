@@ -70,6 +70,20 @@
 .settings-number-grid input { width: 100%; }
 .mcp-details { font-size: 12px; color: var(--fg-dim); padding: 10px 0; overflow-wrap: anywhere; }
 .mcp-details li { margin: 6px 0; }
+/* Fenêtre étroite : le centre d'extensions ne doit jamais passer sous le chat. Quand la
+   place restante est insuffisante, il prend toute la largeur et le chat s'efface
+   (Ctrl+Alt+A le ramène) : les onglets et les boutons restent cliquables. */
+@media (max-width: 1240px) {
+    #app.view-ext #ext-view {
+        left: calc(var(--rail, 168px) + var(--left) + 4px);
+        min-width: min(480px, calc(100vw - var(--rail, 168px) - var(--left) - 4px));
+    }
+    #app.view-ext:not(.no-agent) > #agent,
+    #app.view-ext:not(.no-agent) > #resizer-right {
+        display: none;
+    }
+}
+
 /* Petites fenêtres : le centre d'extensions occupe la largeur disponible, sans débordement. */
 @media (max-width: 1050px) { #app.view-ext #ext-view { right: 0; } }
 @media (max-width: 600px) { .settings-number-grid { grid-template-columns: 1fr; } .center-hero { padding: 16px; } #app.view-ext #ext-view { padding: 0 12px 18px; } }

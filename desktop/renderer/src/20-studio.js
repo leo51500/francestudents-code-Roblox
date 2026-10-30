@@ -206,6 +206,9 @@ $("agent-access").onclick = () => showSideView("settings");
  * /fr-project dans le CLI). La liste vient du compte : rien n'est inventé ni créé, et
  * un projet supprimé sur le site disparaît du sélecteur. */
 let frProjectSelected = null;
+/* Dernière liste connue : elle reste sélectionnable si l'actualisation échoue
+ * (session expirée, hors ligne), pour ne pas bloquer le choix du projet. */
+let frProjectsKnown = [];
 /* Une liste qui a échoué (session expirée, réseau) doit être rechargée dès que
  * possible, sans marteler l'API à chaque poussée de statut : on laisse un délai. */
 let frProjectsRetryAt = 0;
@@ -214,7 +217,9 @@ function renderFrProjects(data, message = "") {
     const select = $("fr-project-select"), state = $("fr-project-state"), refresh = $("fr-project-refresh");
     if (!select) return;
     const projects = Array.isArray(data?.projects) ? data.projects : [];
-    frProjectSelected = data?.selected ? { id: String(data.selected.id), name: String(data.selected.name) } : null;
+    const previousName = frProjectSelected?.id === String(data?.selected?.id ?? "") ? frProjectSelected?.name : "";
+    frProjectSelected = data?.selected ? { id: String(data.selected.id), name: String(data.selected.name || projects.find(item => String(item.id) === String(data.selected.id))?.name || previousName || data.selected.id) } : null;
+    if (projects.length) frProjectsKnown = projects.map(project => ({ id: String(project.id), name: String(project.name || project.id) }));
     select.replaceChildren();
     if (state && data?.sharedUnavailable) {
         state.textContent = "Projets partagés indisponibles sur ce serveur ; seuls les projets personnels sont listés.";
@@ -231,6 +236,8 @@ function renderFrProjects(data, message = "") {
         select.appendChild(option);
     }
     select.value = frProjectSelected?.id || "";
+    // Une liste vide affichée ("Aucun projet sur le site") est un fait connu : le champ
+    // reste cohérent avec ce qui est montré. Une liste inaccessible garde les choix connus.
     select.disabled = !projects.length;
     select.dataset.loaded = "1";
     if (state) {
@@ -280,7 +287,9 @@ async function refreshFrProjects(message = "") {
             const detail = String(error.message || "");
             const status = /^HTTP (\d{3})\b/i.exec(detail)?.[1];
             if (/Aucune session|Connexion impossible|HTTP 401|HTTP 403/i.test(detail)) {
-                state.textContent = "Session expirée. Reconnecte-toi pour actualiser la liste, ou choisis un projet déjà chargé ci-dessus.";
+                state.textContent = frProjectSelected
+                    ? `Session expirée pour la liste, mais « ${frProjectSelected.name} » reste choisi : les nouvelles discussions y seront classées. Reconnecte-toi pour changer de projet.`
+                    : "Session expirée. Reconnecte-toi pour choisir dans quel projet classer les nouvelles discussions.";
                 if (typeof openConnectionGuide === "function") {
                     const login = document.createElement("button");
                     login.type = "button"; login.className = "fr-project-login"; login.textContent = "Se reconnecter";
@@ -298,13 +307,44 @@ async function refreshFrProjects(message = "") {
             }
         }
         if (select) {
-            // La liste déjà chargée reste utilisable : l'utilisateur doit pouvoir choisir
+            // La liste déjà connue reste utilisable : l'utilisateur doit pouvoir choisir
             // un projet même quand l'actualisation échoue (session expirée, hors ligne).
-            if (!select.dataset.loaded) select.disabled = true;
+            if (!select.dataset.loaded) keepKnownFrProjects();
+            else select.disabled = false;
             frProjectsRetryAt = Date.now() + 60_000;
         }
         if (refresh) refresh.disabled = false;
     }
+}
+
+/* Réaffiche les projets déjà connus quand l'actualisation échoue : le sélecteur
+ * reste utilisable avec ce qui a été chargé, au lieu de se vider. */
+function keepKnownFrProjects() {
+    const select = $("fr-project-select");
+    if (!select) return;
+    const current = frProjectSelected?.id || "";
+    select.replaceChildren();
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "Aucun projet";
+    select.appendChild(none);
+    for (const project of frProjectsKnown) {
+        const option = document.createElement("option");
+        option.value = project.id;
+        option.textContent = project.name;
+        option.title = `Les nouvelles discussions iront dans « ${project.name} »`;
+        select.appendChild(option);
+    }
+    // Le projet actif reste affiché même s'il n'est plus dans la liste connue.
+    if (current && !frProjectsKnown.some(project => project.id === current)) {
+        const option = document.createElement("option");
+        option.value = current;
+        option.textContent = frProjectSelected.name || current;
+        select.appendChild(option);
+    }
+    select.value = current;
+    select.disabled = false;
+    select.dataset.loaded = frProjectsKnown.length ? "1" : "";
 }
 
 function syncFrProject(project, booted = ui.status?.booted) {
@@ -315,7 +355,11 @@ function syncFrProject(project, booted = ui.status?.booted) {
     // Après une reconnexion ou un délai écoulé depuis un échec, la liste se recharge
     // d'elle-même : plus besoin d'appuyer sur ↻ pour retrouver ses projets.
     const select = $("fr-project-select");
-    if (!select || !select.dataset.loaded) return;
+    // Le sélecteur reste utilisable avec la liste connue même sans liste chargée.
+    if (!select || !select.dataset.loaded) {
+        if (select) select.disabled = false;
+        return;
+    }
     if (frProjectsRetryAt && Date.now() >= frProjectsRetryAt) {
         frProjectsRetryAt = 0;
         refreshFrProjects();
@@ -339,11 +383,19 @@ $("fr-project-select")?.addEventListener("change", async (event) => {
     const id = event.target.value;
     const name = event.target.selectedOptions[0]?.textContent || "";
     try {
-        const data = await api.frProjects("select", { id });
-        renderFrProjects(data, id ? `Les nouvelles discussions iront dans « ${name} ».` : "Nouveau : plus de rattachement à un projet.");
+        const data = await api.frProjects("select", { id, name });
+        // Une réponse sans liste (session expirée ou « Aucun projet ») ne doit pas effacer
+        // les projets déjà connus : on les réaffiche autour du choix. Une liste reçue,
+        // même vide, est la vérité du compte et remplace la précédente.
+        const received = Array.isArray(data?.projects) ? data.projects : null;
+        const projects = received && received.length ? received : (data?.unavailable ? frProjectsKnown : received || frProjectsKnown);
+        renderFrProjects({ ...data, projects, selected: data?.selected ?? (id ? { id, name } : null) },
+            id ? `Les nouvelles discussions iront dans « ${name} ».` : "Nouveau : plus de rattachement à un projet.");
     } catch (error) {
+        // Le choix reste visible : seule la mémorisation côté compte a échoué.
         $("fr-project-state").classList.add("error");
         $("fr-project-state").textContent = `Choix non enregistré : ${error.message}`;
+        if ($("fr-project-select")) $("fr-project-select").value = frProjectSelected?.id || "";
         refreshFrProjects();
     }
 });
@@ -358,36 +410,27 @@ function setAgentFocus(active){
     const focused = active === true;
     if (focused) {
         app.dataset.focusGridColumns = app.style.gridTemplateColumns;
-        app.dataset.focusGridRows = app.style.gridTemplateRows;
-        app.dataset.focusTitlebar = app.style.getPropertyValue("--titlebar");
         app.dataset.focusLeft = app.style.getPropertyValue("--left");
         app.dataset.focusRight = app.style.getPropertyValue("--right");
         app.dataset.focusRail = app.style.getPropertyValue("--rail");
         app.style.gridTemplateColumns = "0 0 0 0 0 minmax(0, 1fr)";
-        app.style.gridTemplateRows = "minmax(0, 1fr) 0";
         app.style.setProperty("--left", "0px"); app.style.setProperty("--right", "0px"); app.style.setProperty("--rail", "0px");
     }
     app.classList.toggle("focus-agent", focused);
-    if (focused) {
-        app.style.gridTemplateRows = app.classList.contains("chat-detached") ? "minmax(0, 1fr) 24px" : "minmax(0, 1fr) 0";
-        app.style.setProperty("--titlebar", "0px");
-    }
+    // Le plein écran garde la ligne de la barre de titre (bouton ⤢, « Mise à jour »
+    // accessibles) : les lignes viennent de .focus-agent dans agent-workspace.css.
     const label = focused ? "Quitter le plein écran du chat" : "Agrandir le chat";
     button.setAttribute("aria-pressed",String(focused));button.setAttribute("aria-label",label);button.title=label;
     button.textContent=focused?"⤡":"⤢";
     if (!focused) {
         const columns = app.dataset.focusGridColumns || "";
-        const rows = app.dataset.focusGridRows || "";
         const left = app.dataset.focusLeft || "", right = app.dataset.focusRight || "", rail = app.dataset.focusRail || "";
-        delete app.dataset.focusGridColumns; delete app.dataset.focusGridRows;
+        delete app.dataset.focusGridColumns;
         delete app.dataset.focusLeft; delete app.dataset.focusRight; delete app.dataset.focusRail;
-        if (app.dataset.focusTitlebar) app.style.setProperty("--titlebar", app.dataset.focusTitlebar);
-        else app.style.removeProperty("--titlebar");
-        delete app.dataset.focusTitlebar;
         if (left) app.style.setProperty("--left", left); else app.style.removeProperty("--left");
         if (right) app.style.setProperty("--right", right); else app.style.removeProperty("--right");
         if (rail) app.style.setProperty("--rail", rail); else app.style.removeProperty("--rail");
-        app.style.gridTemplateColumns = columns; app.style.gridTemplateRows = rows;
+        app.style.gridTemplateColumns = columns;
     }
 }
 $("agent-focus").onclick = () => setAgentFocus(!$("app").classList.contains("focus-agent"));

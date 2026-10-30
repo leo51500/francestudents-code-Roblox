@@ -12,6 +12,8 @@ test("startup offers an available update, supports later, download and explicit 
         await page.screenshot({path:path.join(root,"release/startup-update-offer.png")});
         await page.getByRole("button",{name:"Plus tard",exact:true}).click();
         assert.equal(await page.locator("#startup-loading").isVisible(),false);assert.equal(await page.locator("#app").evaluate(el=>el.inert),false);
+        // La barre de titre, désactivée pendant l'écran de démarrage, redevient utilisable.
+        assert.equal(await page.locator("#titlebar").evaluate(el=>el.inert),false);
         await page.locator("#startup-update-open").click();
         await page.getByRole("button",{name:"Mettre à jour maintenant",exact:true}).click();
         await page.getByRole("button",{name:"Redémarrer et installer",exact:true}).waitFor();

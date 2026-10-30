@@ -1,8 +1,11 @@
 /* Agent workspace: reuse the existing Dark Modern theme and its tokens. */
 .agent-navigation { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
-/* En petite fenêtre, le sélecteur de projet passe à la ligne plutôt que d'écraser les
-   onglets ou de sortir de la colonne (aucun élément ne se chevauche). */
-@media (max-width: 1100px) { .agent-navigation .agent-fr-project { order: 3; flex-basis: 100%; } }
+/* Le sélecteur de projet ouvre l'en-tête du chat, sur sa propre ligne : on choisit où
+   partir avant d'écrire. En petite fenêtre il reste en tête et prend toute la largeur
+   au lieu d'écraser les onglets. */
+.agent-navigation .agent-fr-project { order: -1; flex-basis: 100%; }
+/* Le libellé reste entier : c'est lui qui explique où part la discussion. */
+.agent-navigation .agent-fr-project label { flex: 0 0 auto; overflow: visible; text-overflow: clip; }
 .agent-tabs { display: flex; align-items: center; gap: 6px; }
 .agent-tabs button { color: var(--fg-dim); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 7px 11px; min-height: 32px; font-size: 11px; line-height: 16px; position: relative; cursor: pointer; transition: color .15s ease, background-color .15s ease, border-color .15s ease; }
 .agent-tabs button:hover { color: var(--fg-strong); background: var(--bg-hover); }

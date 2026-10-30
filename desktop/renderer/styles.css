@@ -268,7 +268,7 @@ kbd {
 
 /* Explorateur */
 #sidebar {
-    grid-row: 1 / span 2;
+    grid-row: 2 / span 1;
     grid-column: 2;
     background: var(--bg-side);
     display: flex;
@@ -279,7 +279,7 @@ kbd {
 
 /* Rail de navigation : occupe toute la hauteur, logo en haut, outils en bas. */
 #sidebar-tabs {
-    grid-row: 1 / span 2;
+    grid-row: 2 / -1;
     min-height: 0;
 }
 
