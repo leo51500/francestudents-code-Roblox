@@ -1,6 +1,14 @@
 ﻿# Changelog
 
-## [1.5.37] — La barre de titre redevient accessible, le sélecteur de projet passe en tête du chat
+## [1.5.38] - Le sélecteur de projets distingue session expirée, droits refusés et panne réseau
+- **Fausse « session expirée » au lancement** : la liste des projets était demandée avant que le statut de l'application soit connu, donc sans jeton ; l'échec s'affichait comme une session expirée et restait à l'écran. La requête attend maintenant le premier statut, et la ligne revient à son état normal dès qu'une liste arrive.
+- **Cause annoncée correctement** : un refus de droits (HTTP 403) n'est plus présenté comme une session expirée, et une coupure réseau devient « service injoignable ». Le détail exact de l'échec reste lisible au survol de la ligne, sans jargon à l'écran.
+- **Projets partagés tolérants** : une route `/projects/shared` refusée ou absente (400, 403, 404, 405) ne masque plus les projets personnels ; seul un refus d'authentification remonte.
+- **Plus de requêtes en boucle** : après un échec, la liste respecte le délai d'une minute au lieu d'être redemandée à chaque poussée de statut (toutes les deux secondes). Une reconnexion la recharge immédiatement.
+- **Sans compte connecté** : la ligne propose « Se connecter » en gris, sans erreur rouge, et le sélecteur reste cohérent.
+- Vérifié : `npm run build:renderer`, `npm run check:renderer`, `npm run lint`, `node --test test/fr-projects.test.js` (8 tests) et parcours Electron réels (403, 401, hors ligne, non connecté, liste chargée). Suite complète à lancer avant publication.
+
+## [1.5.37] - La barre de titre redevient accessible, le sélecteur de projet passe en tête du chat
 - **Boutons de la barre de titre bloqués** : le chat et sa poignée de redimensionnement démarraient tout en haut de la fenêtre et recouvraient la pastille « Mise à jour » et les boutons de la barre de titre. La grille réserve maintenant une ligne à la barre de titre : aucune colonne ne monte dessous, et ses boutons répondent de nouveau à toutes les tailles de fenêtre.
 - **« Discussions dans » en tête du chat** : le sélecteur de projet ouvre l'en-tête du chat sur sa propre ligne, avant les onglets, avec son libellé entier. On choisit où part la discussion avant d'écrire, y compris dans une petite fenêtre.
 - **Centre d'extensions sur fenêtre étroite** : sous 1240 px, il ne passe plus sous le chat ; il prend la largeur disponible pour que ses onglets et boutons restent cliquables.

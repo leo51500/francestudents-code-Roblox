@@ -63,7 +63,11 @@ async function listProjects() {
         const shared = await requestJson("GET", "/projects/shared");
         projects.push(...asList(shared));
     } catch (error) {
-        if (error.status !== 404) throw error;
+        // Route partagée absente ou désactivée (400, 403, 404, 405) : elle ne doit ni
+        // priver l'utilisateur de ses projets personnels ni faire croire à une session
+        // expirée alors que « GET /projects » vient de répondre. Un 401, une panne
+        // serveur ou le réseau remontent tels quels.
+        if (![400, 403, 404, 405].includes(error.status)) throw error;
         sharedUnavailable = true;
     }
     const unique = new Map(projects.filter(project => project?.id != null).map(project => [String(project.id), project]));
