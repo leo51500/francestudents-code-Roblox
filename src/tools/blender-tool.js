@@ -18,8 +18,12 @@ const sandbox = require("./sandbox");
 const blender = require("./blender");
 
 const ACTIONS = ["detect", "inspect", "validate", "render", "script", "templates", "manifest", "import_roblox", "export_blender"];
-// studio : fond sombre (aperçu habituel) ; plain : fond neutre pour comparer à une référence.
-const RENDER_MODES = ["studio", "plain"];
+// studio : fond sombre (aperçu habituel) ; plain : fond neutre pour comparer à une
+// référence ; silhouette : noir sur blanc, projection orthographique, pour juger la forme.
+const RENDER_MODES = ["studio", "plain", "silhouette"];
+// Noms des vues écrites par render_preview : la comparaison à une référence
+// porte sur UNE vue, pas sur l'assemblage des quatre.
+const VIEW_ANGLES = ["face", "trois-quarts", "cote", "dessus"];
 const trusted = new Set();
 
 function insideProject(workspace, file) {
@@ -45,6 +49,11 @@ function checkArgs(args = {}) {
     if (args.mode !== undefined) {
         requireString(args.mode, "mode");
         if (!RENDER_MODES.includes(args.mode)) throw new Error(`mode doit valoir ${RENDER_MODES.join(" ou ")}.`);
+    }
+    if (args.reference !== undefined) requireString(args.reference, "reference");
+    if (args.angle !== undefined) {
+        requireString(args.angle, "angle");
+        if (!VIEW_ANGLES.includes(args.angle)) throw new Error(`angle doit valoir ${VIEW_ANGLES.join(" ou ")}.`);
     }
     optionalInt(args.timeout_ms, "timeout_ms");
     argList(args.script_args, "script_args");
@@ -170,22 +179,55 @@ async function runBlender(args = {}) {
         const target = insideProject(workspace, output);
         fs.mkdirSync(path.dirname(target), { recursive: true });
         const harness = path.join(blender.TEMPLATE_DIR, "render_preview.py");
-        const mode = args.mode || "studio";
-        const res = await sandbox.runProcess(
-            found.path,
-            ["--background", "--factory-startup", "--python", harness, "--", "--input", input, "--render", target, "--mode", mode],
-            { cwd: workspace, timeoutMs: args.timeout_ms ?? 180000 }
-        );
+        const reference = args.reference ? insideProject(workspace, args.reference) : null;
+        if (reference && !fs.existsSync(reference)) {
+            throw new Error(`Image de référence introuvable : ${args.reference}`);
+        }
+        // La comparaison de forme est fiable sur un rendu silhouette : fond
+        // uniforme, objet noir. Sans mode explicite, une référence l'active.
+        const mode = args.mode || (reference ? "silhouette" : "studio");
+        const angle = args.angle || "face";
+        const callArgs = [
+            "--background", "--factory-startup", "--python", harness, "--",
+            "--input", input, "--render", target, "--mode", mode
+        ];
+        if (reference) callArgs.push("--reference", reference, "--angle", angle);
+        const res = await sandbox.runProcess(found.path, callArgs, {
+            cwd: workspace,
+            timeoutMs: args.timeout_ms ?? 180000
+        });
         const ok = res.exit_code === 0 && fs.existsSync(target);
+        const comparison = reference ? blender.parseMarker(res.output, "COMPARE") : null;
+
+        let message = ok
+            ? `Rendu ${mode === "silhouette" ? "silhouette (noir sur blanc, orthographique)" : mode === "plain" ? "sur fond neutre" : "studio"} écrit dans ${output}. Examine-le avec view_image {path:"${output}"}.`
+            : "Le rendu Blender a échoué : lis output, corrige le script puis relance.";
+
+        if (ok && reference) {
+            const relative = sandbox.relativeTo(workspace, reference);
+            const score = value => (typeof value === "number" ? value.toFixed(2).replace(".", ",") : "—");
+            if (comparison) {
+                message += comparison.iou === null
+                    ? ` Comparaison vue ${angle} avec ${relative} : ${comparison.verdict} (${comparison.reason}).`
+                    : ` Comparaison vue ${angle} avec ${relative} : IoU ${score(comparison.iou)}, SSIM ${score(comparison.ssim)} — ${comparison.verdict}${comparison.reason ? ` (${comparison.reason})` : ""}.`;
+                if (comparison.verdict === "différent") {
+                    message += " Corrige les proportions et la silhouette, puis relance avant de conclure.";
+                }
+            } else {
+                message += " La comparaison de référence n'a rien renvoyé d'exploitable : juge la forme avec view_image.";
+            }
+        }
+
         return {
             status: ok ? "ok" : res.timed_out ? "timeout" : "failed",
             exit_code: res.exit_code,
             preview: ok ? output : null,
             mode,
+            reference: reference ? sandbox.relativeTo(workspace, reference) : null,
+            angle: reference ? angle : null,
+            comparison,
             output: res.output.slice(-4000),
-            message: ok
-                ? `Rendu ${mode === "plain" ? "sur fond neutre" : "studio"} écrit dans ${output}. Examine-le avec view_image {path:"${output}"}.`
-                : "Le rendu Blender a échoué : lis output, corrige le script puis relance."
+            message
         };
     }
 

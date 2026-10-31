@@ -11,7 +11,7 @@ test("les rôles de sous-agent sont connus, sans doublon et déclarent leur acc�
     assert.ok(NAMES.includes("general"));
     // Un rôle en écriture le dit explicitement ; les autres restent en lecture seule.
     for (const name of NAMES) assert.match(rolePrompt(name), canWrite(name) ? /MODIFIER le projet/ : /LECTURE SEULE/);
-    assert.deepEqual(READ_TOOLS, ["list_directory", "read_file", "search_files"]);
+    assert.deepEqual(READ_TOOLS, ["list_directory", "read_file", "search_files", "find_files"]);
 });
 
 test("le prompt du sous-agent garde la mission et ajoute la spécialité", () => {

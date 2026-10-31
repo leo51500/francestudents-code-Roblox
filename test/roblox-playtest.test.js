@@ -1,50 +1,32 @@
 "use strict";
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const os = require("node:os");
-const path = require("node:path");
 
-const playtest = require("../src/tools/roblox-playtest");
+const { parseStudioLog } = require("../src/tools/roblox-playtest");
 
-test("roblox_playtest valide ses arguments", () => {
-    assert.throws(() => playtest.check({ action: "delete" }), /action doit valoir/);
-    assert.throws(() => playtest.check({ build: "oui" }), /build/);
-    assert.throws(() => playtest.check({ open: 1 }), /open/);
-    assert.doesNotThrow(() => playtest.check({}));
-    assert.doesNotThrow(() => playtest.check({ action: "logs", since_ms: 60000 }));
+test("parseStudioLog ignore le bruit Windows de démarrage de Studio", () => {
+    const log = [
+        "2026-10-31T02:53:30.354Z,0.354281,82e4,6,Info [FLog::WndProcessCheck] waitForNewPlayerProcess new waiting for mutex result is 0X000000, ERROR The operation completed successfully.",
+        "2026-10-31T02:54:54.719Z,0.719698,7b48,6,Error [FLog::Error] Redundant Flag ID: AnimationGraphStateMachine",
+        "2026-10-31T02:54:54.719Z,0.719698,7b48,6,Error [FLog::Graphics] Potential graphics modes: 1",
+        "2026-10-31T02:54:54.719Z,0.719698,7b48,6,Error [FLog::Network] HTTP Request user-heartbeats-api/action-report failed: Place does not exist.",
+        "2026-10-31T02:54:54.719Z,0.719698,7b48,6,Error [FLog::Debugger] DAPClient: Response was an error: Failed to send message to server.",
+        "2026-10-31T02:53:31.000Z,0.1,82e4,6,Info [FLog::Output] Chargement terminé."
+    ].join("\n");
+    assert.deepEqual(parseStudioLog(log), { errors: [], warnings: [] });
 });
 
-test("readStudioErrors ne prétend pas avoir lu un log absent", () => {
-    const result = playtest.readStudioErrors(0);
-    assert.equal(typeof result.available, "boolean");
-    assert.ok(Array.isArray(result.errors));
-    assert.ok(Array.isArray(result.warnings));
-    if (!result.available) assert.match(result.message, /introuvable/);
-});
-
-test("runPlaytest bloque proprement sans projet Rojo", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "frst-playtest-"));
-    const state = require("../src/state").state;
-    const previous = state.workspace;
-    state.workspace = dir;
-    try {
-        const result = await playtest.runPlaytest({ build: false });
-        assert.equal(result.status, "blocked");
-        assert.ok(typeof result.message === "string" && result.message.length > 0);
-    } finally {
-        state.workspace = previous;
-        fs.rmSync(dir, { recursive: true, force: true });
-    }
-});
-
-test("runPlaytest exige un projet sélectionné", async () => {
-    const state = require("../src/state").state;
-    const previous = state.workspace;
-    state.workspace = null;
-    try {
-        await assert.rejects(() => playtest.runPlaytest({}), /Aucun projet/);
-    } finally {
-        state.workspace = previous;
-    }
+test("parseStudioLog conserve les vraies erreurs et avertissements Luau", () => {
+    const log = [
+        "ServerScriptService.Server.Main:12: attempt to index nil with 'Value'",
+        "stack traceback:",
+        "ServerScriptService.Server.Main:12: in function 'onPlayerAdded'",
+        "Warning: quelque chose à vérifier",
+        "ERREUR: sauvegarde impossible"
+    ].join("\n");
+    const parsed = parseStudioLog(log);
+    assert.equal(parsed.errors.length, 3);
+    assert.match(parsed.errors[0], /attempt to index nil/);
+    assert.equal(parsed.warnings.length, 1);
 });

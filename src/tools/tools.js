@@ -12,6 +12,7 @@ const { TOOLS, validateToolCall, describeCall } = require("./registry");
 const { listDirectory } = require("./fs/list-directory");
 const { readFile } = require("./fs/read-file");
 const { searchFiles } = require("./fs/search-files");
+const { findFiles } = require("./fs/find-files");
 const { undoLast } = require("./core/journal");
 
 /* ============================================================
@@ -33,6 +34,7 @@ function summarizeResult(name, result) {
             return `${result.total_lines} lignes${where}` + (result.truncated ? ", tronqué" : "");
         }
         case "search_files":
+        case "find_files":
         case "web_search":
             return result.message;
         case "run_command":
@@ -75,6 +77,12 @@ async function setProject(directory, { newConv = false } = {}) {
     await memory.open(real);
 
     const { project, created } = await projects.open(real, { newConv });
+
+    try {
+        await require("../project/project-facts").refresh(memory, real);
+    } catch (error) {
+        require("../ui-bridge").ui.debug(`Faits du projet non enregistrés : ${error.message}`);
+    }
 
     for (const mode of ["chat", "agent"]) {
         const saved = project.conversations[mode];
@@ -129,5 +137,6 @@ module.exports = {
     undoLast,
     listDirectory,
     readFile,
-    searchFiles
+    searchFiles,
+    findFiles
 };

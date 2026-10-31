@@ -122,3 +122,67 @@ test("roblox_check : projet Rojo détecté en priorité", () => {
         fs.rmSync(dir, { recursive: true, force: true });
     }
 });
+
+test("roblox_check : wait/spawn/delay/tick obsolètes, task.wait accepté", () => {
+    const legacy = [
+        "wait(1)",
+        "spawn(function() end)",
+        "delay(1, function() end)",
+        "local temps = tick()"
+    ].join("\n");
+    const codes = inspectLuau(legacy, "src/shared/temps.luau").map(item => item.code);
+    assert.equal(codes.filter(code => code === "deprecated-global").length, 4);
+
+    const modern = [
+        "local Players = game:GetService(\"Players\")",
+        "task.wait(1)",
+        "task.spawn(function() end)",
+        "local temps = os.clock()"
+    ].join("\n");
+    assert.deepEqual(inspectLuau(modern, "src/shared/temps.luau"), []);
+});
+
+test("roblox_check : game.Workspace et RemoteEvent créé côté client signalés", () => {
+    const source = [
+        "local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")",
+        "local base = game.Workspace.Baseplate",
+        "local event = Instance.new(\"RemoteEvent\")",
+        "event.Parent = ReplicatedStorage"
+    ].join("\n");
+    const codes = inspectLuau(source, "src/client/jeu.client.luau").map(item => item.code);
+    assert.ok(codes.includes("game-workspace"), codes.join(","));
+    assert.ok(codes.includes("remote-client-creation"), codes.join(","));
+});
+
+test("roblox_check : OnServerEvent sans validation et DataStore non protégé", () => {
+    const source = [
+        "local DataStoreService = game:GetService(\"DataStoreService\")",
+        "local store = DataStoreService:GetDataStore(\"Joueurs\")",
+        "store:SetAsync(player.Name, 1)",
+        "Remotes.BuyItem.OnServerEvent:Connect(function(player, item)",
+        "    print(item)",
+        "end)"
+    ].join("\n");
+    const codes = inspectLuau(source, "src/server/achat.server.luau").map(item => item.code);
+    assert.ok(codes.includes("datastore-player-name-key"), codes.join(","));
+    assert.ok(codes.includes("datastore-no-pcall"), codes.join(","));
+    assert.ok(codes.includes("remote-client-validation"), codes.join(","));
+});
+
+test("roblox_check : une connexion au chargement du script n'est pas un fuite", () => {
+    const topLevel = [
+        "local Players = game:GetService(\"Players\")",
+        "Players.PlayerAdded:Connect(function(player)",
+        "    print(player.Name)",
+        "end)"
+    ].join("\n");
+    assert.deepEqual(inspectLuau(topLevel, "src/server/joueurs.server.luau"), []);
+
+    const repeated = [
+        "local function installer(signal)",
+        "    signal:Connect(function() print(\"x\") end)",
+        "end",
+        "installer(workspace.ChildAdded)"
+    ].join("\n");
+    assert.ok(inspectLuau(repeated, "src/server/installer.server.luau").some(item => item.code === "connect-without-disconnect"));
+});
