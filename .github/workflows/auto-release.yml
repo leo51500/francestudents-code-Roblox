@@ -73,24 +73,6 @@ jobs:
           # d'être lue par le job Windows (condition vide = job ignoré).
           echo "created=false" >> "$GITHUB_OUTPUT"
           echo "draft=false" >> "$GITHUB_OUTPUT"
-          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
-            # Un brouillon signale un build interrompu : on relance le workflow
-            # Windows pour le compléter. Une release publiée n'est jamais modifiée.
-            draft=$(gh release view "$tag" --repo "$GH_REPO" --json isDraft --jq '.isDraft')
-            echo "La release $tag existe déjà (brouillon=$draft)."
-            echo "created=false" >> "$GITHUB_OUTPUT"
-            echo "draft=$draft" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          tag_remote_sha=$(git ls-remote --tags origin "refs/tags/$tag" | tr -d '\r' | awk '{print $1}')
-          if [ -n "$tag_remote_sha" ] && [ "$tag_remote_sha" != "$HEAD_SHA" ]; then
-            if ! git merge-base --is-ancestor "$tag_remote_sha" "$HEAD_SHA" 2>/dev/null; then
-              echo "Le tag $tag existe sans release sur un commit étranger ($tag_remote_sha vs $HEAD_SHA) : publication manuelle requise." >&2
-              exit 1
-            fi
-            echo "Le tag $tag existe déjà sur un commit ancêtre ($tag_remote_sha) : suppression du tag distant pour recréer la release sur $HEAD_SHA."
-            git push origin ":refs/tags/$tag" || true
-          fi
           # Les releases lancées manuellement avec une version différente de
           # package.json doivent utiliser le commit actuellement contrôlé.
           # Ne pas créer un tag de version courante sur une ancienne ref/tag.
@@ -102,6 +84,42 @@ jobs:
             echo "La version demandée ($version) ne correspond pas à package.json ($package_version)." >&2
             echo "Mets à jour package.json, le changelog et le résumé, puis pousse sur main." >&2
             exit 1
+          fi
+          release_exists=false
+          draft=false
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            # Un brouillon signale un build interrompu : on relance le workflow
+            # Windows pour le compléter. Une release publiée n'est jamais modifiée.
+            release_exists=true
+            draft=$(gh release view "$tag" --repo "$GH_REPO" --json isDraft --jq '.isDraft')
+            echo "La release $tag existe déjà (brouillon=$draft)."
+          fi
+          # Une release en brouillon n'a PAS encore de tag Git : GitHub ne crée
+          # le tag qu'à la publication. Sans tag, le job Windows ne peut pas
+          # faire de checkout sur v<version> (« A branch or tag with the name
+          # 'v<version>' could not be found »). Le tag est donc posé ici, sur le
+          # commit déclencheur, y compris pour compléter un brouillon existant.
+          tag_remote_sha=$(git ls-remote --tags origin "refs/tags/$tag" | tr -d '\r' | awk '{print $1}')
+          if [ -n "$tag_remote_sha" ] && [ "$tag_remote_sha" != "$HEAD_SHA" ]; then
+            if [ "$release_exists" = true ]; then
+              echo "Le tag $tag désigne déjà $tag_remote_sha : la release existante reste sur ce commit."
+            elif ! git merge-base --is-ancestor "$tag_remote_sha" "$HEAD_SHA" 2>/dev/null; then
+              echo "Le tag $tag existe sans release sur un commit étranger ($tag_remote_sha vs $HEAD_SHA) : publication manuelle requise." >&2
+              exit 1
+            else
+              echo "Le tag $tag existe déjà sur un commit ancêtre ($tag_remote_sha) : suppression du tag distant pour recréer la release sur $HEAD_SHA."
+              git push origin ":refs/tags/$tag"
+              tag_remote_sha=""
+            fi
+          fi
+          if [ -z "$tag_remote_sha" ]; then
+            git tag -f "$tag" "$HEAD_SHA"
+            git push origin "refs/tags/$tag"
+          fi
+          if [ "$release_exists" = true ]; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "draft=$draft" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           if [[ "$version" == *-* ]]; then
             prerelease=true
