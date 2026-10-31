@@ -3291,7 +3291,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     // C'est ce qui donne l'impression que la poignée colle exactement au doigt.
     let sash = null;
 
-    function showSash(clientX, clientY) {
+    function showSash() {
         if (axis !== "x") return; // sash vertical seulement pour l'instant
         if (!sash) {
             sash = document.createElement("div");
@@ -3300,10 +3300,12 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         }
         // Le trait couvre exactement la hauteur des panneaux : il ne traverse ni la
         // barre de titre ni la barre d'état, sinon la fenêtre paraît cassée.
+        // Il est aussi colle au bord reel des panneaux : quand la largeur atteint sa
+        // limite, il s'arrete avec le panneau au lieu de continuer a suivre la souris.
         const zone = handle.getBoundingClientRect();
         sash.style.top = `${Math.round(zone.top)}px`;
         sash.style.height = `${Math.round(zone.height)}px`;
-        sash.style.transform = `translateX(${Math.round(clientX)}px)`;
+        sash.style.transform = `translateX(${Math.round(zone.left + zone.width / 2)}px)`;
         sash.classList.add("active");
     }
 
@@ -3354,8 +3356,8 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         activeDrag = { pointerId: ev.pointerId, start, last: start, finished: false };
         const initial = layoutSizeOf(zoneId, axis) || layoutPx(cssVar);
         const min = LAYOUT_LIMITS[cssVar].min;
-        // Afficher le sash flottant dès l'appui, à la position exacte du curseur.
-        if (axis === "x") showSash(ev.clientX, ev.clientY);
+        // Afficher le sash flottant dès l'appui, sur le bord des panneaux.
+        if (axis === "x") showSash();
         showLayoutBadge({ label: describe(), clientX: ev.clientX, clientY: ev.clientY }, true);
         const apply = () => {
             const drag = activeDrag;
@@ -3383,9 +3385,10 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
             activeDrag.last = axis === "x" ? e.clientX : e.clientY;
             pointer.x = e.clientX;
             pointer.y = e.clientY;
-            // Sash flottant : il suit le curseur immédiatement, sans attendre la grille.
-            if (axis === "x") showSash(e.clientX, e.clientY);
+            // Le panneau suit le curseur, puis le sash se recale sur le bord reel :
+            // a la limite de largeur, le trait s'arrete avec le panneau.
             apply();
+            if (axis === "x") showSash();
         };
         const up = () => {
             const drag = activeDrag;

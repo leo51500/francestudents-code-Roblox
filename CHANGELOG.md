@@ -1,5 +1,10 @@
 ﻿# Changelog
 
+## [1.5.40] - Le trait de redimensionnement reste collé au bord, comme dans VS Code
+- **Trait qui suivait la souris** : quand la largeur du panneau atteignait sa limite, le trait continuait d'avancer avec le curseur et flottait au milieu de l'interface, détaché de la colonne. Il est maintenant recalé sur le bord réel du panneau à chaque mouvement : il s'arrête avec la colonne, même si la souris va beaucoup plus loin.
+- **Rendu VS Code** : trait de 1 px, gris (`--fg-dim`), limité à la hauteur des panneaux, visible seulement pendant le glisser ; plus de barre blanche.
+- Vérifié : `npm run build:renderer`, `npm run check:renderer`, `npm run lint`, et glisser réel à la souris jusqu'au-delà de la limite (bord du panneau = 666 px, trait = 666 px, souris 250 px plus loin), relâchement hors de la fenêtre, perte de focus.
+
 ## [1.5.39] - La barre blanche du redimensionnement ne reste plus à l'écran
 - **Trait blanc figé corrigé** : quand un glisser de séparateur se terminait sans recevoir le relâchement de la souris (relâchement hors de la fenêtre, Alt+Tab, perte de focus), le trait de redimensionnement restait affiché en plein milieu des panneaux, sur toute la hauteur, et donnait l'impression que l'interface était cassée. L'état de glisser est maintenant effacé dès qu'il ne peut plus être en cours : perte de focus, fenêtre masquée, mouvement de souris sans bouton enfoncé, ou nouveau clic.
 - **Trait discret et à sa place** : 2 px, translucide, limité à la hauteur des panneaux ; il ne traverse plus la barre de titre ni la barre d'état, et n'apparaît que pendant un glisser actif.
