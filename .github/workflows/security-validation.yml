@@ -1,37 +1,55 @@
 name: Security and upgrade validation
+
+# Validation manuelle : build empaqueté, audit des dépendances livrées et
+# exécutable réel. Ce workflow ne publie rien.
+#
+# Les tests e2e et le lint tournent déjà à chaque PR dans ci.yml : ne pas les
+# dupliquer ici. Déclenché aussi sur `pull_request` il doublait chaque PR sans
+# rien valider de plus ; il reste donc réservé au lancement manuel.
 on:
-  workflow_dispatch:
-  push:
-    branches: [fix/security-hardening]
+    workflow_dispatch:
+
 permissions:
-  contents: read
+    contents: read
+
+env:
+    ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install
-      - run: npm run prepare:electron
-      - run: npm audit --audit-level=low
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build:renderer
-      - uses: ./.github/actions/build-effectcraft
-      - run: node --test --test-concurrency=4 e2e/*.e2e.test.js
-      - run: npx electron-builder --win nsis --publish never --config.npmRebuild=false
-      - name: Test packaged terminal and EffectCraft
-        run: node --test e2e/effectcraft.e2e.test.js
-        env:
-          FRST_PACKAGED_EXE: ${{ github.workspace }}/release/win-unpacked/FranceStudent IDE.exe
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Windows-security-validation
-          path: |
-            release/*-setup.exe
-            release/*-setup.exe.blockmap
-            release/latest.yml
-          if-no-files-found: error
+    windows:
+        runs-on: windows-latest
+        timeout-minutes: 45
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npm run prepare:electron
+            # Même périmètre que ci.yml : seules les dépendances livrées bloquent.
+            - run: npm audit --omit=dev --audit-level=low
+            - run: npm run check:renderer-globals
+            - run: npm run check:docs
+            - run: npm run check:tokens
+            - run: npm run lint
+            - run: npm test
+            - run: npm run build:renderer
+            - uses: ./.github/actions/build-effectcraft
+            - run: npx electron-builder --win nsis --publish never --config.npmRebuild=false
+              env:
+                  CSC_IDENTITY_AUTO_DISCOVERY: "false"
+            - name: Test packaged terminal and EffectCraft
+              run: node --test e2e/effectcraft.e2e.test.js
+              env:
+                  # productName = « FranceStudent Code Roblox » : c'est le nom de l'exe
+                  # produit par electron-builder, pas celui de l'ancien IDE.
+                  FRST_PACKAGED_EXE: ${{ github.workspace }}/release/win-unpacked/FranceStudent Code Roblox.exe
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: Windows-security-validation
+                  path: |
+                      release/*-setup.exe
+                      release/*-setup.exe.blockmap
+                      release/latest.yml
+                  if-no-files-found: error

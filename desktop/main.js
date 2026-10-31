@@ -748,9 +748,24 @@ async function openDesktopConversation(id,fromCommand=false){
 }
 
 function registerIpc() {
-    handle("stability", (action = "get", id) => {
+    handle("stability", async (action = "get", id) => {
         if (action === "get") return stability.notice();
         if (action === "acknowledge") return stability.acknowledge(String(id || ""));
+        if (action === "save") {
+            // Le rapport est déjà calculé pour l'affichage : on n'ajoute aucune
+            // donnée au journal, on écrit seulement le texte visible.
+            const notice = stability.notice();
+            if (!notice) throw new Error("Aucun diagnostic à enregistrer.");
+            const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+            const chosen = await dialog.showSaveDialog(win, {
+                title: "Enregistrer le diagnostic",
+                defaultPath: `diagnostic-${notice.code}-${stamp}.txt`,
+                filters: [{ name: "Texte", extensions: ["txt"] }]
+            });
+            if (chosen.canceled || !chosen.filePath) return { canceled: true };
+            await fs.writeFile(chosen.filePath, String(notice.report || "").slice(0, 200000), { encoding: "utf8", mode: 0o600 });
+            return { path: chosen.filePath };
+        }
         throw new Error("Action de diagnostic inconnue.");
     });
     const releaseNotes=require("./release-highlights").createReleaseHighlights({version:app.getVersion(),enabled:app.isPackaged || process.env.FRST_QA_RELEASE_NOTES==="1",load:()=>require("../src/settings").load(),save:value=>require("../src/settings").save(value)});
@@ -1483,7 +1498,7 @@ if (!gotLock) {
         session = require("../src/core/session");
         const updateSettings=require("../src/settings");
         const updateEnabled=app.isPackaged&&process.platform==="win32"&&!process.env.PORTABLE_EXECUTABLE_DIR&&require("node:fs").existsSync(path.join(process.resourcesPath,"app-update.yml"));
-        updates=require("./updates").createUpdateController({updater:updateEnabled?require("electron-updater").autoUpdater:null,enabled:updateEnabled,version:app.getVersion(),getPreference:()=>updateSettings.load().automaticUpdates!==false,savePreference:automaticUpdates=>updateSettings.save({automaticUpdates}),onChange:data=>send("appUpdate",data),checkRelease:app.isPackaged&&process.platform==="win32"&&!updateEnabled?require("./startup-updates").checkPortableRelease:null});
+        updates=require("./updates").createUpdateController({updater:updateEnabled?require("electron-updater").autoUpdater:null,enabled:updateEnabled,version:app.getVersion(),getPreference:()=>updateSettings.load().automaticUpdates!==false,savePreference:automaticUpdates=>updateSettings.save({automaticUpdates}),getPrerelease:()=>updateSettings.load().allowPrerelease===true,savePrerelease:allowPrerelease=>updateSettings.save({allowPrerelease:allowPrerelease===true}),onChange:data=>send("appUpdate",data),checkRelease:app.isPackaged&&process.platform==="win32"&&!updateEnabled?require("./startup-updates").checkPortableRelease:null});
 
         registerIpc();
         createWindow();

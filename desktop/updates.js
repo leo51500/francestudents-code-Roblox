@@ -1,12 +1,15 @@
 "use strict";
 const {EventEmitter}=require("node:events");
-function createUpdateController({updater,enabled=false,version="",getPreference=()=>true,savePreference=()=>{},onChange=()=>{},checkRelease=null}={}) {
-    const state={version,status:enabled?"idle":"unavailable",availableVersion:null,progress:0,automatic:getPreference(),message:enabled?"Les mises à jour sont distribuées via les versions GitHub publiées.":"Les mises à jour automatiques seront disponibles dans la version Windows installée. Le mode développement et la version portable restent manuels."};
+function createUpdateController({updater,enabled=false,version="",getPreference=()=>true,savePreference=()=>{},getPrerelease=()=>false,savePrerelease=()=>{},onChange=()=>{},checkRelease=null}={}) {
+    const state={version,status:enabled?"idle":"unavailable",availableVersion:null,progress:0,automatic:getPreference(),allowPrerelease:getPrerelease()===true,message:enabled?"Les mises à jour sont distribuées via les versions GitHub publiées.":"Les mises à jour automatiques seront disponibles dans la version Windows installée. Le mode développement et la version portable restent manuels."};
     const publish=patch=>{Object.assign(state,patch);onChange({...state});};
     state.canInstall=enabled;
     if(checkRelease){state.status="idle";state.message="Vérification des versions publiées disponible. Les mises à jour de cette version restent manuelles.";}
     let checking=null,downloading=null;
     if(enabled&&updater){
+        // allowPrerelease est relu par electron-updater à chaque vérification :
+        // le canal bêta ne s'applique qu'aux versions suffixées (1.6.0-beta.1).
+        updater.allowPrerelease=state.allowPrerelease;
         updater.autoDownload=state.automatic;updater.autoInstallOnAppQuit=state.automatic;
         updater.on("checking-for-update",()=>publish({status:"checking",message:"Recherche d’une nouvelle version…"}));
         updater.on("update-available",info=>publish({status:"available",availableVersion:info.version,message:`La version ${info.version} est disponible.`}));
@@ -18,6 +21,12 @@ function createUpdateController({updater,enabled=false,version="",getPreference=
     async function action(type,payload={}) {
         if(type==="status")return {...state};
         if(type==="automatic"){state.automatic=payload.enabled===true;savePreference(state.automatic);if(updater){updater.autoDownload=state.automatic;updater.autoInstallOnAppQuit=state.automatic;}publish({automatic:state.automatic});return {...state};}
+        if(type==="prerelease"){
+            state.allowPrerelease=payload.enabled===true;savePrerelease(state.allowPrerelease);
+            if(updater)updater.allowPrerelease=state.allowPrerelease;
+            publish({allowPrerelease:state.allowPrerelease,status:"idle",message:state.allowPrerelease?"Les préversions seront proposées à la prochaine vérification.":"Seules les versions stables seront proposées."});
+            return {...state};
+        }
         if((!enabled||!updater)&&type==="check"&&checkRelease){
             if(!checking){publish({status:"checking",message:"Recherche de mises à jour…"});checking=Promise.resolve().then(()=>checkRelease(version)).then(publish).catch(()=>publish({status:"error",message:"Vérification impossible. Tu peux continuer et réessayer plus tard."})).finally(()=>{checking=null;});}
             await checking;return {...state};

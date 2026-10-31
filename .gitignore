@@ -1,4 +1,6 @@
 node_modules/
+# Données locales de l'application et artefacts de test Blender/captures.
+.frst/
 .env
 .env.*
 !.env.example

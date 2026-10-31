@@ -2,7 +2,9 @@
 
 ## Dernière version
 
-La version **1.5.26** ajoute les sous-agents spécialisés « Interfaces » (`roblox-interface`) et « 3D » (`roblox-3d`) : l’orchestrateur choisit le rôle, écrit un brief autonome, récupère le résumé et assemble les demandes mixtes (modèle 3D puis interface qui l’affiche). Chaque rôle déclare ses instructions, ses skills réutilisés, ses zones d’écriture et ses outils ; un nouveau sous-agent ne demande qu’un fichier et une ligne d’import. Le moteur refuse tout outil hors rôle et n’ouvre l’écriture que si le rôle la déclare. La version **1.5.25** impose Blender pour tout modèle 3D. La version **1.5.22** corrige les séparateurs de mise en page (zone de préhension élargie, glisser sans transition ni barre de défilement parasite) et l’affichage de l’historique rechargé sans animation. La version **1.5.21** aligne la publication Windows sur la CI et les versions du verrou ; la **1.5.20** apporte le zoom global, le panneau Logs et les animations de réflexion. La version **1.5.19** rend l’extension Roblox Studio réellement pilotable par MCP (métadonnées `_meta`, jeton et `studio_id` fournis par l’application, `datamodel_type` sur toutes les opérations), reconstruit la demande quand un fil reste refusé (409) et explique les outils Aftman installés mais pas encore reconnus. La version **1.5.18** remplace « Cendre » par le thème « Onyx » (aucun bleu, noirs neutres, identité de chat d’IA, fenêtre étroite corrigée). La version **1.5.17** avait appliqué le thème « Cendre », retire le panneau Git de l’interface, ajoute les sous-agents spécialisés (`task` avec `role`), le rappel de la demande et des outils enregistrés dans les suivis, la tolérance des QCM mal formés, des messages GitHub/MCP plus explicites et un `Retry-After` respecté. Elle n’est pas encore publiée.
+La version **1.5.42** sécurise la publication Windows (vérification que l’exécutable empaqueté existe et se lance avant de publier la fiche), exécute les parcours Electron à chaque pull request et chaque nuit avec un contrôle d’accessibilité axe-core, et protège les documents et le thème par des contrôles automatiques. Les notes visibles dans l’application sont dans `desktop/release-highlights.js`, le journal des versions dans `CHANGELOG.md`.
+
+Ce document ne décrit que l’état stable actuel. L’historique des versions antérieures et les notes de préparation non publiées sont archivés dans [AI_CONTEXT_HISTORY.md](AI_CONTEXT_HISTORY.md).
 
 ### Interface : thème « Onyx » et fin du panneau Git
 
@@ -12,9 +14,9 @@ La version **1.5.26** ajoute les sous-agents spécialisés « Interfaces » (`ro
 - Panneau Git retiré : plus d’onglet Versions, de `Ctrl+Maj+G` ni de `view-git`. `#git-view` reste dans le DOM, masqué, pour ne pas casser une reprise ; `refreshGit` tolère les éléments absents. Push/pull/fetch/commit passent par `gitCommand` (palette `Ctrl+Maj+P`) et le terminal. Le connecteur GitHub porte désormais compte (token), liaison de remote et création de dépôt.
 - Vérifié par captures réelles `release/ui-cendre-1440.png`, `release/ui-cendre-1100.png`, `release/ui-cendre-900.png` et par contraste calculé dans l’application (11,56:1 texte principal, 15,81:1 navigation, 10,75:1 onglet actif).
 
-### Travail local en cours — actualisation du quota
+### Actualisation du quota
 
-Le renderer actualise le quota du compte à chaque cinquième requête modèle, à partir du compteur local `usage.requests`. Cela appelle uniquement l’endpoint de consultation du quota (`api.usage()`), sans générer de requête au modèle. Le rafraîchissement à la fin d’une tâche et le contrôle périodique existant restent actifs. Cette modification est en cours et n’est pas encore publiée.
+Le renderer actualise le quota du compte à chaque cinquième requête modèle, à partir du compteur local `usage.requests`. Cela appelle uniquement l’endpoint de consultation du quota (`api.usage()`), sans générer de requête au modèle. Le rafraîchissement à la fin d’une tâche et le contrôle périodique restent actifs.
 
 Ce document est volontairement indépendant d’un fournisseur et d’un modèle. Il se lit comme du Markdown ordinaire. Commencer par [AGENTS.md](../AGENTS.md), puis consulter les sections utiles à la tâche.
 
@@ -25,9 +27,11 @@ FranceStudent Code Roblox associe un éditeur Luau, un agent de programmation et
 
 Le projet original appartient à [Gab-Desing](https://github.com/Gab-Desing/francestudents-code-Roblox), et le fork d’amélioration intermédiaire est `extraopaa/francestudents-ide`. Le fork de publication actuel, seul dépôt distant du dépôt local, est [leo51500/francestudents-code-Roblox](https://github.com/leo51500/francestudents-code-Roblox) : c’est lui qui reçoit les releases, les installateurs et sert de source de mises à jour. Conserver cette distinction, les crédits et les licences tierces.
 
-## État de référence, daté du 28 octobre 2026
+## État de référence, daté du 31 octobre 2026
 
-- **Version en cours : 1.5.22**, Windows x64 uniquement, quatre assets (installateur, `.blockmap`, `latest.yml`, `SHA256SUMS.txt`). Un push sur `main` crée la release et lance le build Windows (`.github/workflows/auto-release.yml`). Le journal complet des versions se trouve dans `CHANGELOG.md` ; les notes visibles dans l’application sont dans `desktop/release-highlights.js`.
+- **Version en cours : 1.5.42**, Windows x64 uniquement, quatre assets (installateur, `.blockmap`, `latest.yml`, `SHA256SUMS.txt`). Un push sur `main` crée une release **en brouillon** puis lance le build Windows (`.github/workflows/auto-release.yml`) ; `release-win.yml` vérifie que l’exécutable empaqueté existe et se lance, dépose les quatre fichiers et publie la fiche. Une release incomplète reste invisible. Le journal complet des versions est dans `CHANGELOG.md` ; les notes visibles dans l’application sont dans `desktop/release-highlights.js`.
+- **Garde-fous de dépôt** : `npm run check:docs` (README, ce fichier et `release-highlights.js` citent la version de `package.json`), `npm run check:tokens` (thème Onyx identique dans les quatre feuilles), `npm run check:renderer-globals` (liste générée des symboles partagés du renderer, utilisée par `no-undef`), `npm run format:check` (Prettier, indicatif). `.npmrc` ne contient aucune clé npm propre à un paquet : `ONNXRUNTIME_NODE_INSTALL=skip` est défini par l’environnement et les workflows. Dependabot groupe les correctifs npm et les actions GitHub une fois par semaine.
+- **Intégration continue** : `ci.yml` lance lint, vérifications, tests unitaires et build à chaque push et pull request ; le job `e2e` (Electron réel, application empaquetée, contrôle axe-core) tourne sur les pull requests et chaque nuit. `security-validation.yml` reste une validation manuelle de l’installateur et ne publie rien.
 - **Spécialisation Roblox/Blender** : outils `roblox_env`, `roblox_check`, `roblox_scene`, `rojo_serve` (serveur Rojo géré, port réel, Studio connecté dans la barre d’état) et `roblox_playtest` (build + ouverture Studio + logs) ; côté Blender, `detect`, `templates`, `script`, `inspect`, `validate`, `render`, `manifest`, `import_roblox`, `export_blender`. Le serveur Rojo s’arrête avec l’application.
 - **Explorateur Roblox et Rojo en direct** : `src/tools/roblox-graph.js` expose `buildStudioTree` (arbre des services depuis `default.project.json`, sans exécution) ; `roblox_scene` avec `tree: true` renvoie la même hiérarchie à l’agent. `desktop/roblox-dashboard.js` fournit aux IPC `robloxDashboard` (statut, start, stop, build, restart) et `wallyAction` (status, install, update) ; seuls les binaires Aftman/PATH connus sont lancés, args fixes. L’interface est dans `desktop/renderer/src/56-roblox-studio.js` (arbre, paquets Wally, panneau Rojo, pastille vert/orange de la barre d’état).
 - **Skills auto-installés** : le catalogue de `src/skills/index.js` inclut la bibliothèque embarquée, et `getSkill` installe un skill de la bibliothèque à la volée. `ensureRobloxSkills` précharge les packs selon le contenu du projet (`default.project.json`, `wally.toml`, `.luaurc`, `.luau`, `.blend`) dans `.frst/skills/` ; il est appelé par `src/tools/tools.js#setProject`.
@@ -129,12 +133,18 @@ Préférence du contributeur, confirmée le 24 octobre 2026 : les tests automati
 
 ```sh
 npm install
+npm run check:renderer-globals
+npm run check:docs
+npm run check:tokens
 npm run build:renderer
-npm run desktop
 npm run lint
+npm run check:renderer
 npm test
+npm run test:coverage
 node --test --test-concurrency=4 e2e/*.e2e.test.js
 ```
+
+`npm run test:coverage` utilise la couverture native de Node 22 (`--experimental-test-coverage`). `npm run format:check` n’est qu’un indicateur : l’arbre n’a pas été reformaté d’un bloc, ne pas lancer `npm run format` sur tout le dépôt sans demande explicite.
 
 Pour un seul fichier unitaire en conservant l’isolation :
 
@@ -208,47 +218,20 @@ Validation de cette extension NON exécutée, selon la consigne de réserver les
 
 Tests WSL préparés dans `test/execution-environment.test.js` (non exécutés) : opt-in par projet et isolation Motion, chemins UNC/casse Linux, arguments littéraux non interpolés, masque du marqueur PGID, arrêt ciblé sans shutdown/terminate de distribution, conversion cwd sous le projet. Les contrôles réels de processus et distributions restent indispensables avant publication.
 
-## Préparation de la release 1.4.0
+### Saisie du chat et accès
 
+`50-chat-composer.js` regroupe les contrôles du compositeur (identifiants conservés). `51-chat-access.js` ajoute le menu d’accès dans le compositeur, popover natif avec navigation clavier et mémorisation optionnelle ; il réutilise uniquement l’IPC `autoApprove` et `applySettings`/`applyStatus`, sans seconde politique de permissions. Les sélecteurs `[data-access-mode]` restent réservés aux paramètres, le menu utilise `[data-chat-access]`, et l’ancien badge `agent-access` reste en place pour les ancrages Motion. Le réglage vaut pour la session entière, Code et Motion compris ; Full accès n’auto-répond pas à `ask_user`.
 
-Import local rétabli : desktop/local-skill-import.js, IPC localSkillImport, 55-local-skills.js et branche local de l’éditeur existant. Fichier Markdown, dossier et ZIP (une seule racine SKILL.md), ressources incluses, aperçu à token temporaire gardé dans main, choix nom/portée, skill désactivé, aucune exécution à l’import. Réutilisation des limites et contrôles de chemins de extension-center.install ; pas d’écrasement d’un dossier déjà installé. Limites : 200 ressources/4 Mo, profondeur 12, 1000 éléments de dossier, ZIP indexé avant décompression pour refuser les grandes archives. Le renderer ne transmet pas les octets des ressources lors de l’installation, seulement le token. Tests locaux : test/local-skill-import.test.js et import UI dans e2e/chat-composer.e2e.test.js.
+### Pièces jointes et recherche locale
 
-Les nouveaux rappels de suivi sont compacts ; délimiteur RAPPELS INTERNES ajouté à la reconstitution d’historique pour ne jamais les confondre avec une réponse utilisateur. Le script WSL d’arguments est une chaîne ordinaire : ne pas le convertir en template JS sans traiter les expansions Bash. setsid --wait conserve le lien de durée de vie avec wsl.exe. Le test d’arrêt brutal accepte un code Windows non nul différent du 77 demandé : la fermeture forcée de ConPTY peut rapporter un fast-fail natif ; c’est la détection d’arrêt non propre qui est vérifiée.
+`src/attachment-policy.js` définit la consigne commune : une pièce jointe et son nom ne constituent pas une demande de retrouver l’original sur le PC. Elle est ajoutée au prompt agent (Code/Motion) et aux requêtes contenant des fichiers ou images ; un rappel court persiste dans les suivis, y compris après compaction. Pas de recherche de repli via fichiers, shell ou MCP, même en Full accès ; une recherche d’original exige une demande explicite. Il s’agit d’une instruction au modèle, pas d’un bac à sable.
 
-### Finition des contrôles du chat
+### Environnement du projet · WSL
 
-Le compositeur utilise deux rangées stables : `chat-model-row` (modèle, contexte, micro) et `chat-settings-row` (accès/réflexion). Réutiliser `chatControlContent` pour les icônes SVG, labels et chevrons. Les requêtes container de la saisie masquent le préfixe Réflexion sur panneau étroit pour garder la valeur lisible ; les outils secondaires restent identifiables par leurs titres et noms accessibles. Les boutons ont des états focus/hover cohérents et le micro un petit badge β. Ne pas revenir à une suite libre de textes et symboles qui se replie aléatoirement. Le test chat-composer vérifie le bouton Envoyer à 900×600 et l’aperçu a été contrôlé visuellement. La confirmation de suppression ferme explicitement le menu d’historique, y compris au clavier et après annulation.
+Réglage optionnel Paramètres → Général → Environnement du projet · WSL (`54-wsl-project.js`). IPC `projectEnvironment` get/check/save, lié à l’identité du workspace et interdit pendant agent/jobs/tâches ; sauvegarde par projet dans `projectExecutionEnvironments`. `src/execution-environment.js` centralise les cibles WSL (args séparés distribution/`--cd`, conversion par wslpath, shell de connexion Bash, groupe setsid, arrêt par PGID sans `wsl --shutdown`). L’interface, l’éditeur, le LSP, les connecteurs GitHub et les serveurs MCP Windows restent natifs : ce n’est pas une session distante de type VS Code Remote.
 
+### Réflexion GPT et profils de terminal
 
-### Refonte plein écran du chat (après 1.4.0, non encore publiée)
+`src/api/reasoning.js` + `53-gpt-reasoning.js` : GET/PATCH `/user/instructions` ne transmet que `gptReasoning`, relecture après sauvegarde, niveaux filtrés par modèle, sauvegarde interdite pendant une tâche. `terminalPreferences` gère les distributions WSL ; la liste installée ne démarre ni n’installe rien.
 
-56-chat-layout.js regroupe les actions dans la navigation du chat, masque les anciens agent-header/agent-context-bar mais conserve leurs ancrages DOM utilisés par Motion, et déplace les outils secondaires existants dans un popover accessible chat-more-tools. Les IDs et handlers sont conservés. Le choix de mode et l’effacement d’affichage sont rangés dans ce menu. La sélection d’accès reste dans le compositeur. Pas de centrage max 900 px : focus-agent occupe tout l’espace utile, sans barre d’activité ni statut. Les rangées de contrôles se réunissent en une ligne lorsque le compositeur est large ; les cartes de démarrage sont en trois colonnes en plein écran large. Échap quitte le focus seulement hors tâche, dialogue, menu et commande slash. Code/Motion restent isolés ; le focus Motion masque puis restaure le vrai studio.
-
-03-transcript.js replie uniquement les notices techniques de démarrage reconnues (connexion/projet/mémoire/indexation) et le message précis de transmission du projet, dans un groupe de session consultable. Aucun message utilisateur/assistant, erreur ou avertissement arbitraire supprimé. Le journal local et l’historique conservent les données originales. Les parcours import Codex, Éco et favoris passent désormais par chat-more-tools. Test dédié e2e/chat-layout.e2e.test.js : dimensions plein écran Code/Motion, retour par Échap, accessibilité du menu et vue étroite ; capture release/chat-fullscreen-next.png contrôlée visuellement. Parcours spécifiques du compositeur, import, Éco, file et migration Windows également passés. Cette refonte est séparée des assets 1.4.0 déjà publiés : ne pas remplacer leur contenu sous le même tag.
-
-
-
-### Import ZIP de skills : exclusions cohérentes (1.4.1)
-
-
-Le scénario de régression ZIP de test/local-skill-import.test.js (dépendances volumineuses et faux SKILL.md exclus) a réussi en préparation 1.4.1. L’utilisateur a ensuite précisé que son signalement concernait un ZIP joint au chat ; voir la section dédiée. Son archive exacte n’a pas été fournie.
-
-### Plan de travail unique et présentation (1.4.1)
-
-57-work-plan.js fournit le rendu commun du plan. Les événements plan sont toujours enregistrés via recordStudioEntry pour l’historique et l’export, mais n’ajoutent plus de carte dans le transcript : ils mettent à jour agent-live-plan. Le même composant est utilisé par renderAgentActivity. Les items texte historiques sont interprétés à partir de leurs marqueurs ✓/◉/○ et cases Markdown ; les données structurées steps sont privilégiées lorsqu’elles sont présentes. La carte conserve l’état ouvert/replié, le scroll des étapes et le focus du résumé ; des mises à jour identiques ne reconstruisent pas le DOM. Le composant utilise uniquement son état DOM pour pouvoir être appelé par les modules antérieurs à son chargement dans le bundle concaténé (pas de variable let tardive en TDZ).
-
-La progression se fonde exclusivement sur les étapes completed. Un run terminé avec des étapes non vérifiées affiche À poursuivre, pas Terminé. Les plans relus dans l’historique sont repliés par défaut ; une nouvelle conversation réinitialise le plan. Les messages de l’agent demandent de ne pas recopier la liste du plan dans la réponse finale sans demande utilisateur ; il s’agit d’une instruction, pas d’une suppression heuristique des réponses. La carte reste accessible au clavier, indique aria-current=step et utilise des textes de statut accessibles.
-
-Le scénario e2e/work-plan.e2e.test.js a réussi dans la suite complète puis dans les contrôles ciblés 1.4.1 : un seul plan après événements plan+activité, mises à jour, pliage, états incomplets, réinitialisation et relecture historique. Le build renderer a été régénéré et la capture plein écran contrôlée visuellement.
-
-### ZIP joints au chat (1.4.1)
-
-Le signalement concerne bien une archive jointe dans le chat que l’agent semble ne pas réussir à décompresser/lire. Les fichiers ne sont pas importés dans le projet : les contenus sont ouverts/converts localement, envoyés dans le texte des pièces jointes, et les images par les lots existants. Ne pas demander à l’agent de chercher l’original sur le PC.
-
-src/api/archive-input.js ajoute allowPartial (désactivé par défaut) : en mode chat, une entrée dépassant 25 Mo ou le budget de décompression de 100 Mo est signalée sans décompression, tandis que les autres entrées sûres restent lisibles ; erreurs de flux/compression signalées par entrée. Les erreurs de structure, traversées de chemins et plus de 10 000 entrées restent des refus de l’archive. Le lecteur strict de l’import de skills conserve son comportement. Le décompte des entrées reste global même en cas de filtre.
-
-src/api/file-conversion.js active cette lecture partielle pour les ZIP du chat. Les méthodes de compression ZIP non supportées par yauzl peuvent être reprises par le moteur 7z-wasm déjà installé, uniquement en mémoire et avec ses contrôles de chemins/tailles. Les données récupérées sont rapprochées des entrées validées du premier inventaire ; un échec de repli ne supprime pas les contenus déjà lus. Les archives chiffrées ne sont pas déchiffrées sans mot de passe et aucun secret n’est demandé automatiquement.
-
-convertArchiveContents borne l’inventaire et le texte global, conserve les premiers contenus transmis au lieu de remplacer toute l’archive par un aperçu binaire en cas de dépassement, et signale les fichiers omis (noms bornés + compte). Une entrée chiffrée/illisible marque effectivement partial=true ; un fichier vide est identifié sans prétendre à un défaut de lecture. resolvePendingFiles affiche un avertissement ZIP partiel lors de sa première conversion, sans le répéter pour chaque relance. Le texte envoyé précise que les chemins sont internes à l’archive et ne doivent pas être recherchés sur la machine.
-
-Les scénarios test/document-conversion.test.js ont réussi en préparation 1.4.1 : entrée ZIP >25 Mo avec texte exploitable à côté, entrée chiffrée + entrée publique, dépassement du budget texte conservant le contenu déjà lu, ZIP LZMA via 7-Zip. Aucun ZIP concret ni message d’erreur de l’utilisateur n’a été fourni ; ne pas prétendre avoir reproduit son archive précise.
+Les notes de préparation, les checklists de validation et l’historique des versions antérieures sont archivés dans [AI_CONTEXT_HISTORY.md](AI_CONTEXT_HISTORY.md).

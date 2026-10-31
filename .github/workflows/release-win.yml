@@ -23,6 +23,10 @@ concurrency:
   group: windows-release-${{ inputs.tag }}
   cancel-in-progress: false
 
+env:
+  # Windows x64 : onnxruntime-node fournit déjà ses binaires CPU dans le paquet.
+  ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -56,7 +60,7 @@ jobs:
           # Même préparation qu'en CI : installer, puis charger Electron avant
           # toute autre commande. `npm test` appelle `node -e "require('electron')"`
           # (via prepare:electron) et échoue si le binaire n'est pas téléchargé.
-          npm install
+          npm ci
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run prepare:electron
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -65,19 +69,49 @@ jobs:
           # empecher la sortie de l'installateur.
           npm audit --omit=dev --audit-level=low
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run check:renderer-globals
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run check:docs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run check:tokens
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run lint
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build:renderer
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Détecter le certificat de signature
+        id: signing
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+        run: |
+          # Le secret n'est exposé qu'à cette étape : les suivantes lisent
+          # seulement le booléen, jamais la valeur du certificat.
+          if ($env:WINDOWS_CERTIFICATE) { "present=true" >> $env:GITHUB_OUTPUT } else { "present=false" >> $env:GITHUB_OUTPUT }
+      - name: Préparer le certificat de signature (facultatif)
+        if: steps.release.outputs.ready != 'true' && steps.signing.outputs.present == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          # Le secret contient le .pfx encodé en base64. Sans secret, le build
+          # reste non signé : aucune étape ne doit échouer pour autant.
+          $path = Join-Path $env:RUNNER_TEMP "codesign.pfx"
+          [IO.File]::WriteAllBytes($path, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          "CSC_LINK=$path" >> $env:GITHUB_ENV
+          "CSC_KEY_PASSWORD=$env:WINDOWS_CERTIFICATE_PASSWORD" >> $env:GITHUB_ENV
       - uses: ./.github/actions/build-effectcraft
         if: steps.release.outputs.ready != 'true'
       - name: Construire sans publier de fichiers intermédiaires
         if: steps.release.outputs.ready != 'true'
         run: npx electron-builder --win nsis --publish never --config.npmRebuild=false
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          # true uniquement si le certificat est présent : CSC_LINK est alors
+          # défini par l'étape précédente.
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ steps.signing.outputs.present == 'true' && 'true' || 'false' }}
       - name: Empreintes et publication des exécutables
         if: steps.release.outputs.ready != 'true'
         shell: pwsh
@@ -90,3 +124,32 @@ jobs:
           $assets = @(Get-ChildItem release/*-setup.exe,release/*-setup.exe.blockmap,release/latest.yml,release/SHA256SUMS.txt | ForEach-Object { $_.FullName })
           gh release upload $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY @assets --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Vérifier que l'exécutable existe et se lance
+        # Garde-fou : une régression du nom d'exécutable ne doit pas empêcher la
+        # découverte d'un build cassé. Le test d'accessibilité lance l'application
+        # empaquetée (doit produire exactement le nom de build.productName).
+        if: steps.release.outputs.ready != 'true'
+        env:
+          ELECTRON_DISABLE_SECURITY_WARNINGS: "1"
+        run: node --test e2e/accessibility.e2e.test.js
+      - name: Publier la release une fois les artefacts déposés
+        # S'exécute aussi quand les artefacts existaient déjà : une exécution
+        # précédente a pu laisser la fiche en brouillon.
+        shell: pwsh
+        run: |
+          $release = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "Release introuvable" }
+          if (-not $release.isDraft) {
+            Write-Host "La release $env:RELEASE_TAG est déjà publiée."
+            exit 0
+          }
+          $names = @((gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets | ConvertFrom-Json).assets | ForEach-Object { $_.name })
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          $installer = $package.build.nsis.artifactName.Replace('${version}', $package.version)
+          $required = @($installer, "$installer.blockmap", "latest.yml", "SHA256SUMS.txt")
+          $missing = @($required | Where-Object { $_ -notin $names })
+          if ($missing.Count -gt 0) { throw "Artefacts manquants : $($missing -join ', ')" }
+          $flags = if ($release.isPrerelease) { @("--prerelease") } else { @("--latest") }
+          gh release edit $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --draft=false @flags
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host "Release $env:RELEASE_TAG publiée."

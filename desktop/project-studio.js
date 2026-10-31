@@ -142,6 +142,28 @@ function createProjectStudio({workspace = () => null, onEvent = () => {}} = {}) 
     return {action,get runningCount(){return [...runs.values()].filter(job=>job.status==="running").length;},stopAll(){return Promise.allSettled([...runs.keys()].map(stop));}};
 }
 let diagnosticsPromise = null; let diagnosticsAt = 0;
+// Complète les outils hôtes avec Rojo/Wally/Selene/luau/Aftman et Blender.
+// Aucune installation : seulement les binaires déjà résolus par le projet.
+async function robloxEnvironmentDiagnostics() {
+    if (!require("../src/state").state.workspace) return [];
+    try {
+        const result = await require("../src/tools/roblox-env").runRobloxEnv({ action: "check" });
+        const rows = result.tools.map(tool => ({
+            name: tool.required ? `${tool.name} · requis` : tool.name,
+            available: tool.status === "ok",
+            version: tool.version || (tool.status === "absent" ? "Non trouvé" : tool.status)
+        }));
+        const blender = result.blender || {};
+        rows.push({
+            name: "Blender",
+            available: Boolean(blender.found && blender.status === "ok"),
+            version: blender.version || (blender.found ? "Version illisible" : "Non trouvé")
+        });
+        return rows;
+    } catch {
+        return [];
+    }
+}
 async function environmentDiagnostics() {
     const workspace = require("../src/state").state.workspace, runtime = require("../src/execution-environment"), environment = runtime.projectEnvironment(workspace);
     if (environment.mode === "wsl") {
@@ -150,10 +172,13 @@ async function environmentDiagnostics() {
     }
     if(diagnosticsPromise && Date.now()-diagnosticsAt<30000)return diagnosticsPromise;
     diagnosticsAt=Date.now();
-    diagnosticsPromise=Promise.all([["Node.js","node",["--version"]],["npm",process.platform==="win32"?"npm.cmd":"npm",["--version"]],["Git","git",["--version"]]].map(async([name,file,args])=>{
-        try {const cmd=programCommand(file,args);const result=await exec(cmd.file,cmd.args,{timeout:7000,windowsHide:true,maxBuffer:20000});return {name,available:true,version:result.stdout.trim().slice(0,160)};}
-        catch{return {name,available:false,version:"Non trouvé dans le PATH"};}
-    }));
+    diagnosticsPromise=(async()=>{
+        const host=await Promise.all([["Node.js","node",["--version"]],["npm",process.platform==="win32"?"npm.cmd":"npm",["--version"]],["Git","git",["--version"]]].map(async([name,file,args])=>{
+            try {const cmd=programCommand(file,args);const result=await exec(cmd.file,cmd.args,{timeout:7000,windowsHide:true,maxBuffer:20000});return {name,available:true,version:result.stdout.trim().slice(0,160)};}
+            catch{return {name,available:false,version:"Non trouvé dans le PATH"};}
+        }));
+        return [...host,...await robloxEnvironmentDiagnostics()];
+    })();
     return diagnosticsPromise;
 }
 module.exports={createProjectStudio,discover,environmentDiagnostics,programCommand};

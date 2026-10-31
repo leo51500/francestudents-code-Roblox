@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.42":{headline:"Publication vérifiée, accessibilité et tests Electron à chaque PR.",items:[
+        {icon:"tools",title:"Installeur contrôlé avant publication",text:"La release ne devient visible qu'après la vérification que l'exécutable empaqueté existe et se lance. Une erreur de nom ou de build ne peut plus publier une fiche sans application utilisable."},
+        {icon:"spark",title:"Tests Electron à chaque PR",text:"Les parcours réels tournent aussi à chaque pull request et chaque nuit, avec un contrôle d'accessibilité automatique de la fenêtre principale. Le champ de saisie du chat a désormais un libellé explicite."},
+        {icon:"clock",title:"Documents et thème alignés",text:"Un contrôle compare la version citée dans le README, le contexte et les nouveautés à la version réelle, et un autre détecte les couleurs de thème qui divergent entre les feuilles."}
+    ]},
     "1.5.41":{headline:"Le trait de redimensionnement reste collé au bord, comme dans VS Code.",items:[
         {icon:"tools",title:"Trait qui ne se détache plus",text:"À la limite de largeur, le trait continuait à suivre la souris et flottait au milieu des panneaux. Il est maintenant recalé sur le bord réel de la colonne à chaque mouvement : il s'arrête avec elle, même si la souris va plus loin."},
         {icon:"spark",title:"Rendu VS Code",text:"1 px, gris discret, limité à la hauteur des panneaux et visible seulement pendant le glisser : plus de barre blanche en travers de l'interface."},
