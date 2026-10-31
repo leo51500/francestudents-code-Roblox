@@ -31,12 +31,16 @@ jobs:
   windows:
     runs-on: windows-latest
     env:
+      # Un tag vide (job `publish` en échec) est remplacé par la version de
+      # package.json, lue juste après le checkout sur le SHA déclencheur (ou sur
+      # la tête de main pour un lancement manuel sans tag).
       RELEASE_TAG: ${{ inputs.tag }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          ref: ${{ inputs.tag || 'main' }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -45,9 +49,21 @@ jobs:
         shell: pwsh
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ([string]::IsNullOrWhiteSpace($env:RELEASE_TAG)) {
+            $env:RELEASE_TAG = "v$version"
+            "RELEASE_TAG=$($env:RELEASE_TAG)" >> $env:GITHUB_ENV
+          }
           if ($env:RELEASE_TAG -ne "v$version") { throw "Le tag doit correspondre à package.json : v$version" }
-          $release = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets,isPrerelease,isDraft | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0) { throw "Release introuvable" }
+          # La lecture peut échouer sans que l'étape entière ne s'arrête : la
+          # réponse vide et le code de sortie sont testés explicitement pour
+          # produire un message clair au lieu d'une exception du lanceur.
+          $releaseJson = $null
+          $ErrorActionPreference = "Continue"
+          $releaseJson = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets,isPrerelease,isDraft
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($releaseJson -join ""))) {
+            throw "Release $($env:RELEASE_TAG) introuvable ou inaccessible. Une release publiée existante n'est jamais modifiée : relance le workflow de publication."
+          }
+          $release = $releaseJson | ConvertFrom-Json
           $names = @($release.assets | ForEach-Object { $_.name })
           $package = Get-Content package.json -Raw | ConvertFrom-Json
           $installer = $package.build.nsis.artifactName.Replace('${version}', $version)
@@ -137,8 +153,10 @@ jobs:
         # précédente a pu laisser la fiche en brouillon.
         shell: pwsh
         run: |
-          $release = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0) { throw "Release introuvable" }
+          $ErrorActionPreference = "Continue"
+          $releaseJson = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json isDraft,isPrerelease
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($releaseJson -join ""))) { throw "Release $($env:RELEASE_TAG) introuvable" }
+          $release = $releaseJson | ConvertFrom-Json
           if (-not $release.isDraft) {
             Write-Host "La release $env:RELEASE_TAG est déjà publiée."
             exit 0

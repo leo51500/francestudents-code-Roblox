@@ -18,7 +18,7 @@ Un éditeur Luau prêt pour Rojo, un studio EffectCraft pour l'UI et les animati
 >
 > **FranceStudent Code Roblox est une application distincte** (identifiant `fr.francestudent.code.roblox`, dossier de données `~/.francestudent-code-roblox`). Elle s’installe à côté d’une éventuelle version FranceStudent IDE sans partager ni écraser ses réglages.
 
-**Nouveautés 1.5.42 :** la release Windows n’est publiée qu’après vérification que l’exécutable empaqueté existe et se lance, les parcours Electron tournent à chaque pull request, et le champ de saisie du chat est accessible aux lecteurs d’écran.
+**Nouveautés 1.5.43 :** un échec de création de la fiche GitHub ne bloque plus la construction : le build Windows démarre quand même, redépose les artefacts et complète la release. La vérification de l’installeur, les parcours Electron avec contrôle d’accessibilité et les garde-fous de documents et de thème arrivent avec cette version.
 
 ## Le mode Roblox Studio
 

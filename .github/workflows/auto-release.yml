@@ -6,7 +6,11 @@ name: Publication automatique
 # La fiche est créée en brouillon : elle n'est publiée qu'une fois les quatre
 # artefacts (installateur, .blockmap, latest.yml, SHA256SUMS.txt) déposés, pour
 # qu'aucun utilisateur ne voie une release sans installateur.
-# Si la release existe déjà, rien n'est modifié.
+# Une release publiée existante n'est jamais modifiée ; un brouillon laissé par
+# un build interrompu relance uniquement le job Windows pour le compléter.
+# Une panne du job `publish` lance quand même le build Windows (version lue
+# dans package.json) : les artefacts peuvent être déposés et la fiche complétée
+# à la main, alors qu'un job ignoré ne produit rien.
 # Le dépôt étant privé, l'API publique renvoie 404 : seule la page Actions
 # (connectée) permet de voir ces exécutions.
 
@@ -65,6 +69,10 @@ jobs:
           tag="v$version"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Valeurs par défaut : `set -u` empêcherait toute sortie non écrite
+          # d'être lue par le job Windows (condition vide = job ignoré).
+          echo "created=false" >> "$GITHUB_OUTPUT"
+          echo "draft=false" >> "$GITHUB_OUTPUT"
           if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
             # Un brouillon signale un build interrompu : on relance le workflow
             # Windows pour le compléter. Une release publiée n'est jamais modifiée.
@@ -117,8 +125,16 @@ jobs:
 
   windows:
     needs: publish
-    # Lancer le build Windows pour une fiche nouvelle ou restée en brouillon.
-    if: needs.publish.outputs.created == 'true' || needs.publish.outputs.draft == 'true'
+    # Lancer le build Windows quand la fiche vient d'être créée ou reste en
+    # brouillon (build interrompu), et même si le job `publish` a échoué : le
+    # workflow Windows relit alors la version dans package.json, envoie les
+    # artefacts et complète la fiche. Un échec du job `publish` ne doit pas
+    # laisser une version non construite.
+    if: >-
+      !cancelled() &&
+      (needs.publish.result != 'success' ||
+       needs.publish.outputs.created == 'true' ||
+       needs.publish.outputs.draft == 'true')
     uses: ./.github/workflows/release-win.yml
     with:
       tag: ${{ needs.publish.outputs.tag }}
