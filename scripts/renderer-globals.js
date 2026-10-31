@@ -56,7 +56,11 @@ for (const file of moduleFiles()) collect(file, names);
 const output = `${JSON.stringify(Object.fromEntries([...names].sort().map((name) => [name, "writable"])), null, 2)}\n`;
 
 if (process.argv.includes("--check")) {
-    const current = fs.existsSync(TARGET) ? fs.readFileSync(TARGET, "utf8") : "";
+    // .gitattributes impose eol=crlf : sous Windows, le fichier versionné arrive
+    // en CRLF alors que le générateur écrit en LF. Comparer les fins de ligne
+    // ferait échouer le contrôle sur un fichier pourtant identique.
+    const raw = fs.existsSync(TARGET) ? fs.readFileSync(TARGET, "utf8") : "";
+    const current = raw.replace(/\r\n/g, "\n");
     if (current !== output) {
         console.error("desktop/renderer/globals.generated.json n'est pas à jour : lance npm run build:renderer-globals.");
         process.exitCode = 1;
