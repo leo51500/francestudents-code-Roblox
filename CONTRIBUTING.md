@@ -45,7 +45,7 @@ Ouvre une pull request dans ce fork. Décris le problème, le comportement obten
 ## Préparer une release
 
 1. Mettre à jour `package.json`, `package-lock.json` (racine et `packages[""]`), le changelog et le résumé dans `desktop/release-highlights.js`. **Chaque modification livrée reçoit une nouvelle version de correctif** et sa propre release : ne pas réutiliser un tag public.
-2. Vérifier le diff, le code, construire et contrôler l’application.
+2. Vérifier le diff, le code, construire et contrôler l’application. Rédiger un titre de commit qui décrit le changement — `[<version>] <zone> — <ce qui a réellement changé>` — et un corps listant les fichiers ou modules touchés : l’explorateur de fichiers affiche ce titre à côté de chaque dossier, un message vague (« big MAJ ») ne dit pas quoi relire.
 3. Pousser le commit sur `main`. Le workflow **Publication automatique** crée `v<version>` **en brouillon** puis lance le build Windows. Il ne modifie jamais une release existante.
 4. Dans GitHub → **Actions** → **Publication automatique**, vérifier que l’exécution a démarré et réussi. Si le push n’a pas déclenché le workflow, utiliser **Run workflow** sur `main` ; laisser le champ `version` vide afin de prendre celle de `package.json`.
 5. Vérifier que la release contient l’installateur, son `.blockmap`, `latest.yml` et `SHA256SUMS.txt`, puis qu’elle n’est plus en brouillon. La fiche n’est publiée qu’après le dépôt des quatre fichiers : une release visible sans installateur signale un problème à corriger. Les portables restent locaux.
