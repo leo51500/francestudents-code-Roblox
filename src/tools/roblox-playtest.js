@@ -74,6 +74,36 @@ function latestStudioLog() {
     return files[0] || null;
 }
 
+/** Bruit connu de Windows/Studio : le mot « ERROR » y est trompeur, pas une panne du jeu. */
+const BENIGN_STUDIO = new RegExp(
+    [
+        "FLog::WndProcessCheck",
+        "waitForNewPlayerProcess",
+        "The operation completed successfully",
+        "Redundant Flag ID",
+        "Potential graphics modes",
+        "user-heartbeats-api",
+        "DAPClient: Response was an error"
+    ].join("|"),
+    "i"
+);
+
+/** Sépare erreurs et avertissements d'un extrait de log Studio. */
+function parseStudioLog(text) {
+    const errors = [];
+    const warnings = [];
+    for (const raw of String(text || "").split(/\r?\n/)) {
+        const line = raw.trim();
+        if (!line || BENIGN_STUDIO.test(line)) continue;
+        if (/\b(Error|ERREUR|stack traceback|attempt to index nil|Infinite yield)\b/i.test(line)) {
+            if (errors.length < 40) errors.push(line.slice(0, 400));
+        } else if (/\bWarning\b|\bWARN\b/.test(line) && warnings.length < 20) {
+            warnings.push(line.slice(0, 300));
+        }
+    }
+    return { errors, warnings };
+}
+
 /** Extrait les erreurs et avertissements d'un log Studio (best effort, borné). */
 function readStudioErrors(sinceMs = 0) {
     const latest = latestStudioLog();
@@ -94,17 +124,7 @@ function readStudioErrors(sinceMs = 0) {
     } catch (error) {
         return { available: true, file: latest.full, errors: [], warnings: [], message: `Log illisible : ${error.message}` };
     }
-    const errors = [];
-    const warnings = [];
-    for (const raw of text.split(/\r?\n/)) {
-        const line = raw.trim();
-        if (!line) continue;
-        if (/\b(Error|ERREUR|stack traceback|attempt to index nil|Infinite yield)\b/i.test(line)) {
-            if (errors.length < 40) errors.push(line.slice(0, 400));
-        } else if (/\bWarning\b|\bWARN\b/.test(line) && warnings.length < 20) {
-            warnings.push(line.slice(0, 300));
-        }
-    }
+    const { errors, warnings } = parseStudioLog(text);
     return { available: true, file: latest.full, errors, warnings, message: `${errors.length} erreur(s) et ${warnings.length} avertissement(s) dans le dernier log Studio.` };
 }
 
@@ -251,6 +271,7 @@ module.exports = {
     runPlaytest,
     testScenario,
     readStudioErrors,
+    parseStudioLog,
     findStudio,
     latestStudioLog,
     resetTrust

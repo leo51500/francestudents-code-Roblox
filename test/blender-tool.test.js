@@ -81,6 +81,37 @@ test("blender validate et export_blender exigent un chemin", () => {
     assert.doesNotThrow(() => blenderTool.checkArgs({ action: "manifest", path: "build/models/Coffre.glb", name: "Coffre" }));
 });
 
+test("blender render accepte le mode silhouette et refuse un mode inconnu", () => {
+    assert.doesNotThrow(() => blenderTool.checkArgs({ action: "render", path: "build/models/Coffre.glb", mode: "silhouette" }));
+    assert.doesNotThrow(() => blenderTool.checkArgs({ action: "render", path: "build/models/Coffre.glb", mode: "plain" }));
+    assert.throws(
+        () => blenderTool.checkArgs({ action: "render", path: "build/models/Coffre.glb", mode: "wireframe" }),
+        /mode doit valoir/
+    );
+});
+
+test("blender render accepte une référence et une vue, et refuse un angle inconnu", () => {
+    assert.doesNotThrow(() => blenderTool.checkArgs({
+        action: "render",
+        path: "build/models/Coffre.glb",
+        reference: "refs/coffre.png",
+        angle: "face"
+    }));
+    assert.doesNotThrow(() => blenderTool.checkArgs({
+        action: "render",
+        path: "build/models/Coffre.glb",
+        angle: "trois-quarts"
+    }));
+    assert.throws(
+        () => blenderTool.checkArgs({ action: "render", path: "build/models/Coffre.glb", angle: "gauche" }),
+        /angle doit valoir/
+    );
+    assert.throws(
+        () => blenderTool.checkArgs({ action: "render", path: "build/models/Coffre.glb", reference: 42 }),
+        /reference/
+    );
+});
+
 test("les modèles Blender embarqués couvrent prop, rig et validation", () => {
     const names = blender.listTemplates().map(item => item.name);
     for (const expected of ["prop_box.py", "prop_tree.py", "prop_weapon.py", "prop_panel.py", "tile_ground.py", "rig_r15.py", "validate_model.py", "export_for_roblox.py", "render_preview.py"]) {

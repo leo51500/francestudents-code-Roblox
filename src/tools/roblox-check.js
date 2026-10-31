@@ -64,6 +64,27 @@ function walk(workspace, rel = ".", out = [], depth = 0) {
  * Contrôles statiques sur le texte Luau. Renvoie des diagnostics
  * { file, line, column, severity, source, code, message }.
  */
+/* Catalogue stable des codes locaux : utilisé par les tests, le benchmark et la documentation. */
+const RULE_CODES = {
+    "instance-new-empty": "Instance.new sans nom de classe",
+    "instance-new-name": "Nom de classe invalide",
+    "instance-new-parent": "Parent passé en deuxième argument",
+    "reserved-name": "Nom d'Instance réservé",
+    "split-assignment": "Affectation coupée sur deux lignes",
+    "tight-loop": "Boucle while true do sans attente",
+    "datastore-client": "DataStore utilisé côté client",
+    "datastore-no-pcall": "Appel DataStore sans pcall",
+    "datastore-player-name-key": "Clé DataStore basée sur le nom du joueur",
+    "waitforchild-timeout": "WaitForChild sans délai",
+    "connect-without-disconnect": "Connexion sans Disconnect",
+    "playeradded-missing": "PlayerAdded absent avec GetPlayers",
+    "service-global": "Service utilisé sans GetService",
+    "deprecated-global": "Fonction globale obsolète (wait, spawn, delay, tick)",
+    "game-workspace": "game.Workspace au lieu de workspace",
+    "remote-client-validation": "Événement client traité sans validation apparente",
+    "remote-client-creation": "RemoteEvent créé côté client"
+};
+
 function inspectLuau(source, file = "") {
     const list = [];
     const lines = String(source).split(/\r?\n/);
@@ -73,6 +94,7 @@ function inspectLuau(source, file = "") {
     // État multi-lignes : { kind: "comment"|"string", eq: nombre de "=" }
     let open = null;
     const isServerFile = /(^|\/)(server|ServerScriptService|ServerStorage|src\/server)/i.test(file) || /\bScript\b/.test(file);
+    const isClientFile = /(^|\/)(client|StarterPlayer|StarterGui|src\/client)/i.test(file) || /\.client\./i.test(file);
     // Lignes qui ouvrent une connexion à un événement (checked après l'analyse du fichier).
     const connectLines = [];
 
@@ -163,12 +185,46 @@ function inspectLuau(source, file = "") {
         // anonyme en plusieurs lignes ne commence pas par « function » : on regarde
         // simplement si la ligne contient :Connect( et ne termine pas le fichier.
         const connectIndex = code.indexOf(":Connect(");
-        if (connectIndex !== -1 && !connectLines.length) {
+        // Les connexions au chargement du script (pas d'indentation) vivent une seule
+        // fois : les signaler produirait du bruit sur le motif PlayerAdded standard.
+        if (connectIndex !== -1 && /^\s+\S/.test(code) && !connectLines.length) {
             connectLines.push({ line: lineNo, column: connectIndex + 1 });
+        }
+
+        // Fonctions globales retirées du Luau moderne : elles ralentissent ou
+        // faussent le temps (wait hérite du frame, tick n'est pas monotone).
+        for (const match of code.matchAll(/(^|[^\w.:])(wait|spawn|delay)\s*\(/g)) {
+            push(lineNo, match.index + match[1].length + 1, "warning", "deprecated-global", `${match[2]}() est obsolète : utilise task.wait, task.spawn ou task.delay.`);
+        }
+        if (/(^|[^\w.:])tick\s*\(/.test(code)) {
+            push(lineNo, code.indexOf("tick(") + 1, "warning", "deprecated-global", "tick() est obsolète et non monotone : utilise os.clock() (durée) ou os.time() (date).");
+        }
+
+        if (/\bgame\s*\.\s*Workspace\b/.test(code)) {
+            push(lineNo, code.search(/\bgame\s*\.\s*Workspace\b/) + 1, "warning", "game-workspace", "game.Workspace est déprécié : utilise workspace (ou game:GetService(\"Workspace\")).");
+        }
+
+        if (/\bOnServerEvent\s*:\s*Connect\s*\(/.test(code) && !/\btypeof\s*\(|\bassert\s*\(|\btype\s*\(/.test(String(source))) {
+            push(lineNo, code.search(/\bOnServerEvent\b/) + 1, "warning", "remote-client-validation", "OnServerEvent sans validation visible (typeof/assert) : vérifie le type, la plage et le cooldown des arguments envoyés par le client.");
+        }
+
+        if (isClientFile && /Instance\.new\(\s*["'](RemoteEvent|RemoteFunction|UnreliableRemoteEvent)["']/.test(code)) {
+            push(lineNo, code.search(/Instance\.new/) + 1, "warning", "remote-client-creation", "RemoteEvent/RemoteFunction créé côté client : il ne sera pas partagé avec le serveur. Crée-le dans ReplicatedStorage côté serveur (ou via Rojo) et attends-le côté client.");
+        }
+
+        if (/(GetAsync|SetAsync|UpdateAsync|IncrementAsync|RemoveAsync)\s*\(/.test(code) && /player\.Name\b/.test(code)) {
+            push(lineNo, 1, "warning", "datastore-player-name-key", "Clé DataStore construite avec player.Name : le joueur peut changer de nom. Utilise UserId comme clé stable.");
         }
 
         // Service Roblox écrit en global : vérifié après l'analyse du fichier (cf. boucle ci-dessous).
     });
+
+    // DataStore sans pcall : une panne du service fait échouer tout le script.
+    const dataStoreCall = /:\s*(GetAsync|SetAsync|UpdateAsync|IncrementAsync|RemoveAsync|GetOrderedDataStore)\s*\(/;
+    if (dataStoreCall.test(String(source)) && !/\bpcall\s*\(/.test(String(source)) && isServerFile) {
+        const line = lines.findIndex(item => dataStoreCall.test(item.replace(/--.*$/, ""))) + 1;
+        push(line || 1, 1, "warning", "datastore-no-pcall", "Appel DataStore sans pcall : une erreur réseau ou une limitation de débit interrompt le script. Enveloppe l'appel et traite l'échec (retry avec task.wait).");
+    }
 
     // Un service utilisé en global sans GetService dans tout le fichier est fragile.
     for (const service of SERVICES) {
@@ -407,6 +463,7 @@ module.exports = {
     },
     runRobloxCheck,
     inspectLuau,
+    RULE_CODES,
     parseSelene,
     parseLuauAnalyze,
     findRojoProject,

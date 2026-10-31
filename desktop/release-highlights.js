@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.45":{headline:"L'assistant retrouve tes fichiers, retient ton projet et ne conclut plus sans preuve.",items:[
+        {icon:"tools",title:"Fichier retrouvé même avec un nom approximatif",text:"Nouvel outil find_files : « le HUD », « le module de sauvegarde » ou « sprite » suffisent, sans accent ni chemin exact. Un chemin introuvable oriente l'agent vers cette recherche au lieu de répéter la même erreur."},
+        {icon:"spark",title:"Un jeu jouable dès le premier appel",text:"roblox_game écrit un projet Rojo complet (parcours, checkpoints, pièces, chrono, meilleur temps, HUD) dans un dossier vide. L'assistant part d'une base jouable cohérente, puis la personnalise et la vérifie."},
+        {icon:"chat",title:"Fin de tâche vérifiée, pas annoncée",text:"Après une modification, une conclusion « terminé » est refusée si roblox_check manque ou si un test est antérieur à la dernière correction. Chaque réponse se termine par une checklist : fichiers modifiés, validation, test, reste à vérifier."}
+    ]},
     "1.5.44":{headline:"L'assistant corrige ses modifications plus vite et vérifie vraiment le Luau.",items:[
         {icon:"tools",title:"Modification guidée quand le texte diffère",text:"Quand un remplacement ne trouve pas le texte demandé, l'agent recevait un message sec et relisait le fichier entier. Il reçoit maintenant la zone réelle la plus proche, avec ses lignes et le texte exact à recopier : la correction suit en un seul nouvel essai."},
         {icon:"spark",title:"Vérification Luau honnête",text:"Après chaque modification de code Roblox, la vérification est exigée avant la réponse finale. Un contrôle qui trouve des erreurs n'affiche plus « ok », et un build en échec interdit d'annoncer un jeu qui fonctionne."},

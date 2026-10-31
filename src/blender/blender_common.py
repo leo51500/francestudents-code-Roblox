@@ -13,7 +13,8 @@ Géométrie disponible : box, cylinder, sphere, cone, torus, lathe (révolution)
 bevel, mirror, boolean_cut, noise. Palette : palette(["bois", "metal", …]) + assign_material
 ou assign_palette avant join, puis finish(obj, args, materials=list(materials.values())).
 Contrôle visuel : render_preview écrit quatre angles (face, trois-quarts, côté, dessus)
-dans une seule image 1024 px.
+dans une seule image 1024 px ; compare_render mesure la forme (IoU) et les tons (SSIM)
+d'un rendu par rapport à une image de référence.
 """
 
 import argparse
@@ -312,8 +313,12 @@ PREVIEW_ANGLES = (
 )
 
 
-def _view_camera(name, center, radius, direction):
-    """Caméra orientée vers le centre, reculée pour cadrer tout le modèle."""
+def _view_camera(name, center, radius, direction, orthographic=False):
+    """Caméra orientée vers le centre, reculée pour cadrer tout le modèle.
+
+    `orthographic` force une projection sans perspective (mode silhouette) : les
+    proportions restent exactes d'une vue à l'autre.
+    """
     import bpy
     from mathutils import Vector
     direction = Vector(direction).normalized()
@@ -327,7 +332,13 @@ def _view_camera(name, center, radius, direction):
     camera.location = center + direction * distance
     look = (center - camera.location).normalized()
     camera.rotation_euler = look.to_track_quat("-Z", "Y").to_euler()
-    camera_data.lens = 50
+    if orthographic:
+        # Silhouette : projection orthographique, pour comparer les proportions
+        # réelles sans la déformation d'un objectif grand-angle.
+        camera_data.type = "ORTHO"
+        camera_data.ortho_scale = max(radius * 2.2, 0.2)
+    else:
+        camera_data.lens = 50
     return camera
 
 
@@ -338,10 +349,37 @@ def _prepare_render_scene(resolution, mode="studio"):
     mode="plain" : fond neutre gris clair et trois points de lumière. C'est le
     fond à utiliser pour comparer un modèle à une référence (image jointe) :
     un décor sombre fausse la perception des couleurs et de la silhouette.
+    mode="silhouette" : modèle noir uni sur fond blanc, rendu Workbench sans
+    lumière ni matière. C'est le mode qui juge la FORME : contour, proportions,
+    lisibilité des volumes, sans être trompé par les couleurs ou les reflets.
     """
     import bpy
     scene = bpy.context.scene
-    plain = str(mode or "studio").lower() == "plain"
+    normalized = str(mode or "studio").lower()
+    plain = normalized == "plain"
+
+    if normalized == "silhouette":
+        scene.render.engine = "BLENDER_WORKBENCH"
+        shading = scene.display.shading
+        shading.light = "FLAT"
+        shading.color_type = "SINGLE"
+        shading.single_color = (0.0, 0.0, 0.0)
+        shading.show_shadows = False
+        shading.show_cavity = False
+        shading.show_object_outline = False
+        shading.show_specular_highlight = False
+        # En rendu final, Workbench ignore le fond « viewport » : le fond vient de la
+        # couleur d'affichage du monde. Sans monde clair, l'image sort sur du noir.
+        world = scene.world or bpy.data.worlds.new("PreviewWorld")
+        world.use_nodes = False
+        world.color = (0.97, 0.97, 0.97)
+        scene.world = world
+        shading.background_type = "WORLD"
+        shading.background_color = (0.97, 0.97, 0.97)
+        scene.render.resolution_x = resolution
+        scene.render.resolution_y = resolution
+        scene.render.film_transparent = False
+        return scene
 
     lights = [
         ("PreviewLight", 3.5 if not plain else 2.2, (50, 10, 30)),
@@ -420,13 +458,211 @@ def assemble_quad_image(images, target, size=1024, background=(0.06, 0.06, 0.07)
     return target
 
 
+# Comparaison à une image de référence : la réduction borne le coût même sur une
+# photo 4000 px, et la grille 64×64 reste assez fine pour distinguer une poignée
+# d'un couvercle sans dépendre du zoom ni de la résolution des deux images.
+COMPARE_MAX_SIDE = 240
+COMPARE_GRID = 64
+
+
+def _load_luminance(path, max_side=COMPARE_MAX_SIDE):
+    """Charge une image et renvoie (luminance, largeur, hauteur) pour la comparaison."""
+    import bpy
+    image = bpy.data.images.load(os.path.abspath(path), check_existing=False)
+    try:
+        width, height = image.size
+        if width <= 0 or height <= 0:
+            raise RuntimeError(f"Image vide ou illisible : {path}")
+        if max(width, height) > max_side:
+            ratio = max_side / float(max(width, height))
+            image.scale(max(1, round(width * ratio)), max(1, round(height * ratio)))
+            width, height = image.size
+        pixels = list(image.pixels[:])
+    finally:
+        bpy.data.images.remove(image)
+
+    luminance = [0.0] * (width * height)
+    for index in range(width * height):
+        base = index * 4
+        luminance[index] = (
+            0.2126 * pixels[base] + 0.7152 * pixels[base + 1] + 0.0722 * pixels[base + 2]
+        )
+    return luminance, width, height
+
+
+def _subject_mask(luminance, width, height):
+    """Masque du sujet : pixels nettement plus sombres que le fond.
+
+    Le seuil est placé au milieu du contraste réel de l'image, pas à une valeur
+    fixe : la gestion des couleurs de Blender transforme 0,97 en ~0,75 et une
+    photo peut avoir un fond gris. Renvoie (masque, boîte englobante) ou None
+    quand aucun sujet ne se détache (image uniforme, fond sombre, UI comprise).
+    """
+    low = min(luminance)
+    high = max(luminance)
+    if high - low < 0.12:
+        return None, "contraste insuffisant entre l'objet et le fond"
+
+    cut = low + (high - low) * 0.5
+    mask = [1 if value < cut else 0 for value in luminance]
+    coverage = sum(mask) / float(len(mask))
+    if coverage < 0.01:
+        return None, "aucun objet sombre détecté"
+    if coverage > 0.9:
+        return None, "le fond n'est pas clair et uniforme"
+
+    x0, y0 = width, height
+    x1, y1 = -1, -1
+    for index, value in enumerate(mask):
+        if not value:
+            continue
+        x = index % width
+        y = index // width
+        x0 = min(x0, x)
+        x1 = max(x1, x)
+        y0 = min(y0, y)
+        y1 = max(y1, y)
+    if x1 < x0 or y1 < y0:
+        return None, "aucun objet détecté"
+    return (mask, (x0, y0, x1, y1)), ""
+
+
+def _compare_grids(mask, luminance, width, bounds, out=COMPARE_GRID):
+    """Recadre sur la boîte du sujet puis rééchantillonne forme et tons en 64×64.
+
+    Le recadrage supprime l'effet du zoom et des marges ; le centrage dans un
+    carré CONSERVE les proportions. Étirer la boîte sur toute la grille aurait
+    rendu un objet large identique à un objet haut, ce qui masquerait justement
+    l'erreur de proportions la plus fréquente.
+    """
+    x0, y0, x1, y1 = bounds
+    span_x = max(1, x1 - x0 + 1)
+    span_y = max(1, y1 - y0 + 1)
+    scale = out / float(max(span_x, span_y))
+    scaled_x = max(1, min(out, round(span_x * scale)))
+    scaled_y = max(1, min(out, round(span_y * scale)))
+    offset_x = (out - scaled_x) // 2
+    offset_y = (out - scaled_y) // 2
+
+    cells = out * out
+    hits = [0] * cells
+    counts = [0] * cells
+    tones = [0.0] * cells
+
+    for y in range(y0, y1 + 1):
+        row = y * width
+        cy = min(out - 1, offset_y + (y - y0) * scaled_y // span_y)
+        for x in range(x0, x1 + 1):
+            index = row + x
+            cx = min(out - 1, offset_x + (x - x0) * scaled_x // span_x)
+            cell = cy * out + cx
+            counts[cell] += 1
+            if mask[index]:
+                hits[cell] += 1
+            tones[cell] += luminance[index]
+
+    shape = [hits[i] / counts[i] if counts[i] else 0.0 for i in range(cells)]
+    tone = [tones[i] / counts[i] if counts[i] else 0.0 for i in range(cells)]
+    low = min(tone)
+    high = max(tone)
+    span = high - low
+    if span > 1e-6:
+        tone = [(value - low) / span for value in tone]
+    return shape, tone
+
+
+def _global_ssim(first, second):
+    """SSIM global (moyennes, variances, covariance) sur deux grilles normalisées."""
+    count = float(len(first))
+    mean_a = sum(first) / count
+    mean_b = sum(second) / count
+    var_a = sum((value - mean_a) ** 2 for value in first) / count
+    var_b = sum((value - mean_b) ** 2 for value in second) / count
+    cov = sum((first[i] - mean_a) * (second[i] - mean_b) for i in range(len(first))) / count
+    c1 = 0.01 ** 2
+    c2 = 0.03 ** 2
+    value = ((2 * mean_a * mean_b + c1) * (2 * cov + c2)) / (
+        (mean_a ** 2 + mean_b ** 2 + c1) * (var_a + var_b + c2)
+    )
+    return max(-1.0, min(1.0, value))
+
+
+def compare_render(rendered, reference, angle=""):
+    """Compare un rendu à une image de référence et renvoie des scores mesurés.
+
+    `iou` (intersection sur union) mesure la FORME : 1 = même silhouette dans la
+    même pose. `ssim` compare les tons après recadrage : élevé quand l'ombrage et
+    les couleurs se ressemblent. Le résultat reste `None` quand le sujet ne se
+    détache pas du fond, au lieu d'inventer un score.
+
+    La référence doit montrer un seul objet sur un fond clair et uniforme, sous
+    l'angle demandé (`angle` = nom de la vue : face, trois-quarts, cote, dessus).
+    """
+    result = {
+        "reference": os.path.abspath(reference),
+        "angle": angle,
+        "iou": None,
+        "ssim": None,
+        "aspect_render": None,
+        "aspect_reference": None,
+        "verdict": "indéterminé",
+        "reason": "",
+    }
+
+    rendered_lum, rw, rh = _load_luminance(rendered)
+    reference_lum, tw, th = _load_luminance(reference)
+
+    rendered_mask, reason = _subject_mask(rendered_lum, rw, rh)
+    if rendered_mask is None:
+        result["reason"] = f"rendu : {reason}"
+        return result
+    reference_mask, reason = _subject_mask(reference_lum, tw, th)
+    if reference_mask is None:
+        result["reason"] = f"référence : {reason}"
+        return result
+
+    r_mask, r_bounds = rendered_mask
+    t_mask, t_bounds = reference_mask
+    r_shape, r_tone = _compare_grids(r_mask, rendered_lum, rw, r_bounds)
+    t_shape, t_tone = _compare_grids(t_mask, reference_lum, tw, t_bounds)
+
+    intersection = 0
+    union = 0
+    for index in range(len(r_shape)):
+        first = r_shape[index] >= 0.5
+        second = t_shape[index] >= 0.5
+        if first and second:
+            intersection += 1
+        if first or second:
+            union += 1
+
+    result["iou"] = round(intersection / union, 3) if union else 0.0
+    result["ssim"] = round(_global_ssim(r_tone, t_tone), 3)
+    result["aspect_render"] = round((r_bounds[2] - r_bounds[0] + 1) / float(r_bounds[3] - r_bounds[1] + 1), 3)
+    result["aspect_reference"] = round((t_bounds[2] - t_bounds[0] + 1) / float(t_bounds[3] - t_bounds[1] + 1), 3)
+    aspect_delta = abs(result["aspect_render"] - result["aspect_reference"]) / max(
+        result["aspect_render"], result["aspect_reference"]
+    )
+
+    if result["iou"] >= 0.87 and aspect_delta <= 0.18:
+        result["verdict"] = "très proche"
+    elif result["iou"] >= 0.72 and aspect_delta <= 0.3:
+        result["verdict"] = "proche"
+    else:
+        result["verdict"] = "différent"
+    if aspect_delta > 0.25:
+        result["reason"] = "proportions différentes (hauteur/largeur)"
+    return result
+
+
 def render_preview(target, resolution=1024, per_view=512, mode="studio"):
     """Rendu de contrôle en EEVEE (ou Workbench), quatre angles dans une seule image.
 
     `target` reçoit l'image assemblée (1024 px par défaut) ; les vues individuelles sont
     écrites dans un sous-dossier `_vues` à côté, pour un diagnostic plus fin si besoin.
-    `mode` : "studio" (fond sombre) ou "plain" (fond gris neutre, trois points de
-    lumière) pour comparer le modèle à une référence sans que le décor trompe l'œil.
+    `mode` : "studio" (fond sombre), "plain" (fond gris neutre, trois points de
+    lumière) pour comparer le modèle à une référence, ou "silhouette" (noir sur
+    blanc, projection orthographique) pour valider la forme et les proportions.
     """
     import bpy
     target = os.path.abspath(target)
@@ -435,12 +671,14 @@ def render_preview(target, resolution=1024, per_view=512, mode="studio"):
     views_dir = os.path.splitext(target)[0] + "_vues"
     os.makedirs(views_dir, exist_ok=True)
 
-    plain = str(mode or "studio").lower() == "plain"
+    normalized = str(mode or "studio").lower()
+    plain = normalized == "plain"
+    silhouette = normalized == "silhouette"
     _, _, center, radius = scene_bounds()
     scene = _prepare_render_scene(per_view, mode)
     tiles = []
     for label, direction in PREVIEW_ANGLES:
-        scene.camera = _view_camera(f"PreviewCamera_{label}", center, radius, direction)
+        scene.camera = _view_camera(f"PreviewCamera_{label}", center, radius, direction, orthographic=silhouette)
         tile = os.path.join(views_dir, f"{label}.png")
         scene.render.filepath = tile
         bpy.ops.render.render(write_still=True)
@@ -448,7 +686,13 @@ def render_preview(target, resolution=1024, per_view=512, mode="studio"):
             raise RuntimeError(f"Le rendu « {label} » n'a rien produit : {tile}")
         tiles.append(tile)
 
-    assemble_quad_image(tiles, target, size=resolution, background=(0.5, 0.5, 0.52) if plain else (0.06, 0.06, 0.07))
+    if silhouette:
+        background = (0.97, 0.97, 0.97)
+    elif plain:
+        background = (0.5, 0.5, 0.52)
+    else:
+        background = (0.06, 0.06, 0.07)
+    assemble_quad_image(tiles, target, size=resolution, background=background)
     if not os.path.isfile(target):
         raise RuntimeError(f"Le rendu n'a rien produit : {target}")
     return target

@@ -22,7 +22,8 @@ const {
     listDirectory
 } = require("../tools/tools");
 const { execFile } = require("node:child_process");
-const { repeatLimitFor, repeatSteering, stuckSummary, lockedFileHint } = require("./stuck-guard");
+const { repeatLimitFor, repeatSteering, stuckSummary, lockedFileHint, missingPathHint } = require("./stuck-guard");
+const { createCompletionGuard } = require("./completion-guard");
 /** Ordre stable des clés : deux appels MCP identiques produisent la même clé, quel que soit l'ordre d'écriture. */
 function canonicalValue(value) {
     if (Array.isArray(value)) return value.map(canonicalValue);
@@ -264,7 +265,7 @@ function parseAgentResponse(text) {
     if (action.calls !== undefined) {
         // Lecture en lot : jusqu'à MAX_BATCH_CALLS appels en lecture seule dans un seul tour.
         const MAX_BATCH_CALLS = 5;
-        const BATCH_TOOLS = new Set(["list_directory", "read_file", "search_files"]);
+        const BATCH_TOOLS = new Set(["list_directory", "read_file", "search_files", "find_files"]);
 
         if (!Array.isArray(action.calls) || action.calls.length < 1 || action.calls.length > MAX_BATCH_CALLS) {
             throw new Error(`calls doit être une liste de 1 à ${MAX_BATCH_CALLS} appels.`);
@@ -481,6 +482,7 @@ async function runAgent(task, options = {}) {
     let recoveredUnsupportedTool = false;
     let recoveredWorkspaceAccess = false;
     const changesBefore = memory.sessionChanges();
+    const completionGuard = createCompletionGuard({ task, readOnly: Boolean(options.readOnly) });
 
     // Point de reprise : /rewind peut annuler d'un coup tout ce que cette demande a modifié.
     if (state.workspace && !state.motionDesign && !options.readOnly) {
@@ -815,8 +817,22 @@ async function runAgent(task, options = {}) {
                 continue;
             }
             if (action.plan_progress !== undefined) applyProgress(state.agentPlan, action.plan_progress);
-            await finish(action.message, action.conversation_title, action.decisions);
-            return { completed: action.completed !== false, message: action.message };
+
+            // Génération → validation → test : une conclusion « terminé » doit être
+            // adossée à une vérification postérieure à la dernière modification.
+            const verdict = completionGuard.evaluateFinal(action);
+            if (verdict.force) {
+                ui.info("Vérification obligatoire avant la conclusion : roblox_check sur les fichiers modifiés.");
+                deferredSteering.push(verdict.steering);
+                continue;
+            }
+
+            const finalMessage = verdict.checklist
+                ? `${verdict.message}\n\n${verdict.checklist}`
+                : verdict.message;
+
+            await finish(finalMessage, action.conversation_title, action.decisions);
+            return { completed: verdict.completed, message: finalMessage };
         }
 
         if (action.plan_progress !== undefined && action.name !== "update_plan") applyProgress(state.agentPlan, action.plan_progress);
@@ -962,13 +978,21 @@ async function runAgent(task, options = {}) {
                 ok: results.every(item => item.ok),
                 result: { results }
             });
+            for (const item of results) {
+                completionGuard.record({
+                    tool: item.tool,
+                    args: item.args,
+                    ok: item.ok,
+                    result: item.ok ? item.result : { error: item.error }
+                });
+            }
             lastActionFailed = results.some(item => !item.ok);
 
             continue;
         }
 
         // Mode plan (/plan) : lecture seule, toute autre action est refusée sans être exécutée.
-        if (options.readOnly && !["list_directory", "read_file", "read_attachment", "search_files", "task", "semantic_search", "web_search", "web_search_result", "web_fetch", "update_plan", "ask_user"].includes(action.name)) {
+        if (options.readOnly && !["list_directory", "read_file", "read_attachment", "search_files", "find_files", "task", "semantic_search", "web_search", "web_search_result", "web_fetch", "update_plan", "ask_user"].includes(action.name)) {
             ui.result(`Mode plan : ${action.name} refusé (lecture seule)`, { tone: "error" });
             observations.push({
                 tool: action.name,
@@ -1020,6 +1044,7 @@ async function runAgent(task, options = {}) {
                 ok: !failed,
                 result
             });
+            completionGuard.record({ tool: action.name, args: action.args, ok: !failed, result });
             lastActionFailed = failed;
             // Un fichier verrouillé ou en lecture seule n'est pas un bug à réessayer :
             // la même action échouerait encore. On oriente vers le vrai plan de sortie,
@@ -1029,6 +1054,9 @@ async function runAgent(task, options = {}) {
                 deferredSteering.push(locked);
                 signatures.delete(signature);
                 lockedSignatures.add(signature);
+            } else if (failed) {
+                const missing = missingPathHint(action, result);
+                if (missing) deferredSteering.push(missing);
             }
             // Vérification d'accès au projet : son résultat décide de la suite, donc elle
             // est traitée ici et pas laissée au modèle.
@@ -1059,11 +1087,15 @@ async function runAgent(task, options = {}) {
                 ok: false,
                 error: error.message
             });
+            completionGuard.record({ tool: action.name, args: action.args, ok: false, result: { error: error.message } });
             lastActionFailed = true;
             const locked = lockedFileHint(action, { error: error.message });
             if (locked) {
                 deferredSteering.push(locked);
                 lockedSignatures.add(signature);
+            } else {
+                const missing = missingPathHint(action, { error: error.message });
+                if (missing) deferredSteering.push(missing);
             }
         }
     }

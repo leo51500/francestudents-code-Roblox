@@ -77,4 +77,35 @@ function lockedFileHint(action, result = {}) {
     return `FICHIER VERROUILLÉ — ${target} n'a pas pu être écrit : ${detail.slice(0, 240)} Un autre programme (souvent Roblox Studio, ou une autre fenêtre de ce dossier) garde ce fichier. Ne rejoue pas la même écriture : le contenu préparé n'est pas perdu et l'échec vient du système, pas du code. Décris précisément à l'utilisateur ce qui a déjà été modifié, puis propose de l'enregistrer sous un nom différent (write_file vers ${alternative}, même contenu, puis indique ce qui reste à reporter) ou demande de fermer la session qui le verrouille (Studio enregistre la place, puis se déconnecte) avant de relancer la modification. Ne prétends jamais que le fichier a été enregistré.`;
 }
 
-module.exports = { repeatLimitFor, isVerification, repeatSteering, stuckSummary, lockedFileHint, actionLabel, LOCKED_FILE, VERIFY_TYPES, VERIFY_COMMANDS };
+// Chemin absent : le nom exact est faux ou incomplet, ce n'est pas une boucle à rejouer.
+const MISSING_PATH = /(ENOENT|no such file|not found|cannot find|introuvable|n['’]existe pas|chemin invalide)/i;
+
+/**
+ * Chemin introuvable : oriente vers find_files (nom approximatif) au lieu de
+ * laisser l'agent répéter le même chemin supposé. Retourne null si l'échec
+ * n'est pas un chemin absent.
+ */
+function missingPathHint(action, result = {}) {
+    if (!action || action.calls) return null;
+
+    const detail = String(result?.error || result?.message || result?.output || result?.stderr || "");
+    if (!MISSING_PATH.test(detail)) return null;
+
+    const target = action.args?.path || action.args?.from || action.args?.to;
+    if (!target) return null;
+
+    const name = String(target).split(/[\\/]/).pop() || String(target);
+    const query = name.replace(/\.[^.\\/]+$/, "") || name;
+
+    if (action.name === "write_file") {
+        return `DOSSIER INTROUVABLE — ${target} n'a pas pu être écrit : ${detail.slice(0, 200)} Le dossier parent n'existe probablement pas. Ne rejoue pas la même écriture : crée le dossier avec create_directory, puis écris le fichier. Si le dossier parent existe déjà, vérifie le chemin exact avec find_files.`;
+    }
+
+    if (!["read_file", "list_directory", "edit_file", "move_path", "copy_path", "delete_path"].includes(action.name)) {
+        return null;
+    }
+
+    return `CHEMIN INTROUVABLE — ${target} n'existe pas à ce chemin : ${detail.slice(0, 200)} Ne répète pas ce chemin supposé. Appelle find_files {"query":${JSON.stringify(query)}} pour retrouver le bon fichier (nom approximatif, sans accent), puis reprends avec le chemin renvoyé. Si le fichier doit être créé, vérifie d'abord le dossier avec list_directory.`;
+}
+
+module.exports = { repeatLimitFor, isVerification, repeatSteering, stuckSummary, lockedFileHint, missingPathHint, actionLabel, LOCKED_FILE, MISSING_PATH, VERIFY_TYPES, VERIFY_COMMANDS };

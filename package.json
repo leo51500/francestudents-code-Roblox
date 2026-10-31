@@ -1,7 +1,7 @@
 {
   "//name": "Ne pas renommer : Electron dÃ©rive le dossier de profil et le chemin des donnÃ©es (~/.francestudent-code-roblox) de ce nom. Le nom affichÃ© est build.productName, l'identifiant de mise Ã  jour est build.appId.",
   "name": "project-frstcli",
-  "version": "1.5.44",
+  "version": "1.5.45",
   "description": "FranceStudent Code Roblox : agent IA pour Roblox Studio, Luau, Rojo et Blender",
   "main": "index.js",
   "bin": {
@@ -41,6 +41,7 @@
     "pretest": "npm run build:tui",
     "test": "node --require ./test/helpers/isolate-env.cjs --test --test-concurrency=4 test/*.test.js",
     "bench:search": "node scripts/bench-search.js",
+    "bench:roblox": "node scripts/bench-roblox.js",
     "pretest:e2e": "npm run prepare:electron && npm run build:renderer",
     "test:e2e": "node --test e2e/*.e2e.test.js",
     "predesktop": "npm run build:renderer",

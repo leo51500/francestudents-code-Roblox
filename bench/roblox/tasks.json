@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "description": "Banc de tâches Roblox : chaque tâche possède un énoncé, une solution de référence et des contrôles déterministes. Le score mesure la qualité du résultat, pas la vitesse de l'agent.",
+  "tasks": [
+    {
+      "id": "leaderstats",
+      "title": "Leaderstats et arrivée des joueurs",
+      "difficulty": "facile",
+      "weight": 1,
+      "prompt": "Dans src/server/Leaderstats.server.luau, crée un dossier leaderstats avec une valeur IntValue « Pièces » initialisée à 0. Le script doit traiter les joueurs déjà présents au démarrage puis ceux qui arrivent.",
+      "solution": "solutions/01-leaderstats",
+      "files": ["src/server/Leaderstats.server.luau"],
+      "luau": { "clean": true },
+      "require": [
+        { "file": "src/server/Leaderstats.server.luau", "pattern": "leaderstats" },
+        { "file": "src/server/Leaderstats.server.luau", "pattern": "Players\\.PlayerAdded" },
+        { "file": "src/server/Leaderstats.server.luau", "pattern": "GetPlayers\\(\\)" },
+        { "file": "src/server/Leaderstats.server.luau", "pattern": "Instance\\.new\\(\"IntValue\"\\)" }
+      ],
+      "forbid": [
+        { "file": "src/server/Leaderstats.server.luau", "pattern": "game\\.Workspace" }
+      ]
+    },
+    {
+      "id": "datastore",
+      "title": "Sauvegarde DataStore fiable",
+      "difficulty": "moyen",
+      "weight": 2,
+      "prompt": "Dans src/server/Save.server.luau, charge et sauvegarde le nombre de pièces du joueur avec DataStoreService. Utilise le UserId comme clé, protège chaque appel par pcall, crée les leaderstats à l'arrivée et sauvegarde au départ.",
+      "solution": "solutions/02-datastore",
+      "files": ["src/server/Save.server.luau"],
+      "luau": { "clean": true },
+      "require": [
+        { "file": "src/server/Save.server.luau", "pattern": "DataStoreService" },
+        { "file": "src/server/Save.server.luau", "pattern": "pcall\\(" },
+        { "file": "src/server/Save.server.luau", "pattern": "tostring\\(player\\.UserId\\)" },
+        { "file": "src/server/Save.server.luau", "pattern": "SetAsync" },
+        { "file": "src/server/Save.server.luau", "pattern": "PlayerRemoving" }
+      ],
+      "forbid": [
+        { "file": "src/server/Save.server.luau", "pattern": "tostring\\(player\\.Name" }
+      ]
+    },
+    {
+      "id": "remote-authority",
+      "title": "RemoteEvent avec autorité serveur",
+      "difficulty": "moyen",
+      "weight": 2,
+      "prompt": "Crée un RemoteEvent partagé dans src/shared/Remotes.luau, un serveur src/server/Trade.server.luau qui valide le type et le cooldown de la requête avant de débiter les pièces, et un client src/client/Trade.client.luau qui envoie la demande.",
+      "solution": "solutions/03-remote-authority",
+      "files": [
+        "src/shared/Remotes.luau",
+        "src/server/Trade.server.luau",
+        "src/client/Trade.client.luau"
+      ],
+      "luau": { "clean": true },
+      "require": [
+        { "file": "src/shared/Remotes.luau", "pattern": "Instance\\.new\\(\"RemoteEvent\"\\)" },
+        { "file": "src/server/Trade.server.luau", "pattern": "OnServerEvent" },
+        { "file": "src/server/Trade.server.luau", "pattern": "typeof\\(" },
+        { "file": "src/server/Trade.server.luau", "pattern": "os\\.clock\\(\\)" },
+        { "file": "src/client/Trade.client.luau", "pattern": "FireServer" }
+      ],
+      "forbid": [
+        { "file": "src/client/Trade.client.luau", "pattern": "Instance\\.new\\(\\s*[\"']RemoteEvent" },
+        { "file": "src/server/Trade.server.luau", "pattern": "FireAllClients" }
+      ]
+    },
+    {
+      "id": "rojo-project",
+      "title": "Projet Rojo complet",
+      "difficulty": "moyen",
+      "weight": 2,
+      "prompt": "Écris default.project.json avec un DataModel qui monte src/shared dans ReplicatedStorage.Shared, src/server dans ServerScriptService.Server et src/client dans StarterPlayer.StarterPlayerScripts.Client. Ajoute un module Config et un script serveur qui utilise ReplicatedStorage.",
+      "solution": "solutions/04-rojo-project",
+      "files": [
+        "default.project.json",
+        "src/shared/Config.luau",
+        "src/server/Main.server.luau",
+        "src/client/Init.client.luau"
+      ],
+      "luau": { "clean": true },
+      "json": [
+        { "file": "default.project.json", "path": "tree.$className", "equals": "DataModel" },
+        { "file": "default.project.json", "path": "tree.ReplicatedStorage.Shared.$path", "equals": "src/shared" },
+        { "file": "default.project.json", "path": "tree.ServerScriptService.Server.$path", "equals": "src/server" },
+        { "file": "default.project.json", "path": "tree.StarterPlayer.StarterPlayerScripts.Client.$path", "equals": "src/client" }
+      ],
+      "require": [
+        { "file": "src/server/Main.server.luau", "pattern": "ReplicatedStorage" },
+        { "file": "src/server/Main.server.luau", "pattern": "WaitForChild\\(\"Shared\", 10\\)" }
+      ],
+      "build": true
+    },
+    {
+      "id": "obby-game",
+      "title": "Obby jouable de bout en bout",
+      "difficulty": "expert",
+      "weight": 4,
+      "prompt": "Construis un obby complet : parcours serveur, checkpoints, pièces, chute et réapparition, chronomètre, meilleur temps persistant, HUD client et projet Rojo. Le serveur décide de tout ; le client ne fait qu'afficher.",
+      "solution": "template:obby",
+      "files": [
+        "default.project.json",
+        "src/shared/Config.luau",
+        "src/server/Main.server.luau",
+        "src/client/Hud.client.luau"
+      ],
+      "luau": {
+        "fail_on": [
+          "error",
+          "tight-loop",
+          "deprecated-global",
+          "service-global",
+          "instance-new-parent",
+          "waitforchild-timeout",
+          "datastore-client",
+          "datastore-player-name-key",
+          "datastore-no-pcall",
+          "remote-client-validation",
+          "remote-client-creation"
+        ]
+      },
+      "require": [
+        { "file": "src/server/Main.server.luau", "pattern": "Players\\.PlayerAdded" },
+        { "file": "src/server/Main.server.luau", "pattern": "DataStoreService" },
+        { "file": "src/server/Main.server.luau", "pattern": "pcall\\(" },
+        { "file": "src/server/Main.server.luau", "pattern": "RunService\\.Heartbeat" },
+        { "file": "src/server/Main.server.luau", "pattern": "leaderstats" },
+        { "file": "src/client/Hud.client.luau", "pattern": "GetAttributeChangedSignal" },
+        { "file": "src/client/Hud.client.luau", "pattern": "disconnectAll" }
+      ],
+      "forbid": [
+        { "file": "src/server/Main.server.luau", "pattern": "(?<![.\\w:])wait\\(" },
+        { "file": "src/server/Main.server.luau", "pattern": "(?<![.\\w:])tick\\(" },
+        { "file": "src/client/Hud.client.luau", "pattern": "(?<![.\\w:])wait\\(" },
+        { "file": "src/client/Hud.client.luau", "pattern": "FireServer" }
+      ],
+      "build": true
+    }
+  ]
+}

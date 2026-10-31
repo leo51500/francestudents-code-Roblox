@@ -23,12 +23,12 @@ function roleOf(value) {
 }
 
 /** Outils toujours permis : lire le projet, jamais le modifier. */
-const READ_TOOLS = Object.freeze(["list_directory", "read_file", "search_files"]);
+const READ_TOOLS = Object.freeze(["list_directory", "read_file", "search_files", "find_files"]);
 
 /** Outils qu'un rôle peut demander en plus de la lecture (le reste est refusé). */
 const WRITE_TOOLS = Object.freeze([
     "write_file", "edit_file", "create_directory", "move_path", "copy_path",
-    "roblox_check", "roblox_scene", "roblox_env", "rojo_serve", "roblox_playtest",
+    "roblox_check", "roblox_game", "roblox_scene", "roblox_env", "rojo_serve", "roblox_playtest",
     "run_command", "job_output", "job_stop", "blender", "view_image", "semantic_search", "diagnostics"
 ]);
 
