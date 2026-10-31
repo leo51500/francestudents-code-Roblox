@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.43":{headline:"Une panne de fiche GitHub ne bloque plus la construction des mises à jour.",items:[
+        {icon:"tools",title:"Build toujours lancé",text:"Si la création de la fiche de release échoue, le build Windows démarre quand même, relit la version dans le projet, dépose l'installateur et complète la fiche au lieu d'abandonner silencieusement."},
+        {icon:"spark",title:"Messages clairs",text:"Une release introuvable affiche désormais la raison exacte dans les Actions, et les sorties du workflow sont toujours renseignées."},
+        {icon:"clock",title:"Correctifs de publication inclus",text:"La vérification de l'installeur avant publication, les tests Electron avec contrôle d'accessibilité et les garde-fous de documents et de thème arrivent avec cette version."}
+    ]},
     "1.5.42":{headline:"Publication vérifiée, accessibilité et tests Electron à chaque PR.",items:[
         {icon:"tools",title:"Installeur contrôlé avant publication",text:"La release ne devient visible qu'après la vérification que l'exécutable empaqueté existe et se lance. Une erreur de nom ou de build ne peut plus publier une fiche sans application utilisable."},
         {icon:"spark",title:"Tests Electron à chaque PR",text:"Les parcours réels tournent aussi à chaque pull request et chaque nuit, avec un contrôle d'accessibilité automatique de la fenêtre principale. Le champ de saisie du chat a désormais un libellé explicite."},

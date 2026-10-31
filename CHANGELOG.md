@@ -1,6 +1,11 @@
-# Changelog
+﻿# Changelog
 
-## [1.5.42] - CI fidèle, contexte resserré, contrôles qui protègent vraiment
+## [1.5.43] - Publication relancée même si la fiche de release échoue
+- **Version jamais bloquée après une panne de fiche** : quand la création de la release GitHub échouait (API, tag ou droits), le job Windows était ignoré et plus rien n'était construit. Il démarre désormais dans ce cas, relit la version dans `package.json`, dépose les artefacts et complète la fiche.
+- **Sorties explicites** : `created` et `draft` sont toujours écrits par le job de fiche, et un message clair remplace l'exception PowerShell muette quand la release est introuvable.
+- **Publié dans la même version** : les corrections de CI, d’accessibilité et de garde-fous décrites en 1.5.42 arrivent avec cette version.
+
+## [1.5.42] - CI fidèle, contexte resserré, contrôles qui protègent vraiment - CI fidèle, contexte resserré, contrôles qui protègent vraiment
 - **Validation de sécurité réparée** : le test de l’application empaquetée ne retrouvait pas l’exécutable (ancien nom « FranceStudent IDE ») et l’audit bloquait sur un avis de l’outillage de build. Il teste désormais l’installateur réellement produit et ne s’exécute plus en double à chaque PR.
 - **Installeur protégé** : le workflow de publication vérifie que l’exécutable empaqueté existe et se lance avant de rendre la release visible.
 - **Tests Electron à chaque PR et chaque nuit** : les tests e2e de `ci.yml` construisent l’application empaquetée, comme les parcours réels. Un contrôle d’accessibilité (axe-core) couvre les violations critiques de la fenêtre principale, et le champ de saisie du chat a maintenant un libellé accessible.
