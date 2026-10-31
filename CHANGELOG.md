@@ -1,4 +1,12 @@
-﻿# Changelog
+# Changelog
+
+## [1.5.42] - CI fidèle, contexte resserré, contrôles qui protègent vraiment
+- **Validation de sécurité réparée** : le test de l’application empaquetée ne retrouvait pas l’exécutable (ancien nom « FranceStudent IDE ») et l’audit bloquait sur un avis de l’outillage de build. Il teste désormais l’installateur réellement produit et ne s’exécute plus en double à chaque PR.
+- **Installeur protégé** : le workflow de publication vérifie que l’exécutable empaqueté existe et se lance avant de rendre la release visible.
+- **Tests Electron à chaque PR et chaque nuit** : les tests e2e de `ci.yml` construisent l’application empaquetée, comme les parcours réels. Un contrôle d’accessibilité (axe-core) couvre les violations critiques de la fenêtre principale, et le champ de saisie du chat a maintenant un libellé accessible.
+- **Garde-fous de dépôt** : `check:docs` compare la version citée dans le README, le contexte et les nouveautés à `package.json` ; `check:tokens` détecte un token de thème qui diverge entre les feuilles ; Contrôle de format Prettier (indicatif) et mises à jour Dependabot.
+- **Contexte de reprise recentré** : `docs/AI_CONTEXT.md` ne décrit plus que l’état stable actuel ; l’historique des versions préparées est dans `docs/AI_CONTEXT_HISTORY.md`. Les artefacts personnels de `.frst/` ne sont plus versionnés.
+- Vérifié avant publication : `npm run check:renderer-globals`, `npm run check:docs`, `npm run check:tokens`, `npm run check:renderer`, `npm run lint`, `npm test`, et suite e2e Electron.
 
 ## [1.5.41] - Trait de redimensionnement collé au bord, publication débloquée
 - **Trait qui suivait la souris** : quand la largeur du panneau atteignait sa limite, le trait continuait d'avancer avec le curseur et flottait au milieu de l'interface, détaché de la colonne. Il est maintenant recalé sur le bord réel du panneau à chaque mouvement : il s'arrête avec la colonne, même si la souris va beaucoup plus loin.

@@ -18,7 +18,7 @@ Un éditeur Luau prêt pour Rojo, un studio EffectCraft pour l'UI et les animati
 >
 > **FranceStudent Code Roblox est une application distincte** (identifiant `fr.francestudent.code.roblox`, dossier de données `~/.francestudent-code-roblox`). Elle s’installe à côté d’une éventuelle version FranceStudent IDE sans partager ni écraser ses réglages.
 
-**Nouveautés 1.4.4 :** moins de répétitions dans les échanges IA, [pièces jointes préparées localement](docs/attachments.md) pour tous avec repli automatique, choix des fichiers dans les ZIP et meilleur guidage des connecteurs MCP. L’analyse IA automatique du projet revient avec son cache ; elle peut consommer du quota. Le gain dépend des fichiers, du modèle et de la tâche.
+**Nouveautés 1.5.42 :** la release Windows n’est publiée qu’après vérification que l’exécutable empaqueté existe et se lance, les parcours Electron tournent à chaque pull request, et le champ de saisie du chat est accessible aux lecteurs d’écran.
 
 ## Le mode Roblox Studio
 
@@ -49,7 +49,7 @@ Les conversations Code et Motion sont séparées : l’assistant motion travaill
 L’application est distribuée **uniquement pour Windows**.
 
 1. Ouvre l’installateur Windows.
-2. Lance FranceStudent IDE et suis le guide de connexion à ton **compte FranceStudent**.
+2. Lance FranceStudent Code Roblox et suis le guide de connexion à ton **compte FranceStudent**.
 3. Ouvre un dossier pour coder, ou passe dans le studio Motion pour commencer une composition.
 
 Pas besoin d’installer Node.js ni de fournir une clé API pour utiliser le chat FranceStudent. Certains projets et outils peuvent demander leurs propres dépendances.
@@ -78,7 +78,7 @@ La sélection motion propose des skills pour les titres, logos, transitions, mou
 
 ![Sélection de skills Motion : titres animés, animation de logo, transitions et autres outils à installer](docs/images/skills-motion.png)
 
-### Ton quota, visible dans l’IDE
+### Ton quota, visible dans l’application
 
 Clique sur la jauge pour ouvrir l’onglet **Usage** : budget disponible, compteurs de session et réinitialisation lorsque le service la communique. Le mode Éco réduit les capacités proposées pour limiter la consommation, sans garantir une économie précise.
 

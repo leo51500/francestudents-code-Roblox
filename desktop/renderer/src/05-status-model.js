@@ -28,6 +28,7 @@ function applyStatus(s) {
     $("btn-send").textContent = busy ? "Ajouter" : "Envoyer";
     $("btn-send").title = busy ? "Ajouter ce prompt à la file (Entrée)" : "Envoyer (Entrée)";
     input.placeholder = busy ? "Ajouter une demande à la suite…" : "Demande à l’agent… (/ pour les commandes)";
+    input.setAttribute("aria-label", busy ? "Ajouter une demande à la suite" : "Demande à l’agent");
     document.querySelector(".composer-hint").textContent = busy ? "Entrée : ajouter à la suite" : "Entrée : envoyer · Maj+Entrée : ligne";
     $("mode-select").disabled = busy;
     renderInlinePending(queueSnapshot);
@@ -40,6 +41,8 @@ function applyStatus(s) {
     if (typeof updateRojoStatusIndicator === "function") updateRojoStatusIndicator(s.rojoServer);
     $("st-model").textContent = s.model || "";
     $("model-label").textContent = s.model || "modèle";
+    // Le nom accessible doit contenir le libellé affiché (« texte » ne le faisait pas).
+    $("btn-model").setAttribute("aria-label", `${s.model || "modèle"} · choisir le modèle`);
     if (s.modelId != null) ui.currentModelId = s.modelId;
     const u = s.usage;
     let tokensText = "";
@@ -289,6 +292,7 @@ async function selectModel(id) {
         const res = await api.setModel(id);
         ui.currentModelId = res.id;
         $("model-label").textContent = res.name;
+        $("btn-model").setAttribute("aria-label", `${res.name} · choisir le modèle`);
         $("st-model").textContent = res.name;
         if (ui.models) renderModelMenu(ui.models);
     } catch (err) {

@@ -3,6 +3,9 @@ name: Publication automatique
 # Chaque modification livrée reçoit sa version et sa release Windows :
 # un push sur main déclenche la création de la fiche GitHub (tag v<version> de
 # package.json) puis le build Windows qui y dépose ses fichiers.
+# La fiche est créée en brouillon : elle n'est publiée qu'une fois les quatre
+# artefacts (installateur, .blockmap, latest.yml, SHA256SUMS.txt) déposés, pour
+# qu'aucun utilisateur ne voie une release sans installateur.
 # Si la release existe déjà, rien n'est modifié.
 # Le dépôt étant privé, l'API publique renvoie 404 : seule la page Actions
 # (connectée) permet de voir ces exécutions.
@@ -30,6 +33,7 @@ jobs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
       created: ${{ steps.release.outputs.created }}
+      draft: ${{ steps.release.outputs.draft }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,8 +66,12 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "La release $tag existe déjà : aucune modification."
+            # Un brouillon signale un build interrompu : on relance le workflow
+            # Windows pour le compléter. Une release publiée n'est jamais modifiée.
+            draft=$(gh release view "$tag" --repo "$GH_REPO" --json isDraft --jq '.isDraft')
+            echo "La release $tag existe déjà (brouillon=$draft)."
             echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "draft=$draft" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           tag_remote_sha=$(git ls-remote --tags origin "refs/tags/$tag" | tr -d '\r' | awk '{print $1}')
@@ -102,13 +110,15 @@ jobs:
             --target "$HEAD_SHA" \
             --title "FranceStudent Code Roblox $version" \
             --notes "$body" \
+            --draft \
             --prerelease="$prerelease"
           echo "created=true" >> "$GITHUB_OUTPUT"
+          echo "draft=true" >> "$GITHUB_OUTPUT"
 
   windows:
     needs: publish
-    # Ne lancer le build Windows que si la fiche vient d'être créée.
-    if: needs.publish.outputs.created == 'true'
+    # Lancer le build Windows pour une fiche nouvelle ou restée en brouillon.
+    if: needs.publish.outputs.created == 'true' || needs.publish.outputs.draft == 'true'
     uses: ./.github/workflows/release-win.yml
     with:
       tag: ${{ needs.publish.outputs.tag }}

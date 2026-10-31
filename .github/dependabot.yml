@@ -1,0 +1,32 @@
+version: 2
+
+# Mises à jour groupées : une PR hebdomadaire pour les correctifs, une pour les
+# actions GitHub. Les montées majeures restent séparées pour être relues.
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-patch:
+        patterns: ["*"]
+        update-types: ["patch", "minor"]
+    ignore:
+      # Electron et electron-builder sont liés au runtime et aux artefacts
+      # signés : une montée majeure se prépare avec une release dédiée.
+      - dependency-name: electron
+        update-types: ["version-update:semver-major"]
+      - dependency-name: electron-builder
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]

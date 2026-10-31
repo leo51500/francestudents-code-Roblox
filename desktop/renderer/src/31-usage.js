@@ -19,7 +19,9 @@ function renderUsageMeter() {
     el.classList.remove("warn", "crit");
     el.innerHTML = usageProgress(percent, "Quota de chat utilisé", "usage-mini-meter") + `<span class="usage-meter-label">${label}</span>`;
     el.title = percent == null ? "Voir la consommation et les compteurs de session" : `${quota.uncertain ? "Environ " : ""}${percent} % du quota de chat utilisé · Cliquer pour les détails`;
-    el.setAttribute("aria-label", el.title);
+    // Le nom accessible doit inclure la valeur affichée ; la consigne d’action
+    // reste dans l’infobulle, pas dans le nom.
+    el.setAttribute("aria-label", `Consommation : ${label}`);
 }
 
 function renderUsageDashboard() {

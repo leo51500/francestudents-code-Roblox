@@ -29,6 +29,9 @@ Ce fichier s’adresse à toute personne ou tout assistant qui reprend le dépô
 **Préférence du contributeur : réserver les tests automatisés à la préparation d’une publication, ou à une demande explicite de test.** Pendant le développement, ne pas relancer les suites après chaque modification. Préparer le code et documenter ce qui reste à vérifier ; avant publication, effectuer les contrôles adaptés et les parcours nécessaires. Cette règle remplace toute recommandation de test immédiat ci-dessous.
 
 ```sh
+npm run check:renderer-globals
+npm run check:docs
+npm run check:tokens
 npm run lint
 npm run build:renderer
 npm run check:renderer

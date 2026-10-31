@@ -432,6 +432,13 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     handle.tabIndex = 0;
     handle.setAttribute("role", "separator");
     handle.setAttribute("aria-orientation", axis === "x" ? "vertical" : "horizontal");
+    // `separator` focusable exige les bornes ARIA ; elles restent synchronisées
+    // avec les limites réelles du panneau par syncLayoutCustom().
+    handle.setAttribute("aria-valuemin", String(LAYOUT_LIMITS[cssVar].min));
+    handle.setAttribute("aria-valuemax", String(layoutMax(cssVar)));
+    const syncValue = () => handle.setAttribute("aria-valuenow", String(Math.round(layoutSizeOf(zoneId, axis) || layoutPx(cssVar))));
+    syncValue();
+    window.addEventListener("resize", syncValue);
     handle.setAttribute("aria-label", `Redimensionner ${cssVar === "--right" ? "le chat" : cssVar === "--left" ? "les fichiers" : "le panneau du bas"} (flèches)`);
     handle.addEventListener("keydown", (ev) => {
         const keys = axis === "x" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
@@ -441,6 +448,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         const step = (ev.shiftKey ? 40 : 8) * (grow === !invert ? 1 : -1) * (invert ? -1 : 1);
         const next = Math.round(Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutSizeOf(zoneId, axis) || layoutPx(cssVar)) + step));
         document.documentElement.style.setProperty(cssVar, `${next}px`);
+        handle.setAttribute("aria-valuenow", String(next));
         delete layoutPreferred[cssVar];
         if (cssVar !== "--bottom") {
             document.documentElement.style.setProperty(`${cssVar}-custom`, `${next}px`);

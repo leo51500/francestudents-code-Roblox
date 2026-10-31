@@ -29,7 +29,7 @@
     /* Pas de couleur de marque : le « accent » est le blanc qui appelle l'action. */
     --accent: #f2f3f5;
     --accent-hover: #ffffff;
-    --accent-soft: rgba(255, 255, 255, 0.06);
+    --accent-soft: #ffffff0f;
     --accent-ink: #08090a;
     --link: #e6e8ea;
     --danger: #e5484d;

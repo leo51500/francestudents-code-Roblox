@@ -1012,6 +1012,7 @@ function applyStatus(s) {
     $("btn-send").textContent = busy ? "Ajouter" : "Envoyer";
     $("btn-send").title = busy ? "Ajouter ce prompt à la file (Entrée)" : "Envoyer (Entrée)";
     input.placeholder = busy ? "Ajouter une demande à la suite…" : "Demande à l’agent… (/ pour les commandes)";
+    input.setAttribute("aria-label", busy ? "Ajouter une demande à la suite" : "Demande à l’agent");
     document.querySelector(".composer-hint").textContent = busy ? "Entrée : ajouter à la suite" : "Entrée : envoyer · Maj+Entrée : ligne";
     $("mode-select").disabled = busy;
     renderInlinePending(queueSnapshot);
@@ -1024,6 +1025,8 @@ function applyStatus(s) {
     if (typeof updateRojoStatusIndicator === "function") updateRojoStatusIndicator(s.rojoServer);
     $("st-model").textContent = s.model || "";
     $("model-label").textContent = s.model || "modèle";
+    // Le nom accessible doit contenir le libellé affiché (« texte » ne le faisait pas).
+    $("btn-model").setAttribute("aria-label", `${s.model || "modèle"} · choisir le modèle`);
     if (s.modelId != null) ui.currentModelId = s.modelId;
     const u = s.usage;
     let tokensText = "";
@@ -1273,6 +1276,7 @@ async function selectModel(id) {
         const res = await api.setModel(id);
         ui.currentModelId = res.id;
         $("model-label").textContent = res.name;
+        $("btn-model").setAttribute("aria-label", `${res.name} · choisir le modèle`);
         $("st-model").textContent = res.name;
         if (ui.models) renderModelMenu(ui.models);
     } catch (err) {
@@ -3447,6 +3451,13 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
     handle.tabIndex = 0;
     handle.setAttribute("role", "separator");
     handle.setAttribute("aria-orientation", axis === "x" ? "vertical" : "horizontal");
+    // `separator` focusable exige les bornes ARIA ; elles restent synchronisées
+    // avec les limites réelles du panneau par syncLayoutCustom().
+    handle.setAttribute("aria-valuemin", String(LAYOUT_LIMITS[cssVar].min));
+    handle.setAttribute("aria-valuemax", String(layoutMax(cssVar)));
+    const syncValue = () => handle.setAttribute("aria-valuenow", String(Math.round(layoutSizeOf(zoneId, axis) || layoutPx(cssVar))));
+    syncValue();
+    window.addEventListener("resize", syncValue);
     handle.setAttribute("aria-label", `Redimensionner ${cssVar === "--right" ? "le chat" : cssVar === "--left" ? "les fichiers" : "le panneau du bas"} (flèches)`);
     handle.addEventListener("keydown", (ev) => {
         const keys = axis === "x" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
@@ -3456,6 +3467,7 @@ function dragResizer(id, cssVar, axis, invert, zoneId) {
         const step = (ev.shiftKey ? 40 : 8) * (grow === !invert ? 1 : -1) * (invert ? -1 : 1);
         const next = Math.round(Math.max(LAYOUT_LIMITS[cssVar].min, Math.min(layoutMax(cssVar), layoutSizeOf(zoneId, axis) || layoutPx(cssVar)) + step));
         document.documentElement.style.setProperty(cssVar, `${next}px`);
+        handle.setAttribute("aria-valuenow", String(next));
         delete layoutPreferred[cssVar];
         if (cssVar !== "--bottom") {
             document.documentElement.style.setProperty(`${cssVar}-custom`, `${next}px`);
@@ -7930,11 +7942,12 @@ $("settings-view").insertBefore(captureSettings,$("settings-message"));
 api.browserPermission().then(value=>{$("studio-browser-permission").value=value;}).catch(()=>{});
 $("studio-browser-permission").onchange=async()=>{try{await api.browserPermission("save",$("studio-browser-permission").value);$("studio-browser-permission-status").textContent="Permission de capture enregistrée.";}catch(error){$("studio-browser-permission-status").textContent=error.message;}};
 const updateSettings=document.createElement("section");updateSettings.className="settings-card";
-updateSettings.innerHTML=`<h3>Application et mises à jour</h3><p id="studio-app-version" class="settings-help"></p><label class="setting-toggle"><span><b>Mises à jour automatiques</b><small>Vérifier et télécharger les versions publiées. Sur Windows installé, une mise à jour téléchargée est appliquée à la fermeture. Les projets et réglages restent dans leurs dossiers.</small></span><input type="checkbox" role="switch" id="studio-automatic-updates"></label><p id="studio-update-message" class="settings-help" role="status"></p><progress id="studio-update-progress" max="100" value="0" class="hidden"></progress><div class="studio-actions"><button type="button" id="studio-update-check">Vérifier maintenant</button><button type="button" id="studio-update-download" class="hidden">Télécharger la mise à jour</button><button type="button" id="studio-update-install" class="primary hidden">Enregistrer et redémarrer</button></div><p class="settings-help">Source prévue : versions GitHub de leo51500/francestudents-code-Roblox. Les nouvelles versions doivent être publiées avec leur installateur et leurs métadonnées de mise à jour. Aucune version n’est publiée automatiquement par cette interface.</p>`;
+updateSettings.innerHTML=`<h3>Application et mises à jour</h3><p id="studio-app-version" class="settings-help"></p><label class="setting-toggle"><span><b>Mises à jour automatiques</b><small>Vérifier et télécharger les versions publiées. Sur Windows installé, une mise à jour téléchargée est appliquée à la fermeture. Les projets et réglages restent dans leurs dossiers.</small></span><input type="checkbox" role="switch" id="studio-automatic-updates"></label><label class="setting-toggle"><span><b>Recevoir les préversions</b><small>Proposer aussi les versions bêta publiées (numéro suffixé, par exemple 1.6.0-beta.1). Désactivé, seules les versions stables sont proposées. Le retour à une version antérieure demande de réinstaller son installateur.</small></span><input type="checkbox" role="switch" id="studio-prerelease-updates"></label><p id="studio-update-message" class="settings-help" role="status"></p><progress id="studio-update-progress" max="100" value="0" class="hidden"></progress><div class="studio-actions"><button type="button" id="studio-update-check">Vérifier maintenant</button><button type="button" id="studio-update-download" class="hidden">Télécharger la mise à jour</button><button type="button" id="studio-update-install" class="primary hidden">Enregistrer et redémarrer</button></div><p class="settings-help">Source prévue : versions GitHub de leo51500/francestudents-code-Roblox. Les nouvelles versions doivent être publiées avec leur installateur et leurs métadonnées de mise à jour. Aucune version n’est publiée automatiquement par cette interface.</p>`;
 $("settings-view").insertBefore(updateSettings,$("settings-message"));
-function renderStudioUpdates(data){$("studio-app-version").textContent=`Version de l’application : ${data.version}`;$("studio-automatic-updates").checked=data.automatic;$("studio-update-message").textContent=data.message;$("studio-update-progress").value=data.progress;$("studio-update-progress").classList.toggle("hidden",data.status!=="downloading");$("studio-update-check").disabled=["unavailable","unsupported","checking","downloading"].includes(data.status);$("studio-update-download").classList.toggle("hidden",(data.status!=="available"||(data.canInstall===false&&!data.downloadUrl)));$("studio-update-install").classList.toggle("hidden",data.status!=="downloaded");}
+function renderStudioUpdates(data){$("studio-app-version").textContent=`Version de l’application : ${data.version}`;$("studio-automatic-updates").checked=data.automatic;$("studio-prerelease-updates").checked=data.allowPrerelease===true;$("studio-update-message").textContent=data.message;$("studio-update-progress").value=data.progress;$("studio-update-progress").classList.toggle("hidden",data.status!=="downloading");$("studio-update-check").disabled=["unavailable","unsupported","checking","downloading"].includes(data.status);$("studio-update-download").classList.toggle("hidden",(data.status!=="available"||(data.canInstall===false&&!data.downloadUrl)));$("studio-update-install").classList.toggle("hidden",data.status!=="downloaded");}
 api.updates().then(renderStudioUpdates).catch(()=>{});
 $("studio-automatic-updates").onchange=()=>api.updates("automatic",{enabled:$("studio-automatic-updates").checked}).then(renderStudioUpdates).catch(error=>{$("studio-update-message").textContent=error.message;});
+$("studio-prerelease-updates").onchange=()=>api.updates("prerelease",{enabled:$("studio-prerelease-updates").checked}).then(renderStudioUpdates).catch(error=>{$("studio-update-message").textContent=error.message;});
 for(const action of ["check","download","install"])$("studio-update-"+action).onclick=async()=>{try{if(action==="install"){await saveAllStudioFiles();if(ui.tabs.some(tab=>tab.dirty))throw new Error("Certains fichiers n’ont pas pu être enregistrés. Enregistre-les avant de redémarrer.");}renderStudioUpdates(await api.updates(action));}catch(error){$("studio-update-message").textContent=error.message;}};
 api.onEvent((channel,data)=>{if(channel==="appUpdate")renderStudioUpdates(data);});
 
@@ -7948,7 +7961,8 @@ for(const [label,description,icon,command] of [
     ["Compacter","Alléger la conversation","Command","/compact"]
 ]){
     const button=studioAction("",icon,()=>{input.value=command;autosizeInput();input.focus();});
-    button.setAttribute("aria-label",label);
+    // Le texte visible est déjà le nom du bouton : pas d'aria-label divergent
+    // (le nom accessible doit contenir le libellé affiché).
     button.title=description;
     const text=centerNode("span","starter-context-text");
     text.append(centerNode("b","",label),centerNode("small","",description));
@@ -8343,7 +8357,9 @@ function renderUsageMeter() {
     el.classList.remove("warn", "crit");
     el.innerHTML = usageProgress(percent, "Quota de chat utilisé", "usage-mini-meter") + `<span class="usage-meter-label">${label}</span>`;
     el.title = percent == null ? "Voir la consommation et les compteurs de session" : `${quota.uncertain ? "Environ " : ""}${percent} % du quota de chat utilisé · Cliquer pour les détails`;
-    el.setAttribute("aria-label", el.title);
+    // Le nom accessible doit inclure la valeur affichée ; la consigne d’action
+    // reste dans l’infobulle, pas dans le nom.
+    el.setAttribute("aria-label", `Consommation : ${label}`);
 }
 
 function renderUsageDashboard() {
@@ -9071,12 +9087,15 @@ function maybeShowStabilityNotice() {
     const report = centerNode("pre", "fs-stability-report", notice.report);
     body.append(report, centerNode("p", "fs-section-description", "Diagnostic local : le texte des conversations et des fichiers, les jetons et les traces complètes ne sont pas collectés. Aucun envoi automatique."));
     if (!notice.persisted) body.append(centerNode("p", "fs-dialog-note", "Le journal local n’a pas pu être sauvegardé. Copie ce diagnostic avant de fermer."));
-    const footer = centerNode("div", "fs-dialog-footer"), copy = centerNode("button", "", "Copier le diagnostic"), done = centerNode("button", "primary", "J’ai compris");
-    copy.id = "stability-copy"; done.id = "stability-acknowledge"; copy.type = done.type = "button";
+    const footer = centerNode("div", "fs-dialog-footer"), copy = centerNode("button", "", "Copier le diagnostic"), save = centerNode("button", "", "Enregistrer le diagnostic"), done = centerNode("button", "primary", "J’ai compris");
+    copy.id = "stability-copy"; save.id = "stability-save"; done.id = "stability-acknowledge"; copy.type = save.type = done.type = "button";
     copy.onclick = () => api.copyText(notice.report).then(() => { copy.textContent = "Diagnostic copié"; }).catch(error => studioFeedback(error.message));
+    save.onclick = () => api.stability("save").then(result => {
+        if (result && result.path) save.textContent = "Diagnostic enregistré";
+    }).catch(error => studioFeedback(error.message));
     done.onclick = () => dialog.close();
     dialog.addEventListener("close", () => { api.stability("acknowledge", notice.id).catch(error => studioFeedback(error.message)); dialog.remove(); }, { once: true });
-    footer.append(copy, done); dialog.append(body, footer); document.body.append(dialog); dialog.showModal(); done.focus();
+    footer.append(copy, save, done); dialog.append(body, footer); document.body.append(dialog); dialog.showModal(); done.focus();
 }
 const stabilityNoticeObserver = new MutationObserver(maybeShowStabilityNotice);
 stabilityNoticeObserver.observe($("startup-loading"), { attributes: true, attributeFilter: ["hidden"] });

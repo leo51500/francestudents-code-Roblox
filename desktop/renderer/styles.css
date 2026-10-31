@@ -1,21 +1,29 @@
 ﻿:root {
     color-scheme: dark;
-    --bg: #121317;
-    --bg-side: #0c0d11;
-    --bg-activity: #0c0d11;
-    --bg-panel: #16171c;
-    --bg-input: #1c1e24;
-    --bg-hover: #1a1c22;
-    --bg-active: #23252d;
-    --border: #23252d;
-    --fg: #c8cbd3;
-    --fg-dim: #858995;
+    /* Thème Onyx : ces valeurs doivent rester alignées sur theme.css et
+       workbench.css. scripts/check-css-tokens.js le vérifie. */
+    --bg: #08090a;
+    --bg-side: #050506;
+    --bg-activity: #050506;
+    --bg-panel: #0d0e10;
+    --bg-input: #121315;
+    --bg-hover: #141518;
+    --bg-active: #1b1d21;
+    --border: #1a1b1e;
+    --border-strong: #26282c;
+    --fg: #d8dade;
+    --fg-strong: #f5f6f7;
+    --fg-dim: #9a9da4;
+    --fg-faint: #6e7178;
     --accent: #f2f3f5;
     --accent-hover: #ffffff;
+    --accent-soft: #ffffff0f;
+    --accent-ink: #08090a;
+    --link: #e6e8ea;
     --danger: #e5484d;
-    --warn: #cca700;
-    --ok: #89d185;
-    --error: #f48771;
+    --warn: #d9a441;
+    --ok: #46a758;
+    --error: #ff7b72;
     --mono: Consolas, "Cascadia Code", "Courier New", monospace;
     --sans: "Segoe UI", system-ui, sans-serif;
     --left: 248px;

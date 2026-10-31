@@ -1,33 +1,74 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+    push:
+        branches: [main]
+    pull_request:
+    # Passage nocturne : couvre les dépendances et le runner qui évoluent sans
+    # qu'aucune PR ne soit ouverte.
+    schedule:
+        - cron: "0 3 * * *"
+
+env:
+    # Windows x64 : onnxruntime-node fournit déjà ses binaires CPU dans le paquet.
+    ONNXRUNTIME_NODE_INSTALL: skip
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest]
-        node: [22]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-      - run: npm install
-      - run: npm run prepare:electron
-      # Seules les dependances livrees (npm dependencies, empaquetees par
-      # electron-builder) gardent un seuil bloquant. Les avis qui ne touchent que
-      # l'outillage de build (eslint, electron-builder...) ne doivent pas bloquer
-      # une publication quand aucun correctif n'est encore publie en amont.
-      - run: npm audit --omit=dev --audit-level=low
-      - run: npm run build:renderer
-      - run: npm run lint
-      - run: npm run check:renderer
-      - run: npm test
-      - uses: ./.github/actions/build-effectcraft
-      - run: npm run build:desktop
+    test:
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [windows-latest]
+                node: [22]
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run prepare:electron
+            # Seules les dependances livrees (npm dependencies, empaquetees par
+            # electron-builder) gardent un seuil bloquant. Les avis qui ne touchent que
+            # l'outillage de build (eslint, electron-builder...) ne doivent pas bloquer
+            # une publication quand aucun correctif n'est encore publie en amont.
+            - run: npm audit --omit=dev --audit-level=low
+            # Les globals du renderer doivent être à jour avant le lint : ils
+            # alimentent no-undef pour les modules concaténés.
+            - run: npm run check:renderer-globals
+            - run: npm run check:docs
+            - run: npm run check:tokens
+            # Contrôle indicatif tant que l'arbre n'est pas formaté d'un bloc :
+            # il signale les diffs, il ne bloque pas la CI.
+            - run: npm run format:check
+              continue-on-error: true
+            - run: npm run build:renderer
+            - run: npm run lint
+            - run: npm run check:renderer
+            - run: npm test
+            - uses: ./.github/actions/build-effectcraft
+            - run: npm run build:desktop
+
+    e2e:
+        # Tests Electron réels : ils ont besoin d'un affichage, d'où le runner Windows.
+        # Exécutés à chaque PR et lors du passage nocturne. Le push sur main
+        # déclenche déjà release-win.yml, qui construit et publie l'installateur.
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+        runs-on: windows-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npm run prepare:electron
+            - run: npm run build:renderer
+            # Les tests empaquetés comparent l'exécutable réel : on le construit
+            # ici plutôt que d'attendre le job de publication.
+            - run: npm run build:desktop
+            - run: node --test --test-concurrency=4 e2e/*.e2e.test.js
+              env:
+                  ELECTRON_DISABLE_SECURITY_WARNINGS: "1"

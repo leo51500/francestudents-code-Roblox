@@ -3,6 +3,15 @@
 const js = require("@eslint/js");
 const globals = require("globals");
 
+// Symboles déclarés au niveau racine par les modules concaténés du renderer.
+// Le fichier est généré par scripts/renderer-globals.js (prelint).
+let rendererGlobals = {};
+try {
+    rendererGlobals = require("./desktop/renderer/globals.generated.json");
+} catch {
+    // Le premier lint sans fichier généré reste possible ; prelint le crée.
+}
+
 const commonRules = {
     "no-unused-vars": ["warn", { args: "none", caughtErrors: "none", varsIgnorePattern: "^_" }],
     "no-empty": ["error", { allowEmptyCatch: true }],
@@ -56,10 +65,13 @@ module.exports = [
         files: ["desktop/renderer/**/*.js"],
         languageOptions: {
             sourceType: "script",
-            globals: { ...globals.browser }
+            globals: { ...globals.browser, ...rendererGlobals }
         },
         rules: {
-            "no-undef": "off",
+            // no-undef est fiable grâce à la liste générée des symboles partagés.
+            // no-unused-vars et no-redeclare restent désactivés : une déclaration
+            // peut être consommée par un module chargé plus tard.
+            "no-undef": "error",
             "no-unused-vars": "off",
             "no-redeclare": "off"
         }

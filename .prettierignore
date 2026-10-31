@@ -1,0 +1,13 @@
+node_modules/
+release/
+dist/
+desktop/renderer/app.js
+desktop/renderer/vendor/
+desktop/vendor-effectcraft/
+desktop/renderer/globals.generated.json
+package-lock.json
+CHANGELOG.md
+docs/releases/
+qa/
+qa2/
+qa3/
