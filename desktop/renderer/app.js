@@ -10041,12 +10041,70 @@ function renderRojoDashboard(state) {
         late.textContent = `${build.newest_script} a changé après le dernier build : « Recompiler » pour vérifier.`;
         host.appendChild(late);
     }
+    if (state.diagnostics) host.appendChild(renderRobloxDiagnostics(state.diagnostics));
     if (state.log?.length) {
         const log = document.createElement("pre");
         log.className = "rojo-log";
         log.textContent = state.log.map(entry => entry.line).join("\n");
         host.appendChild(log);
     }
+}
+
+/* Diagnostics Luau du cockpit : les erreurs bloquantes d'abord, puis les
+   avertissements. Chaque ligne pointe fichier et ligne, et se ferme sans quitter
+   le panneau. L'analyse est refaite par le backend à chaque actualisation. */
+function renderRobloxDiagnostics(diagnostics) {
+    const box = document.createElement("section");
+    box.className = "rojo-diagnostics";
+    const head = document.createElement("div");
+    head.className = "rojo-diagnostics-head";
+    const title = document.createElement("strong");
+    title.textContent = diagnostics.clean
+        ? "Luau · aucun problème"
+        : `Luau · ${diagnostics.errors} erreur(s), ${diagnostics.warnings} avertissement(s)`;
+    head.appendChild(title);
+    const explain = document.createElement("span");
+    explain.className = "muted";
+    explain.textContent = "règles Roblox locales" + (diagnostics.files ? ` · ${diagnostics.files} fichier(s)` : "");
+    head.appendChild(explain);
+    box.appendChild(head);
+
+    if (!diagnostics.items?.length) {
+        const ok = document.createElement("p");
+        ok.className = "muted";
+        ok.textContent = diagnostics.message || "Aucun problème détecté.";
+        box.appendChild(ok);
+        return box;
+    }
+
+    const list = document.createElement("ul");
+    list.className = "rojo-diagnostics-list";
+    for (const item of diagnostics.items) {
+        const row = document.createElement("li");
+        row.className = `rojo-diagnostic rojo-diagnostic-${item.severity}`;
+        const where = document.createElement("button");
+        where.type = "button";
+        where.className = "rojo-diagnostic-file";
+        where.textContent = `${item.file}:${item.line}`;
+        where.title = "Ouvrir ce fichier à la ligne";
+        where.addEventListener("click", () => {
+            // Le chemin et la ligne viennent des règles locales ; openFile attend une promesse.
+            openFile(item.file).then(() => goToLine(item.line)).catch(() => {});
+        });
+        const message = document.createElement("span");
+        message.className = "rojo-diagnostic-message";
+        message.textContent = item.message;
+        row.append(where, message);
+        list.appendChild(row);
+    }
+    box.appendChild(list);
+    if (diagnostics.truncated) {
+        const more = document.createElement("p");
+        more.className = "muted";
+        more.textContent = "Liste tronquée : corrige déjà ces lignes, puis actualise.";
+        box.appendChild(more);
+    }
+    return box;
 }
 
 async function runRojoAction(action, button) {

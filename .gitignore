@@ -52,4 +52,7 @@ e2e/.tmp-shots.js
 scratch-*.cjs
 scratch-*.js
 scratch-*.mjs
+# Sondes locales jetables (axe, captures) : ne doivent jamais faire échouer lint
+.tmp-*
+e2e/.tmp-*
 

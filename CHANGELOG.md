@@ -1,5 +1,18 @@
 ﻿# Changelog
 
+## [1.5.44] - Des résultats Roblox réellement vérifiés
+- **Modification guidée** : si `old_string` est introuvable, l'erreur contient désormais la **zone réelle la plus proche** (lignes et texte exact à recopier), avec tolérance sur l'indentation, les guillemets typographiques et les espaces. L'agent corrige en un seul nouvel essai au lieu de relire le fichier ou d'abandonner. Nouveau module testé `src/tools/fs/edit-suggest.js`. `list_directory` accepte `tree:true` (arbre compact jusqu'à 5 niveaux) pour les projets Rojo volumineux.
+- **Recherche par le sens enfin expliquée** : `semantic_search` apparaît dans les briefs `search`, `read` et `general` (« si le nom du symbole est inconnu ») et les identifiants de fichiers à tirets (`roblox-check`) sont découpés en mots indexables.
+- **Vérification Luau bloquante** : après une modification de Luau, `roblox_check` est exigé avant la réponse finale. `clean` est renvoyé, un checker qui trouve des erreurs n'est plus « ok », un build en échec est marqué bloquant. Quatre règles locales ajoutées : `Instance.new` avec parent en 2e argument, `WaitForChild` sans délai, `:Connect` sans `Disconnect` (une fois par fichier), `PlayerRemoving`/`GetPlayers` sans `PlayerAdded`. Le rappel est intégré aux skills Roblox embarqués.
+- **Diagnostics dans le cockpit** : le panneau Roblox affiche les erreurs et avertissements Luau locaux (fichier:ligne cliquable, thème sans nouvelle couleur), sans lancer selene ni rojo build depuis l'interface.
+- **Blender comparé honnêtement** : l'action `render` accepte `mode:"plain"` (fond gris neutre, trois points de lumière) pour comparer un modèle à une image de référence, le décor sombre trompant la silhouette et les couleurs.
+- **Documentation web plus lisible** : `web_fetch` retire les lignes de navigation répétées des pages HTML (rapportées dans `navigation_lines_removed`), et renvoie vers `browse` quand le texte reste pauvre (page rendue par JavaScript).
+- **Test guidé dans Studio** : `roblox_playtest` renvoie un scénario court tiré de la demande (F5, Output, geste à rejouer) que l'agent recopie dans sa réponse.
+- **Décisions visibles** : le champ optionnel `decisions` du message final s'affiche à part (« Décisions prises ») pour montrer les choix par défaut faits à la place de l'utilisateur.
+- **Une tâche incomplète ne bloque plus la file** : `completed:false` reste signalé, mais seuls un échec ou une interruption mettent la file en pause (auparavant, une simple fin non testée bloquait les demandes suivantes déjà en attente).
+- **Nettoyage** : les sondes locales `e2e/.tmp-*` sont ignorées par Git.
+- Vérifié : `npm run build:renderer`, `npm run check:renderer`, `npm run lint`, `npm run check:renderer-globals`, `npm run check:docs`, `npm run check:tokens`, tests unitaires ciblés (`edit-suggest`, `roblox-check`, `semantic-search`, `web-fetch`, `agent-helpers`) puis suite complète.
+
 ## [1.5.43] - Publication relancée même si la fiche de release échoue
 - **Version jamais bloquée après une panne de fiche** : quand la création de la release GitHub échouait (API, tag ou droits), le job Windows était ignoré et plus rien n'était construit. Il démarre désormais dans ce cas, relit la version dans `package.json`, dépose les artefacts et complète la fiche.
 - **Sorties explicites** : `created` et `draft` sont toujours écrits par le job de fiche, et un message clair remplace l'exception PowerShell muette quand la release est introuvable.

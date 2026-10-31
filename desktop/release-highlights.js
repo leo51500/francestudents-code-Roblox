@@ -1,6 +1,11 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.44":{headline:"L'assistant corrige ses modifications plus vite et vérifie vraiment le Luau.",items:[
+        {icon:"tools",title:"Modification guidée quand le texte diffère",text:"Quand un remplacement ne trouve pas le texte demandé, l'agent recevait un message sec et relisait le fichier entier. Il reçoit maintenant la zone réelle la plus proche, avec ses lignes et le texte exact à recopier : la correction suit en un seul nouvel essai."},
+        {icon:"spark",title:"Vérification Luau honnête",text:"Après chaque modification de code Roblox, la vérification est exigée avant la réponse finale. Un contrôle qui trouve des erreurs n'affiche plus « ok », et un build en échec interdit d'annoncer un jeu qui fonctionne."},
+        {icon:"chat",title:"Problèmes Luau visibles dans le cockpit",text:"Le panneau Roblox affiche les erreurs et avertissements de tes scripts (instance parentée trop tôt, WaitForChild sans délai, connexion jamais déconnectée, PlayerAdded manquant) avec un clic direct vers la ligne."}
+    ]},
     "1.5.43":{headline:"Une panne de fiche GitHub ne bloque plus la construction des mises à jour.",items:[
         {icon:"tools",title:"Build toujours lancé",text:"Si la création de la fiche de release échoue, le build Windows démarre quand même, relit la version dans le projet, dépose l'installateur et complète la fiche au lieu d'abandonner silencieusement."},
         {icon:"spark",title:"Messages clairs",text:"Une release introuvable affiche désormais la raison exacte dans les Actions, et les sorties du workflow sont toujours renseignées."},

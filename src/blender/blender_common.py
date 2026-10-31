@@ -331,23 +331,45 @@ def _view_camera(name, center, radius, direction):
     return camera
 
 
-def _prepare_render_scene(resolution):
-    """Lumière et fond de contrôle, une seule fois pour toutes les vues."""
+def _prepare_render_scene(resolution, mode="studio"):
+    """Lumière et fond de contrôle, une seule fois pour toutes les vues.
+
+    mode="studio" : fond sombre et soleil unique, proche de l'aperçu Study.
+    mode="plain" : fond neutre gris clair et trois points de lumière. C'est le
+    fond à utiliser pour comparer un modèle à une référence (image jointe) :
+    un décor sombre fausse la perception des couleurs et de la silhouette.
+    """
     import bpy
     scene = bpy.context.scene
-    if "PreviewLight" not in bpy.data.objects:
-        light_data = bpy.data.lights.new("PreviewLight", type="SUN")
-        light_data.energy = 3.5
-        light = bpy.data.objects.new("PreviewLight", light_data)
+    plain = str(mode or "studio").lower() == "plain"
+
+    lights = [
+        ("PreviewLight", 3.5 if not plain else 2.2, (50, 10, 30)),
+    ]
+    if plain:
+        # Trois points : clé, remplissage opposé, contre-jour léger.
+        lights += [
+            ("PreviewFill", 1.1, (60, 0, 210)),
+            ("PreviewRim", 1.6, (25, 0, 120)),
+        ]
+    for name, energy, rotation in lights:
+        if name in bpy.data.objects:
+            bpy.data.objects[name].data.energy = energy
+            continue
+        light_data = bpy.data.lights.new(name, type="SUN")
+        light_data.energy = energy
+        light = bpy.data.objects.new(name, light_data)
         bpy.context.collection.objects.link(light)
-        light.rotation_euler = (math.radians(50), math.radians(10), math.radians(30))
+        light.rotation_euler = tuple(math.radians(value) for value in rotation)
 
     world = scene.world or bpy.data.worlds.new("PreviewWorld")
     world.use_nodes = True
     background = world.node_tree.nodes.get("Background")
     if background:
-        background.inputs[0].default_value = (0.06, 0.06, 0.07, 1.0)
-        background.inputs[1].default_value = 1.0
+        # Gris neutre 50 % : ni noir (détails perdus) ni blanc (silhouette mangée).
+        color = (0.5, 0.5, 0.52, 1.0) if plain else (0.06, 0.06, 0.07, 1.0)
+        background.inputs[0].default_value = color
+        background.inputs[1].default_value = 1.0 if plain else 1.0
     scene.world = world
 
     scene.render.resolution_x = resolution
@@ -364,7 +386,7 @@ def _prepare_render_scene(resolution):
     return scene
 
 
-def assemble_quad_image(images, target, size=1024):
+def assemble_quad_image(images, target, size=1024, background=(0.06, 0.06, 0.07)):
     """Assemble quatre rendus en une image carrée 2x2 (taille finale `size` px).
 
     Chaque vue est réduite à size/2 puis copiée dans son quart. Roblox Studio et le
@@ -374,7 +396,7 @@ def assemble_quad_image(images, target, size=1024):
     half = max(1, size // 2)
     sheet = bpy.data.images.new("CONTROLE", width=size, height=size, alpha=False)
     # Une ligne complète de l'image assemblée fait size*4 valeurs (RGBA).
-    pixels = [0.06, 0.06, 0.07, 1.0] * (size * size)
+    pixels = [*background, 1.0] * (size * size)
 
     for index, path in enumerate(images[:4]):
         tile = bpy.data.images.load(path, check_existing=False)
@@ -398,11 +420,13 @@ def assemble_quad_image(images, target, size=1024):
     return target
 
 
-def render_preview(target, resolution=1024, per_view=512):
+def render_preview(target, resolution=1024, per_view=512, mode="studio"):
     """Rendu de contrôle en EEVEE (ou Workbench), quatre angles dans une seule image.
 
     `target` reçoit l'image assemblée (1024 px par défaut) ; les vues individuelles sont
     écrites dans un sous-dossier `_vues` à côté, pour un diagnostic plus fin si besoin.
+    `mode` : "studio" (fond sombre) ou "plain" (fond gris neutre, trois points de
+    lumière) pour comparer le modèle à une référence sans que le décor trompe l'œil.
     """
     import bpy
     target = os.path.abspath(target)
@@ -411,8 +435,9 @@ def render_preview(target, resolution=1024, per_view=512):
     views_dir = os.path.splitext(target)[0] + "_vues"
     os.makedirs(views_dir, exist_ok=True)
 
+    plain = str(mode or "studio").lower() == "plain"
     _, _, center, radius = scene_bounds()
-    scene = _prepare_render_scene(per_view)
+    scene = _prepare_render_scene(per_view, mode)
     tiles = []
     for label, direction in PREVIEW_ANGLES:
         scene.camera = _view_camera(f"PreviewCamera_{label}", center, radius, direction)
@@ -423,7 +448,7 @@ def render_preview(target, resolution=1024, per_view=512):
             raise RuntimeError(f"Le rendu « {label} » n'a rien produit : {tile}")
         tiles.append(tile)
 
-    assemble_quad_image(tiles, target, size=resolution)
+    assemble_quad_image(tiles, target, size=resolution, background=(0.5, 0.5, 0.52) if plain else (0.06, 0.06, 0.07))
     if not os.path.isfile(target):
         raise RuntimeError(f"Le rendu n'a rien produit : {target}")
     return target

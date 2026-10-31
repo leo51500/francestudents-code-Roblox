@@ -11,6 +11,7 @@ const { statOrNull, denied } = require("../core/fs-utils");
 const { readTextFile, assertFreshRead } = require("../core/freshness");
 const { finishMutation } = require("../core/journal");
 const { writeAtomic } = require("../core/atomic");
+const { notFoundMessage } = require("./edit-suggest");
 
 async function editFile(args = {}) {
     requireString(args.path, "path");
@@ -48,9 +49,10 @@ async function editFile(args = {}) {
     const count = previous.split(needle).length - 1;
 
     if (count === 0) {
-        throw new Error(
-            "old_string est introuvable. Relis le fichier et copie le texte exactement (indentation comprise)."
-        );
+        // Message enrichi : la zone la plus proche est renvoyée avec ses lignes,
+        // pour que le modèle corrige en un seul nouvel essai au lieu de relire
+        // le fichier entier ou d'abandonner.
+        throw new Error(notFoundMessage(rel, previous, args.old_string));
     }
 
     const replaceAll = args.replace_all === true;
@@ -134,4 +136,4 @@ function describe(a) {
     return `${a.path} : "${short(a.old_string, 40)}" -> "${short(a.new_string, 40)}"`;
 }
 
-module.exports = { name: "edit_file", run: editFile, check, describe };
+module.exports = { name: "edit_file", run: editFile, check, describe, notFoundMessage };

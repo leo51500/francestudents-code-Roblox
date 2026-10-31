@@ -50,10 +50,13 @@ function tokenize(text) {
     const tokens = [];
     const plain = String(text ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "");
     for (const word of plain.match(/[\p{L}\p{N}_$]+/gu) || []) {
+        // Les identifiants de fichiers ne séparent pas leurs mots : roblox-check.js,
+        // player_added, BlenderCommon. Sans couper sur « - » et « . », l'index range
+        // « robloxcheck » comme un seul jeton et ne retrouve jamais « roblox ».
         const parts = word
             .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
             .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
-            .split(/[\s_$]+/)
+            .split(/[\s_$\-.]+/)
             .filter(Boolean);
         const pieces = parts.length > 1 ? [word, ...parts] : parts;
         for (const piece of pieces) {

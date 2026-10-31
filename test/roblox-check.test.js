@@ -25,13 +25,44 @@ test("roblox_check : un code Luau sain ne produit aucun diagnostic", () => {
         "--!strict",
         "local Players = game:GetService(\"Players\")",
         "local RunService = game:GetService(\"RunService\")",
-        "RunService.Heartbeat:Connect(function(dt)",
+        "local connexion = RunService.Heartbeat:Connect(function(dt)",
         "    local part = Instance.new(\"Part\")",
         "    part.Name = \"Plateforme\"",
         "    part.Parent = workspace",
-        "end)"
+        "end)",
+        "connexion:Disconnect()"
     ].join("\n");
     assert.deepEqual(inspectLuau(source, "src/server/main.server.luau"), []);
+});
+
+test("roblox_check : parent en 2e argument, WaitForChild sans délai et connexion sans Disconnect", () => {
+    const source = [
+        "local Players = game:GetService(\"Players\")",
+        "local model = Instance.new(\"Model\", workspace)",
+        "local cible = workspace:WaitForChild(\"Cible\")",
+        "local function demarrer()",
+        "    Players.PlayerAdded:Connect(function(joueur)",
+        "        print(joueur.Name)",
+        "    end)",
+        "end",
+        "demarrer()"
+    ].join("\n");
+    const found = inspectLuau(source, "src/client/jeu.client.luau");
+    const codes = found.map(item => item.code);
+    assert.ok(codes.includes("instance-new-parent"), `instance-new-parent manquant : ${codes.join(",")}`);
+    assert.ok(codes.includes("waitforchild-timeout"), `waitforchild-timeout manquant : ${codes.join(",")}`);
+    assert.ok(codes.includes("connect-without-disconnect"), `connect-without-disconnect manquant : ${codes.join(",")}`);
+});
+
+test("roblox_check : PlayerRemoving sans PlayerAdded signalé sur un script serveur", () => {
+    const source = [
+        "local Players = game:GetService(\"Players\")",
+        "Players.PlayerRemoving:Connect(function(joueur)",
+        "    print(joueur.Name)",
+        "end)"
+    ].join("\n");
+    const codes = inspectLuau(source, "src/server/session.server.luau").map(item => item.code);
+    assert.ok(codes.includes("playeradded-missing"), `playeradded-missing manquant : ${codes.join(",")}`);
 });
 
 test("roblox_check : commentaires --[[ ]] et chaînes longues ignorés", () => {
