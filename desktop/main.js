@@ -361,7 +361,10 @@ async function submit(raw, attachments, { queued = false } = {}) {
         busy = false;
         supportsSteering = false;
         taskQueue.releaseSteering();
-        if (failure || submissionInterrupted || result?.completed === false) taskQueue.pause();
+        // Seuls un échec ou une interruption mettent en pause la file. Une tâche
+        // « incomplète » (modification livrée mais non testée, par exemple sans
+        // Roblox Studio) ne doit pas bloquer les demandes suivantes déjà en attente.
+        if (failure || submissionInterrupted) taskQueue.pause();
         backend.endRun({ ok: !failure && result?.completed !== false, interrupted: submissionInterrupted });
         pushStatus();
         taskQueue.kick();

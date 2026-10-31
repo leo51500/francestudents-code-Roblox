@@ -18,6 +18,8 @@ const sandbox = require("./sandbox");
 const blender = require("./blender");
 
 const ACTIONS = ["detect", "inspect", "validate", "render", "script", "templates", "manifest", "import_roblox", "export_blender"];
+// studio : fond sombre (aperçu habituel) ; plain : fond neutre pour comparer à une référence.
+const RENDER_MODES = ["studio", "plain"];
 const trusted = new Set();
 
 function insideProject(workspace, file) {
@@ -40,6 +42,10 @@ function checkArgs(args = {}) {
     if (["inspect", "validate", "render", "script", "manifest", "export_blender"].includes(args.action)) requireString(args.path, "path");
     if (args.output !== undefined) requireString(args.output, "output");
     if (args.name !== undefined) requireString(args.name, "name");
+    if (args.mode !== undefined) {
+        requireString(args.mode, "mode");
+        if (!RENDER_MODES.includes(args.mode)) throw new Error(`mode doit valoir ${RENDER_MODES.join(" ou ")}.`);
+    }
     optionalInt(args.timeout_ms, "timeout_ms");
     argList(args.script_args, "script_args");
 }
@@ -164,9 +170,10 @@ async function runBlender(args = {}) {
         const target = insideProject(workspace, output);
         fs.mkdirSync(path.dirname(target), { recursive: true });
         const harness = path.join(blender.TEMPLATE_DIR, "render_preview.py");
+        const mode = args.mode || "studio";
         const res = await sandbox.runProcess(
             found.path,
-            ["--background", "--factory-startup", "--python", harness, "--", "--input", input, "--render", target],
+            ["--background", "--factory-startup", "--python", harness, "--", "--input", input, "--render", target, "--mode", mode],
             { cwd: workspace, timeoutMs: args.timeout_ms ?? 180000 }
         );
         const ok = res.exit_code === 0 && fs.existsSync(target);
@@ -174,9 +181,10 @@ async function runBlender(args = {}) {
             status: ok ? "ok" : res.timed_out ? "timeout" : "failed",
             exit_code: res.exit_code,
             preview: ok ? output : null,
+            mode,
             output: res.output.slice(-4000),
             message: ok
-                ? `Rendu écrit dans ${output}. Examine-le avec view_image {path:"${output}"}.`
+                ? `Rendu ${mode === "plain" ? "sur fond neutre" : "studio"} écrit dans ${output}. Examine-le avec view_image {path:"${output}"}.`
                 : "Le rendu Blender a échoué : lis output, corrige le script puis relance."
         };
     }

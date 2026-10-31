@@ -465,6 +465,9 @@ function hasExplicitWorkspaceBlock(observations) {
 async function runAgent(task, options = {}) {
     activateConversation("agent");
     state.agentPlan = [];
+    // Demande en cours, lue par les outils qui construisent une aide destinée à
+    // l'utilisateur (scénario de test roblox_playtest). Réinitialisée à la fin.
+    state.currentTask = String(task || "");
     if (task.length > CONFIG.messageBudget / 2) {
         throw new Error(
             `Demande trop longue : ${fmt(task.length)} caractères ` +
@@ -581,8 +584,14 @@ async function runAgent(task, options = {}) {
         });
     }
 
-    async function finish(message, title) {
+    async function finish(message, title, decisions) {
+        state.currentTask = "";
         ui.assistant(message);
+        // Choix par défaut annoncés par l'agent : affichés à part du message pour que
+        // l'utilisateur sache ce qui a été décidé pour lui. Texte simple, jamais d'outil.
+        if (Array.isArray(decisions) && decisions.length) {
+            ui.info(`Décisions prises :\n${decisions.map(item => `  • ${item}`).join("\n")}`);
+        }
         record("user", task);
         record("assistant", message);
         await saveConversation();
@@ -806,7 +815,7 @@ async function runAgent(task, options = {}) {
                 continue;
             }
             if (action.plan_progress !== undefined) applyProgress(state.agentPlan, action.plan_progress);
-            await finish(action.message, action.conversation_title);
+            await finish(action.message, action.conversation_title, action.decisions);
             return { completed: action.completed !== false, message: action.message };
         }
 

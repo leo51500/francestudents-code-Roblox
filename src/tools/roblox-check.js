@@ -73,6 +73,8 @@ function inspectLuau(source, file = "") {
     // État multi-lignes : { kind: "comment"|"string", eq: nombre de "=" }
     let open = null;
     const isServerFile = /(^|\/)(server|ServerScriptService|ServerStorage|src\/server)/i.test(file) || /\bScript\b/.test(file);
+    // Lignes qui ouvrent une connexion à un événement (checked après l'analyse du fichier).
+    const connectLines = [];
 
     /** Retire les blocs multi-lignes d'une ligne ; renvoie le code restant et l'état suivant. */
     function stripBlocks(line, state) {
@@ -143,6 +145,28 @@ function inspectLuau(source, file = "") {
             push(lineNo, 1, "error", "datastore-client", "DataStoreService n'est pas accessible depuis le client : déplace cette logique dans un Script serveur.");
         }
 
+        // Instance.new avec le parent en deuxième argument : le parent doit être défini
+        // en DERNIER, sinon chaque propriété de l'instance déclenche des événements et
+        // des réplications inutiles. recommandé par Roblox (performance).
+        for (const match of code.matchAll(/Instance\.new\(\s*(["'][^"']+["'])\s*,\s*([^)\s][^)]*)\)/g)) {
+            push(lineNo, match.index + 1, "warning", "instance-new-parent", `Instance.new(${match[1]}, ${match[2].trim()}) : crée l'instance sans parent, configure ses propriétés, puis assigne .Parent en dernier. Le parent en deuxième argument réplique chaque changement.`);
+        }
+
+        // WaitForChild sans délai d'attente : sur le client, un objet créé par le serveur
+        // peut ne jamais arriver (ou arriver après un long délai) ; le script reste bloqué.
+        for (const match of code.matchAll(/([:.])WaitForChild\(\s*(["'][^"']+["'])\s*\)/g)) {
+            push(lineNo, match.index + 1, "warning", "waitforchild-timeout", `${match[1]}WaitForChild(${match[2]}) sans délai : ajoute un délai (ex. 5) et traite le cas nil. Sur le client, un objet absent bloque le script indéfiniment.`);
+        }
+
+        // Connexion à un événement : Signalée une seule fois par fichier (première connexion),
+        // après la boucle, et seulement si le fichier ne déconnecte jamais. Une fonction
+        // anonyme en plusieurs lignes ne commence pas par « function » : on regarde
+        // simplement si la ligne contient :Connect( et ne termine pas le fichier.
+        const connectIndex = code.indexOf(":Connect(");
+        if (connectIndex !== -1 && !connectLines.length) {
+            connectLines.push({ line: lineNo, column: connectIndex + 1 });
+        }
+
         // Service Roblox écrit en global : vérifié après l'analyse du fichier (cf. boucle ci-dessous).
     });
 
@@ -153,6 +177,23 @@ function inspectLuau(source, file = "") {
         if (new RegExp(`GetService\\(\\s*["']${service}["']\\s*\\)`, "i").test(source)) continue;
         const line = lines.findIndex(item => new RegExp(`(^|[^\\w.:])${service}\\b`).test(item.replace(/--.*$/, ""))) + 1;
         push(line || 1, 1, "warning", "service-global", `${service} utilisé sans GetService : utilise game:GetService("${service}").`);
+    }
+
+    // Connexions créées sans aucun Disconnect dans le fichier : à signaler seulement
+    // si le fichier n'en possède aucune, sinon ce serait du bruit sur du code correct.
+    // Les connexions appelées une seule fois (au chargement du module, typiquement
+    // Script.PlayerAdded:Connect) et jamais dans une fonction ne sont pas signalées.
+    if (connectLines.length && !/:Disconnect\(|\bDisconnect\b/.test(String(source)) && !/\bMaid\b|\bTrove\b|\bJanitor\b/.test(String(source))) {
+        for (const item of connectLines.slice(0, 5)) {
+            push(item.line, item.column || 1, "warning", "connect-without-disconnect", "Connexion :Connect sans Disconnect dans ce fichier : chaque appel dans une fonction ajoute une connexion et retient les objets. Conserve la connexion (variable) et déconnecte-la à la fin, ou utilise un Maid/Trove. Une connexion unique au chargement du script peut rester.");
+        }
+    }
+
+    // Un Script serveur qui s'intéresse aux joueurs sans PlayerAdded ne verra pas
+    // les joueurs qui arrivent après son démarrage.
+    if (isServerFile && /\bPlayers\b/.test(String(source)) && /\bPlayerRemoving\b|\bGetPlayers\b/.test(String(source)) && !/\bPlayerAdded\b/.test(String(source))) {
+        const line = lines.findIndex(item => /\bPlayerRemoving\b|\bGetPlayers\b/.test(item.replace(/--.*$/, ""))) + 1;
+        push(line || 1, 1, "warning", "playeradded-missing", "Players.PlayerAdded est absent : les joueurs déjà présents ne seront pas traités. Ajoute Players.PlayerAdded et parcours Players:GetPlayers() au démarrage.");
     }
 
     return list;
@@ -260,7 +301,10 @@ async function runRobloxCheck(args = {}) {
             diagnostics.push(...inspectLuau(fs.readFileSync(path.join(workspace, file), "utf8"), file));
         } catch { /* fichier illisible */ }
     }
-    checkers.push({ tool: "roblox-rules", status: "ok", exit_code: 0, count: diagnostics.length });
+    // Statut honnête : un checker qui trouve des erreurs ne doit pas afficher « ok ».
+    // Sinon le modèle lit un tableau tout vert et annonce un projet valide.
+    const ruleErrors = diagnostics.filter(d => d.severity === "error").length;
+    checkers.push({ tool: "roblox-rules", status: ruleErrors ? "failed" : "ok", exit_code: ruleErrors ? 1 : 0, count: diagnostics.length });
 
     const needsTrust = [];
     if (sandbox.findRobloxTool(workspace, "selene")) needsTrust.push("selene");
@@ -282,7 +326,7 @@ async function runRobloxCheck(args = {}) {
         const res = await sandbox.runProcess(selene, [".", "--display-style", "quiet"], { cwd: workspace, timeoutMs });
         const parsed = parseSelene(res.output, workspace);
         diagnostics.push(...parsed);
-        const entry = { tool: "selene", status: res.timed_out ? "timeout" : res.exit_code === 0 ? "ok" : "failed", exit_code: res.exit_code, count: parsed.length };
+        const entry = { tool: "selene", status: res.timed_out ? "timeout" : res.exit_code === 0 && !parsed.some(d => d.severity === "error") ? "ok" : "failed", exit_code: res.exit_code, count: parsed.length };
         if (res.exit_code !== 0 && !parsed.length) entry.output = res.output;
         checkers.push(entry);
     } else {
@@ -295,7 +339,7 @@ async function runRobloxCheck(args = {}) {
         const res = await sandbox.runProcess(luau, wanted.slice(0, 200), { cwd: workspace, timeoutMs });
         const parsed = parseLuauAnalyze(res.output, workspace);
         diagnostics.push(...parsed);
-        checkers.push({ tool: "luau-analyze", status: res.timed_out ? "timeout" : parsed.some(d => d.severity === "error") ? "failed" : "ok", exit_code: res.exit_code, count: parsed.length });
+        checkers.push({ tool: "luau-analyze", status: res.timed_out ? "timeout" : res.exit_code !== 0 || parsed.some(d => d.severity === "error") ? "failed" : "ok", exit_code: res.exit_code, count: parsed.length });
     } else {
         notes.push("luau-analyze absent : les types ne sont pas vérifiés avant le build.");
     }
@@ -314,6 +358,10 @@ async function runRobloxCheck(args = {}) {
             build = { project: rojoProject, output: ok ? output : null, status: res.timed_out ? "timeout" : ok ? "ok" : "failed", exit_code: res.exit_code };
             if (!ok) build.output = res.output;
             checkers.push({ tool: "rojo", status: build.status, exit_code: res.exit_code, count: 0 });
+            if (build.status !== "ok") {
+                // Un build en échec est bloquant : le jeu ne s'ouvrira pas du tout.
+                build.blocking = true;
+            }
         }
     } else if (!rojoProject) {
         notes.push("Aucun fichier *.project.json : ce dossier n'est pas encore un projet Rojo.");
@@ -323,6 +371,8 @@ async function runRobloxCheck(args = {}) {
     const errors = diagnostics.filter(d => d.severity === "error").length;
     const warnings = diagnostics.length - errors;
     const failed = checkers.filter(c => c.status !== "ok").map(c => c.tool);
+    // `clean` permet au harnais de bloquer une conclusion « ça fonctionne ».
+    const clean = !failed.length && !errors;
 
     let message;
     if (failed.length) message = `${failed.join(", ")} en échec ; ${errors} erreur(s), ${warnings} avertissement(s).`;
@@ -333,6 +383,7 @@ async function runRobloxCheck(args = {}) {
         build,
         checkers,
         notes,
+        clean,
         errors,
         warnings,
         diagnostics: diagnostics.slice(0, MAX_DIAGNOSTICS),

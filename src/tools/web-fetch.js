@@ -201,6 +201,49 @@ function clampChars(value) {
     return Math.min(MAX_CHARS_LIMIT, Math.max(MIN_CHARS, value));
 }
 
+// Navigation, menus et pieds de page répétés par les sites de documentation
+// (Roblox, MDN, GitHub) : sans les retirer, un tiers du texte envoyé au modèle
+// n'a aucune valeur et pousse la vraie réponse hors de la limite de caractères.
+const NAVIGATION_LINE = /^(?:\s*[-•|›»]\s*)?(?:menu|navigation|skip to content|aller au contenu principal|search|rechercher|recherche|log ?in|log ?out|sign ?in|sign ?up|connexion|déconnexion|s'inscrire|créer un compte|dark mode|light mode|theme|cookie(?:s)?|nous utilisons des cookies|edit this page|modifier cette page|on this page|sur cette page|table of contents|sommaire|previous|next|précédent|suivant|contents|documentation home|accueil|home|back to top|haut de page|privacy|terms|conditions|legal)$/i;
+
+/**
+ * Retire la navigation répétée d'une page de documentation, sans toucher au contenu.
+ * Renvoie { content, dropped } : `dropped` compte les lignes retirées, pour un message honnête.
+ */
+function cleanDocumentation(text) {
+    const value = String(text ?? "");
+    if (value.length < 2000) return { content: value, dropped: 0 };
+
+    const lines = value.split("\n");
+    const kept = [];
+    let dropped = 0;
+    // Une ligne de menu courte répétée plusieurs fois est de la navigation, pas du texte.
+    const seen = new Map();
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed) seen.set(trimmed, (seen.get(trimmed) || 0) + 1);
+    }
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const repeated = trimmed.length > 0 && trimmed.length <= 60 && (seen.get(trimmed) || 0) >= 3;
+        if (NAVIGATION_LINE.test(trimmed) || repeated) {
+            dropped++;
+            continue;
+        }
+        kept.push(line);
+    }
+
+    // Le retrait doit rester une amélioration : s'il emporte plus de la moitié du texte
+    // (page de contenu court, liste légitime répétée), on renvoie l'original.
+    if (dropped > lines.length / 2) return { content: value, dropped: 0 };
+
+    const content = kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (content.length < value.length * 0.2) return { content: value, dropped: 0 };
+    return { content, dropped };
+}
+
 /**
  * deps (tests) : fetch, lookup, confirm, allowPrivate, timeoutMs.
  */
@@ -286,7 +329,10 @@ break;
 
         const raw = decodeBody(buffer, contentType);
         const isHtml = mime.includes("html") || (!mime && /<html|<!doctype html/i.test(raw.slice(0, 1000)));
-        const full = isHtml ? htmlToText(raw) : raw.trim();
+        const extracted = isHtml ? htmlToText(raw) : raw.trim();
+        // Page de documentation : la navigation répétée est retirée avant la troncature,
+        // pour que le texte utile arrive en premier au modèle.
+        const { content: full, dropped } = isHtml ? cleanDocumentation(extracted) : { content: extracted, dropped: 0 };
         const truncated = cut || full.length > maxChars;
         const content = full.slice(0, maxChars);
 
@@ -295,7 +341,9 @@ break;
             title: isHtml ? extractTitle(raw) : "",
             content,
             truncated,
-            message: `HTTP ${response.status} : ${content.length} caractère(s)` + (truncated ? ", tronqué" : "") + "."
+            ...(dropped ? { navigation_lines_removed: dropped } : {}),
+            message: `HTTP ${response.status} : ${content.length} caractère(s)` + (truncated ? ", tronqué" : "") +
+                (dropped ? `, ${dropped} ligne(s) de navigation retirée(s)` : "") + "."
         };
     } catch (error) {
         if (error.name === "AbortError") {
@@ -326,5 +374,6 @@ module.exports = {
     checkUrl,
     isPrivateAddress,
     htmlToText,
-    decodeEntities
+    decodeEntities,
+    cleanDocumentation
 };

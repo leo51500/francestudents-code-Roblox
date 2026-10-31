@@ -8,7 +8,8 @@ const {
     checkUrl,
     isPrivateAddress,
     htmlToText,
-    decodeEntities
+    decodeEntities,
+    cleanDocumentation
 } = require("../src/tools/web-fetch");
 const { validateToolCall, describeCall } = require("../src/tools/registry");
 const { TOOL_CATALOG } = require("../src/agent/prompt");
@@ -47,6 +48,39 @@ test("checkUrl refuse les schémas non http, localhost et les IP privées", asyn
 
     const url = await checkUrl("https://example.com/page#ancre", { lookup: publicLookup });
     assert.equal(url.href, "https://example.com/page");
+});
+
+test("cleanDocumentation retire la navigation répétée sans toucher au contenu", () => {
+    const filler = "Ce paragraphe décrit l'API Players en détail, avec un exemple de code.";
+    const page = [
+        "Skip to content",
+        "Menu",
+        filler,
+        "Search",
+        "Rechercher",
+        filler,
+        "Sign in",
+        "Documentation",
+        filler,
+        "On this page",
+        "Connexion"
+    ].join("\n");
+    // Page trop courte : elle n'est pas retouchée (seuil de 2 000 caractères).
+    assert.deepEqual(cleanDocumentation(page), { content: page, dropped: 0 });
+
+    const long = [page, ...Array.from({ length: 40 }, () => filler)].join("\n");
+    const { content, dropped } = cleanDocumentation(long);
+    assert.ok(dropped >= 5, `lignes de navigation retirées : ${dropped}`);
+    assert.doesNotMatch(content, /Skip to content/);
+    assert.match(content, /décrit l'API Players/);
+});
+
+test("cleanDocumentation conserve une page dont la moitié serait retirée", () => {
+    const filler = "Contenu technique réel décrit ici en une phrase complète et utile.";
+    const page = [filler, "Menu", filler, "Menu", filler, "Menu", filler].join("\n");
+    const long = page.repeat(20);
+    const result = cleanDocumentation(long);
+    assert.ok(result.content.includes("Contenu technique"), "le contenu doit rester");
 });
 
 test("htmlToText retire scripts et balises, et décode les entités", () => {

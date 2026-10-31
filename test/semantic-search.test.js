@@ -94,3 +94,27 @@ test("semanticSearch : index du projet, exclusions et mise à jour", async () =>
         search.clearIndex();
     }
 });
+
+test("semanticSearch : un nom de fichier à tirets est retrouvé par ses mots", async () => {
+    const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "frst-sem-dash-")));
+    const previous = state.workspace;
+    try {
+        fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+        fs.writeFileSync(path.join(dir, "src", "roblox-check.js"), [
+            "function verifier(source) {",
+            "    return source.length > 0;",
+            "}",
+            "module.exports = { verifier };",
+            ""
+        ].join("\n"));
+        state.workspace = dir;
+        search.clearIndex();
+        const found = await search.semanticSearch({ query: "roblox check" });
+        assert.equal(found.results.length, 1);
+        assert.equal(found.results[0].file, "src/roblox-check.js");
+    } finally {
+        state.workspace = previous;
+        search.clearIndex();
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});

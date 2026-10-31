@@ -20,9 +20,12 @@ def main():
     args = bc.parse_args("Rendu de contrôle Blender")
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     source = ""
+    mode = "studio"
     for index, item in enumerate(argv):
         if item == "--input" and index + 1 < len(argv):
             source = argv[index + 1]
+        elif item == "--mode" and index + 1 < len(argv):
+            mode = argv[index + 1].lower()
     target = args.render or "build/preview/preview.png"
 
     if source.lower().endswith(".blend"):
@@ -39,7 +42,7 @@ def main():
     triangles = sum(bc.triangle_count(obj) for obj in meshes)
     print(f"STATS {{'meshes': {len(meshes)}, 'triangles': {triangles}}}")
 
-    path = bc.render_preview(target, resolution=512)
+    path = bc.render_preview(target, resolution=512, mode=mode)
     print(f"PREVIEW {path}")
 
 

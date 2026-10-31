@@ -108,6 +108,32 @@ function readStudioErrors(sinceMs = 0) {
     return { available: true, file: latest.full, errors, warnings, message: `${errors.length} erreur(s) et ${warnings.length} avertissement(s) dans le dernier log Studio.` };
 }
 
+/* Verbes qui décrivent un comportement observable dans le jeu. */
+const BEHAVIOUR = /\b(ouvre|ferme|apparaît|apparait|disparaît|disparait|augmente|diminue|gagne|perd|ramasse|touche|saute|inflation|récompense|recompense|compte|sauvegarde|s'enregistre|achat|porte|bouton|menu|hud|barre de vie|score|pièce|piece)\b/i;
+
+/**
+ * Scénario de test court, tiré de la demande de l'utilisateur : ce qu'il doit faire
+ * dans Studio (F5) et ce qu'il doit voir. Sans tâche exploitable, un parcours générique.
+ * Roblox Studio n'expose pas de test automatisé : le seul contrôle possible est humain,
+ * et il est plus utile de le décrire que de laisser l'utilisateur deviner.
+ */
+function testScenario(task = "") {
+    const text = String(task || "").replace(/\s+/g, " ").trim();
+    const steps = [
+        "Lance le test avec F5.",
+        "Lis la fenêtre Output : aucune erreur rouge attendue.",
+        "Rejoue le geste de base de la mécanique demandée."
+    ];
+    if (BEHAVIOUR.test(text) && text) {
+        steps.push(`Vérifie le comportement demandé : ${text.length > 160 ? `${text.slice(0, 157)}…` : text}`);
+    } else {
+        steps.push("Vérifie que le résultat attendu se produit, sans blocage ni attente infinie.");
+    }
+    steps.push("Recommence en sortant et en revenant dans le jeu si des données sont sauvegardées.");
+    steps.push("Arrête le test, puis demande-moi ce que tu as vu : je corrige la cause réelle.");
+    return steps;
+}
+
 function checkArgs(args = {}) {
     if (args.build !== undefined && typeof args.build !== "boolean") throw new Error("build doit être true ou false.");
     if (args.open !== undefined && typeof args.open !== "boolean") throw new Error("open doit être true ou false.");
@@ -188,13 +214,16 @@ async function runPlaytest(args = {}) {
     const waitMs = Math.min(60000, Math.max(2000, args.wait_ms ?? 8000));
     await new Promise(resolve => setTimeout(resolve, waitMs));
     result.log = readStudioErrors(startedAt);
+    // Ce que l'utilisateur doit tester lui-même. La demande en cours n'est pas un
+    // argument de l'outil (le modèle la connaît déjà) : elle vient de l'état partagé.
+    result.scenario = testScenario(state.currentTask);
 
     const ok = result.log.errors.length === 0;
     return {
         ...result,
         status: ok ? "ok" : "failed",
         message: ok
-            ? `Place construite et ouverte dans Studio. ${result.log.message} Lance le test (F5) puis demande action:"logs" pour relire les erreurs.`
+            ? `Place construite et ouverte dans Studio. ${result.log.message} Scénario à faire : ${result.scenario.slice(0, 2).join(" ")} Demande ensuite action:"logs" pour relire les erreurs.`
             : `Le test signale ${result.log.errors.length} erreur(s) : lis log.errors et corrige avant d'annoncer le résultat.`
     };
 }
@@ -220,6 +249,7 @@ module.exports = {
         return a.action === "logs" ? "Logs Roblox Studio" : "Test Roblox Studio";
     },
     runPlaytest,
+    testScenario,
     readStudioErrors,
     findStudio,
     latestStudioLog,

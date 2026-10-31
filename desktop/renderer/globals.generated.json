@@ -480,6 +480,7 @@
   "renderPinned": "writable",
   "renderProjectStudio": "writable",
   "renderQuota": "writable",
+  "renderRobloxDiagnostics": "writable",
   "renderRobloxPackages": "writable",
   "renderRobloxTree": "writable",
   "renderRojoDashboard": "writable",

@@ -21,12 +21,14 @@ const path = require("node:path");
 
 const rojoServer = require("../src/tools/rojo-server");
 const sandbox = require("../src/tools/sandbox");
-const { findRojoProject } = require("../src/tools/roblox-check");
+const { findRojoProject, inspectLuau } = require("../src/tools/roblox-check");
 
 const BUILD_DIR = path.join(".frst", "build");
 const BUILD_FILE = path.join(BUILD_DIR, "game.rbxlx");
 const MAX_PACKAGES = 600;
 const IGNORED = new Set(["node_modules", ".git", ".frst", "build", "dist"]);
+// Un script Luau plus gros est rarement lu à l'écran ; on évite de le charger à chaque actualisation.
+const MAX_DIAGNOSTIC_FILE = 512 * 1024;
 
 /** Dossier du projet ouvert, ou erreur explicite. */
 function currentWorkspace() {
@@ -99,6 +101,7 @@ function status(workspace = currentWorkspace()) {
         last_error: state.last_error || null,
         log: Array.isArray(state.log) ? state.log.slice(-6) : [],
         build: buildInfo(workspace),
+        diagnostics: diagnosticsInfo(workspace),
         // Vert = Studio connecté au serveur Rojo ; orange = serveur en attente de connexion.
         tone: state.running ? (state.connected ? "live" : "waiting") : "offline"
     };
@@ -124,6 +127,60 @@ async function build(workspace = currentWorkspace()) {
         message: ok
             ? `Build terminé : ${output}. La sourcemap Rojo se recharge à la prochaine synchronisation.`
             : `rojo build a échoué (code ${result.exit_code ?? "inconnu"}).`
+    };
+}
+
+/* ---------- Diagnostics Luau du cockpit ----------
+   Les règles Roblox locales (roblox_check) ne coûtent rien : ni binaire, ni
+   confirmation. Les afficher dans le cockpit montre OÙ le problème se trouve au
+   lieu de le laisser caché dans une réponse de chat. selene, luau-analyze et
+   rojo build restent réservés à l'agent, qui en discute avec l'utilisateur. */
+
+function diagnosticsInfo(workspace, limit = 40) {
+    const files = [];
+    const walkDir = (rel, depth) => {
+        if (depth > 10 || files.length >= 500) return;
+        let entries;
+        try { entries = fs.readdirSync(path.join(workspace, rel), { withFileTypes: true }); } catch { return; }
+        for (const entry of entries) {
+            if (entry.name.startsWith(".") || IGNORED.has(entry.name)) continue;
+            const child = rel === "." ? entry.name : `${rel}/${entry.name}`;
+            if (entry.isDirectory()) walkDir(child, depth + 1);
+            else if (/\.luau?$/i.test(entry.name)) files.push(child);
+        }
+    };
+    walkDir(".", 0);
+
+    const all = [];
+    for (const rel of files) {
+        try {
+            const info = fs.statSync(path.join(workspace, rel));
+            if (info.size > MAX_DIAGNOSTIC_FILE) continue;
+            all.push(...inspectLuau(fs.readFileSync(path.join(workspace, rel), "utf8"), rel));
+        } catch { /* fichier illisible */ }
+    }
+    const errors = all.filter(item => item.severity === "error").length;
+    const sorted = all
+        .filter(item => item.severity === "error" || item.severity === "warning")
+        .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1));
+    return {
+        files: files.length,
+        errors,
+        warnings: all.length - errors,
+        clean: all.length === 0,
+        items: sorted.slice(0, limit).map(item => ({
+            file: item.file,
+            line: item.line,
+            severity: item.severity,
+            code: item.code,
+            message: item.message
+        })),
+        truncated: sorted.length > limit,
+        message: !files.length
+            ? "Aucun fichier Luau dans ce projet."
+            : all.length
+                ? `${errors} erreur(s) et ${all.length - errors} avertissement(s) Luau.`
+                : "Aucun problème détecté par les règles Roblox locales."
     };
 }
 
@@ -154,6 +211,7 @@ async function rojo(action, workspace) {
         }
         case "build": return build(dir);
         case "restart": return restart(dir);
+        case "diagnostics": return diagnosticsInfo(dir);
         default: throw new Error(`Action Rojo inconnue : ${action}.`);
     }
 }
@@ -277,4 +335,4 @@ async function wally(action, workspace) {
     };
 }
 
-module.exports = { rojo, status, build, restart, wally, wallyStatus, buildInfo, listPackages, readWallyManifest, ensureLuaurcAliases, newestLuau };
+module.exports = { rojo, status, build, restart, diagnosticsInfo, wally, wallyStatus, buildInfo, listPackages, readWallyManifest, ensureLuaurcAliases, newestLuau };
