@@ -20,8 +20,8 @@ jobs:
         runs-on: windows-latest
         timeout-minutes: 45
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
               with:
                   node-version: 22
                   cache: npm
@@ -45,7 +45,7 @@ jobs:
                   # productName = « FranceStudent Code Roblox » : c'est le nom de l'exe
                   # produit par electron-builder, pas celui de l'ancien IDE.
                   FRST_PACKAGED_EXE: ${{ github.workspace }}/release/win-unpacked/FranceStudent Code Roblox.exe
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v7
               with:
                   name: Windows-security-validation
                   path: |
