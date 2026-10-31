@@ -76,3 +76,32 @@ test("l'heuristique « auto » reconnaît « mets à jour ... »", () => {
     assert.equal(router.shouldUseAgent("mets à jour la fonction formatDate"), true);
     assert.equal(router.seemsToRequestLocalFiles("applique le correctif au module de paiement"), true);
 });
+
+test("une longue demande n'est pas prise pour une question de dossier", () => {
+    // Le simple « ou » et le mot « dossiers » suffisaient auparavant : le message
+    // recevait le chemin du projet et l'agent n'était jamais lancé.
+    const spec = [
+        "Fondations",
+        "M0 : conventions de nommage et structure des dossiers dans Explorer",
+        "M12 : détruire les bâtiments de récolte ou les ouvriers de l’ennemi",
+        "M13 : jouer contre l’IA ou en coop avec des amis",
+        "M20 : tests et fluidité sur mobile"
+    ].join("\n");
+
+    assert.equal(router.isWorkspaceQuestion(spec), false);
+    assert.equal(router.isWorkspaceQuestion("Quel projet veux-tu construire pour ce jeu ?"), false);
+    assert.equal(router.isWorkspaceQuestion("Quel est le meilleur projet pour un tycoon ?"), false);
+});
+
+test("une question courte sur le dossier reste reconnue", () => {
+    for (const question of [
+        "Quel est le projet actuel ?",
+        "Quel projet ?",
+        "Où est le projet ?",
+        "Où se trouve mon dossier ?",
+        "Dans quel projet suis-je ?",
+        "What is the project path?"
+    ]) {
+        assert.equal(router.isWorkspaceQuestion(question), true, question);
+    }
+});

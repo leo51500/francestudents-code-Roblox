@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $repo = "leo51500/francestudents-code-Roblox"
-$tag = "v1.5.45"
+$tag = "v1.5.46"
 $input = "protocol=https`nhost=github.com`n`n"
 $cred = $input | git credential fill
 $token = ($cred -split "`n" | Where-Object { $_ -like "password=*" }) -replace "^password=", ""
@@ -9,11 +9,11 @@ $headers = @{ Authorization = "Bearer $token"; "User-Agent" = "frst-publish"; Ac
 
 $body = @{
     tag_name = $tag
-    name = "FranceStudent Code Roblox 1.5.45"
+    name = "FranceStudent Code Roblox 1.5.46"
     draft = $true
     prerelease = $false
     target_commitish = "main"
-    body = "Recherche de fichiers approximative, memoire de projet, jeu complet roblox_game, fin de tache verifiee avec retest, silhouette Blender et banc Roblox. Installateur Windows 64 bits joint par la construction automatique."
+    body = "Une longue demande n'est plus confondue avec la question « Projet actuel » : le routage exige une question courte sur le dossier, et le message part a l'agent. Installateur Windows 64 bits joint par la construction automatique."
 } | ConvertTo-Json
 
 try {
