@@ -50,6 +50,7 @@ node --test --test-concurrency=4 e2e/*.e2e.test.js
 
 - Ne jamais versionner de session, jeton, `.env`, historique personnel, dépendance ou exécutable.
 - Avant un commit, vérifier le diff et les fichiers sélectionnés ; éviter un ajout global quand des fichiers étrangers sont présents.
+- **Message de commit explicite** : l’explorateur de fichiers affiche le titre du dernier commit de chaque dossier. Écrire un titre `[<version>] <zone> — <ce qui a réellement changé>` (ex. `[1.5.45] Publication — le tag est créé avant le build`), puis dans le corps les fichiers ou modules touchés. Éviter « big MAJ », « correctifs », « divers » ou un numéro de version seul : ces titres ne disent pas quoi relire.
 - Ne pousser, taguer ou publier que dans le cadre d’une demande explicite du contributeur. Une demande de test ou de modification n’est pas une demande de release.
 - Pour une version, mettre à jour `package.json`, `CHANGELOG.md` **et** le résumé de `desktop/release-highlights.js` ; consulter la procédure de [CONTRIBUTING.md](CONTRIBUTING.md). Chaque modification livrée reçoit une nouvelle version de correctif et sa release ; une release publiée n’est plus modifiée. Un push sur `main` déclenche `.github/workflows/auto-release.yml`, qui crée la release et lance les builds ; ne pas créer de tag à la main avant lui.
 - **Logo** : source unique `desktop/renderer/assets/francestudent-logo.svg` ; après modification, `node scripts/make-logo.js` régénère `desktop/icon.png` et le PNG d’interface.
