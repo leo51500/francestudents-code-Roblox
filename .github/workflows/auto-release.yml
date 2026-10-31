@@ -101,8 +101,16 @@ jobs:
           # commit déclencheur, y compris pour compléter un brouillon existant.
           tag_remote_sha=$(git ls-remote --tags origin "refs/tags/$tag" | tr -d '\r' | awk '{print $1}')
           if [ -n "$tag_remote_sha" ] && [ "$tag_remote_sha" != "$HEAD_SHA" ]; then
-            if [ "$release_exists" = true ]; then
-              echo "Le tag $tag désigne déjà $tag_remote_sha : la release existante reste sur ce commit."
+            if [ "$release_exists" = true ] && [ "$draft" != "true" ]; then
+              echo "La release $tag est publiée : le tag reste sur $tag_remote_sha, rien n'est déplacé."
+            elif [ "$release_exists" = true ]; then
+              # Brouillon : aucune version publiée ne dépend de ce tag. Le déplacer
+              # sur le commit courant permet à la reprise du build de compiler les
+              # corrections poussées depuis, au lieu de reconstruire l'ancien code.
+              echo "Brouillon $tag : déplacement du tag $tag_remote_sha → $HEAD_SHA pour reprendre le build sur le code courant."
+              git tag -f "$tag" "$HEAD_SHA"
+              git push --force origin "refs/tags/$tag"
+              tag_remote_sha="$HEAD_SHA"
             elif ! git merge-base --is-ancestor "$tag_remote_sha" "$HEAD_SHA" 2>/dev/null; then
               echo "Le tag $tag existe sans release sur un commit étranger ($tag_remote_sha vs $HEAD_SHA) : publication manuelle requise." >&2
               exit 1
