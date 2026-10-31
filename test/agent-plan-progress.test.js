@@ -32,6 +32,7 @@ async function scenario(answers, { motion = false, eco = false, denied = false, 
         sent.push(message); state.chatIds.agent = "plan-test";
         assert.ok(answers.length, "unexpected extra model request");
         const answer = answers.shift();
+        if (typeof answer === "string") return answer;
         if (motion && answer.type === "tool" && answer.name !== "update_plan") {
             answer.name = "effectcraft"; answer.args = { method: "host.info", params: {} };
         }
@@ -135,6 +136,16 @@ test("a short plan checkpoint appears on requests 5 and 10, including protocol r
     assert.equal(result.executed.length, 10);
     assert.deepEqual(result.sent.flatMap((prompt, index) => prompt.includes("POINT PLAN") ? [index + 1] : []), [5, 10]);
     assert.deepEqual(result.steps.map(step => step.status), ["completed", "completed"]);
+});
+
+test("a plain-text answer ends locally instead of losing the request", async () => {
+    const result = await scenario([
+        "Je réponds en texte libre, sans nouvel outil.",
+        "Je réponds en texte libre, sans nouvel outil."
+    ]);
+    assert.equal(result.sent.length, 2);
+    assert.equal(result.result.completed, true);
+    assert.match(result.result.message, /texte libre/);
 });
 
 test("protocol validates progress for tools, batches and final answers and includes it after context restart", () => {

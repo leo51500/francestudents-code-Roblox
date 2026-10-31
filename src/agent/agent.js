@@ -187,6 +187,93 @@ function reportUsage(before) {
 
 /* ---------- Analyse de la réponse du modèle ---------- */
 
+/**
+ * Supprime les virgules qui précèdent une accolade ou un crochet fermant, hors
+ * des chaînes : un JSON d'outil ne doit pas être rejeté pour cette faute de forme.
+ */
+function stripTrailingCommas(text) {
+    let out = "";
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+
+        if (inString) {
+            out += ch;
+            if (escaped) escaped = false;
+            else if (ch === "\\") escaped = true;
+            else if (ch === '"') inString = false;
+            continue;
+        }
+
+        if (ch === '"') {
+            inString = true;
+            out += ch;
+            continue;
+        }
+
+        if (ch === ",") {
+            let next = i + 1;
+            while (next < text.length && /\s/.test(text[next])) next++;
+            if (text[next] === "}" || text[next] === "]") continue;
+        }
+
+        out += ch;
+    }
+
+    return out;
+}
+
+/**
+ * Échappe les retours à la ligne et tabulations bruts à l'intérieur des chaînes.
+ * Les modèles qui écrivent un fichier envoient souvent du JSON multiligne : sans
+ * cette réparation, l'action est perdue puis répétée à l'identique.
+ */
+function escapeControlChars(text) {
+    let out = "";
+    let inString = false;
+    let escaped = false;
+
+    for (const ch of text) {
+        if (!inString) {
+            if (ch === '"') inString = true;
+            out += ch;
+            continue;
+        }
+
+        if (escaped) {
+            escaped = false;
+            out += ch;
+            continue;
+        }
+
+        if (ch === "\\") {
+            escaped = true;
+            out += ch;
+            continue;
+        }
+
+        if (ch === '"') {
+            inString = false;
+            out += ch;
+            continue;
+        }
+
+        if (ch === "\n") { out += "\\n"; continue; }
+        if (ch === "\r") { out += "\\r"; continue; }
+        if (ch === "\t") { out += "\\t"; continue; }
+        if (ch < " ") { out += `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`; continue; }
+
+        out += ch;
+    }
+
+    return out;
+}
+
+const JSON_REPAIR_LIMIT = 1024 * 1024;
+const JSON_REPAIR_CANDIDATES = 40;
+
 function extractJsonObject(text) {
     const raw = String(text).trim();
     const candidates = [raw];
@@ -222,20 +309,38 @@ function extractJsonObject(text) {
         }
     }
 
-    for (const candidate of candidates) {
+    const accept = value => {
         try {
-            const parsed = JSON.parse(candidate);
+            const parsed = JSON.parse(value);
 
-            if (
-                parsed &&
+            return parsed &&
                 typeof parsed === "object" &&
                 !Array.isArray(parsed) &&
                 (parsed.type === "tool" || parsed.type === "final" || parsed.type === "question")
-            ) {
-                return parsed;
-            }
+                ? parsed
+                : null;
         } catch {
-            // candidat suivant
+            return null;
+        }
+    };
+
+    let repaired = 0;
+
+    for (const candidate of candidates) {
+        const parsed = accept(candidate);
+        if (parsed) return parsed;
+
+        // Réparation réservée aux premiers candidats et aux réponses de taille
+        // raisonnable : le texte peut atteindre plusieurs Mo.
+        if (repaired >= JSON_REPAIR_CANDIDATES || candidate.length > JSON_REPAIR_LIMIT) continue;
+
+        repaired++;
+        const stripped = stripTrailingCommas(candidate);
+
+        for (const variant of [stripped, escapeControlChars(candidate), escapeControlChars(stripped)]) {
+            if (variant === candidate) continue;
+            const tolerant = accept(variant);
+            if (tolerant) return tolerant;
         }
     }
 
@@ -298,6 +403,21 @@ function parseAgentResponse(text) {
         : undefined;
 
     return action;
+}
+
+/**
+ * Texte libre reçu à la place du protocole : il ne peut lancer aucun outil, mais
+ * il reste utile à afficher. Un JSON mal formé garde la correction du protocole.
+ */
+function plainTextAnswer(text) {
+    const value = String(text || "").trim();
+
+    if (value.length < 2 || value.startsWith("{") || value.startsWith("[")) return null;
+    const fenced = value.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced && fenced[1].trim().startsWith("{")) return null;
+    if (/"type"\s*:\s*"(?:tool|final|question)"/.test(value)) return null;
+
+    return value;
 }
 
 /* ---------- Prompt ---------- */
@@ -728,10 +848,6 @@ async function runAgent(task, options = {}) {
 
                 try {
                     action = parseAgentResponse(lastResponse);
-                    if (action.plan_progress !== undefined && action.name !== "update_plan") {
-                        validateProgress(action.plan_progress, state.agentPlan.length ? state.agentPlan : action.plan || []);
-                    }
-                    break;
                 } catch (error) {
                     action = null;
                     ui.debug(
@@ -743,7 +859,21 @@ async function runAgent(task, options = {}) {
                         error: error.message,
                         previousResponse: lastResponse.slice(0, 300)
                     };
+                    continue;
                 }
+
+                if (action.plan_progress !== undefined && action.name !== "update_plan") {
+                    // La progression est un affichage : une longueur inattendue ne
+                    // doit pas faire perdre une action pourtant valide.
+                    try {
+                        validateProgress(action.plan_progress, state.agentPlan.length ? state.agentPlan : action.plan || []);
+                    } catch (error) {
+                        action.plan_progress = undefined;
+                        ui.debug(`Progression de plan ignorée : ${error.message}`);
+                    }
+                }
+
+                break;
             }
         } finally {
             spin.stop();
@@ -752,6 +882,22 @@ async function runAgent(task, options = {}) {
         if (options.shouldStop?.()) {
             await finish("Tâche interrompue. Les tâches suivantes restent en attente.");
             return { completed: false, message: "Tâche interrompue." };
+        }
+        if (!action && !protocolFailure && !state.ecoMode) {
+            // Le modèle a répondu en texte libre après la correction : cette
+            // réponse ne lance aucun outil, mais l'afficher vaut mieux qu'une
+            // demande perdue. Le travail déjà commencé reste annoncé incomplet.
+            const plain = plainTextAnswer(lastResponse);
+
+            if (plain) {
+                ui.debug("Réponse en texte libre : aucun outil exécuté à cette étape.");
+                action = {
+                    type: "final",
+                    message: plain,
+                    completed: !completionGuard.hasWork(),
+                    plainAnswer: true
+                };
+            }
         }
         if (!action) {
             if(protocolFailure){
@@ -816,7 +962,10 @@ async function runAgent(task, options = {}) {
                 deferredSteering = lateSteering;
                 continue;
             }
-            if (action.plan_progress !== undefined) applyProgress(state.agentPlan, action.plan_progress);
+            if (action.plan_progress !== undefined) {
+                try { applyProgress(state.agentPlan, action.plan_progress); }
+                catch (error) { ui.debug(`Progression de plan ignorée : ${error.message}`); }
+            }
 
             // Génération → validation → test : une conclusion « terminé » doit être
             // adossée à une vérification postérieure à la dernière modification.
@@ -827,15 +976,21 @@ async function runAgent(task, options = {}) {
                 continue;
             }
 
+            const plainNotice = action.plainAnswer && completionGuard.hasWork()
+                ? "\n\nRéponse reçue en texte libre : aucun nouvel outil n’a été exécuté à cette étape. Les modifications déjà enregistrées sont conservées ; écris « continue » pour reprendre."
+                : "";
             const finalMessage = verdict.checklist
-                ? `${verdict.message}\n\n${verdict.checklist}`
-                : verdict.message;
+                ? `${verdict.message}\n\n${verdict.checklist}${plainNotice}`
+                : `${verdict.message}${plainNotice}`;
 
             await finish(finalMessage, action.conversation_title, action.decisions);
             return { completed: verdict.completed, message: finalMessage };
         }
 
-        if (action.plan_progress !== undefined && action.name !== "update_plan") applyProgress(state.agentPlan, action.plan_progress);
+        if (action.plan_progress !== undefined && action.name !== "update_plan") {
+            try { applyProgress(state.agentPlan, action.plan_progress); }
+            catch (error) { ui.debug(`Progression de plan ignorée : ${error.message}`); }
+        }
 
         if (state.ecoMode && action.name === "task") {
             const message = "Le mode Éco ne lance pas de sous-agents pour limiter les appels IA. Désactive-le pour poursuivre cette exploration.";
@@ -959,7 +1114,7 @@ async function runAgent(task, options = {}) {
             const results = action.calls.map((call, index) => {
                 const outcome = settled[index];
 
-                ui.tool(call.name, describeCall(call));
+                ui.tool(call.name, describeCall(call), { reason: action.reason });
 
                 if (outcome.status === "fulfilled") {
                     ui.result(summarizeResult(call.name, outcome.value));
@@ -1003,7 +1158,7 @@ async function runAgent(task, options = {}) {
             continue;
         }
 
-        ui.tool(action.name, describeCall(action));
+        ui.tool(action.name, describeCall(action), { reason: action.reason });
 
         const recorded = action.name === "ask_user" ? { question: action.args.question } : recordArgs(action.args);
 

@@ -2,7 +2,7 @@
 "use strict";
 
 /**
- * Vérifie que les feuilles qui partagent le thème Onyx ne divergent pas.
+ * Vérifie que les feuilles qui partagent le thème Noir ne divergent pas.
  *
  * Les tokens sont volontairement répétés dans plusieurs fichiers pour rester
  * lisibles sans build CSS. Ce contrôle empêche une ancienne palette de revenir
@@ -83,5 +83,5 @@ if (problems.length) {
     for (const problem of problems) console.error(`- ${problem}`);
     process.exitCode = 1;
 } else {
-    console.log("Tokens CSS cohérents (thème Onyx).");
+    console.log("Tokens CSS cohérents (thème Noir).");
 }

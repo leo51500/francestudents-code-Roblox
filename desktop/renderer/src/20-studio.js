@@ -83,12 +83,24 @@ function humanDuration(start, end) {
 function emptyStudioText(parent, text) {
     const note = document.createElement("p"); note.className = "muted"; note.textContent = text; parent.appendChild(note);
 }
+/** Dernière action en langage courant, pour l'étape en cours du plan. */
+function activityLine(action) {
+    if (!action) return "";
+    const label = toolLabel(action.name);
+    const target = String(action.argument || "").trim();
+    const why = String(action.reason || "").trim();
+    const state = action.status === "running" ? "En cours" : action.status === "done" ? "Dernière action terminée" : "Dernière action à vérifier";
+    return `${state} : ${target ? `${label} · ${target}` : label}${why ? ` — ${why}` : ""}`;
+}
 function renderAgentActivity(run) {
     const motion=typeof isMotionOpen==="function" && isMotionOpen();
     if(run && (!!run.motionDesign!==motion || !motion && run.workspace!==ui.workspace))run=null;
     studioRun = run;
     const steps = run?.steps || [];
-    if (!ui.replayingConversation) renderWorkPlan(steps, { status: run?.status || "idle" });
+    const actions = Array.isArray(run?.actions) ? run.actions : [];
+    const current = actions.length ? (actions.slice().reverse().find(action => action.status === "running") || actions[actions.length - 1]) : null;
+    const activity = current ? { text: activityLine(current) } : null;
+    if (!ui.replayingConversation) renderWorkPlan(steps, { status: run?.status || "idle", activity });
     const overview = $("activity-overview"); overview.replaceChildren();
     const timeline = $("activity-timeline"); timeline.replaceChildren();
     const sources = $("activity-sources"); sources.replaceChildren();
@@ -122,7 +134,9 @@ function renderAgentActivity(run) {
     for (const action of (run.actions || []).slice().reverse()) {
         const row = document.createElement("details"); row.className = `activity-action activity-action-${action.status}`;
         const summary = document.createElement("summary"); summary.textContent = `${action.status === "done" ? "✓" : action.status === "running" ? "◉" : "!"} ${toolLabel(action.name)} · ${humanDuration(action.startedAt, action.endedAt)}`;
-        const body = document.createElement("pre"); body.textContent = [action.argument, action.result].filter(Boolean).join("\n\n");
+        summary.title = [action.reason, action.argument].filter(Boolean).join(" — ");
+        const body = document.createElement("pre");
+        body.textContent = [action.reason && `Pourquoi : ${action.reason}`, action.argument, action.result].filter(Boolean).join("\n\n");
         row.append(summary, body); timeline.appendChild(row);
     }
     if (!run.actions?.length) emptyStudioText(timeline, "L’agent prépare sa prochaine action.");

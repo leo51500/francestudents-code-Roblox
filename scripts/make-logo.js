@@ -27,11 +27,9 @@ function logoSvg() {
     return readSourceSvg();
 }
 
-/* L'icône Windows conserve le fond bleu pour rester lisible en petit sur les tuiles. */
+/* L'icône Windows reprend le logo seul, sur fond transparent : aucun fond. */
 function iconSvg() {
-    return readSourceSvg()
-        .replace(/<linearGradient id="hex"[\s\S]*?<\/linearGradient>/, '<linearGradient id="hex" x1="0.1" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#2450de"/><stop offset="0.55" stop-color="#1236c4"/><stop offset="1" stop-color="#0a2591"/></linearGradient>')
-        .replace(/<linearGradient id="spark"[\s\S]*?<\/linearGradient>/, '<linearGradient id="spark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2450de"/><stop offset="1" stop-color="#0a2591"/></linearGradient>');
+    return readSourceSvg();
 }
 
 function write(file, content) {

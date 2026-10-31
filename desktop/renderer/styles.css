@@ -1,31 +1,32 @@
 ﻿:root {
     color-scheme: dark;
-    /* Thème Onyx : ces valeurs doivent rester alignées sur theme.css et
-       workbench.css. scripts/check-css-tokens.js le vérifie. */
-    --bg: #08090a;
+    /* Thème « Noir » : fond noir pur, surfaces presque noires et accents blancs.
+       Ces valeurs doivent rester alignées sur theme.css et workbench.css ;
+       check-css-tokens.js le vérifie. */
+    --bg: #000000;
     --bg-side: #050506;
     --bg-activity: #050506;
-    --bg-panel: #0d0e10;
-    --bg-input: #121315;
-    --bg-hover: #141518;
-    --bg-active: #1b1d21;
-    --border: #1a1b1e;
-    --border-strong: #26282c;
-    --fg: #d8dade;
-    --fg-strong: #f5f6f7;
-    --fg-dim: #9a9da4;
-    --fg-faint: #6e7178;
+    --bg-panel: #0a0a0b;
+    --bg-input: #111112;
+    --bg-hover: #18181a;
+    --bg-active: #232325;
+    --border: #19191c;
+    --border-strong: #2a2a2d;
+    --fg: #f5f5f7;
+    --fg-strong: #ffffff;
+    --fg-dim: #c9c9ce;
+    --fg-faint: #a6a6ad;
     --accent: #f2f3f5;
     --accent-hover: #ffffff;
-    --accent-soft: #ffffff0f;
-    --accent-ink: #08090a;
+    --accent-soft: #ffffff14;
+    --accent-ink: #000000;
     --link: #e6e8ea;
-    --danger: #e5484d;
-    --warn: #d9a441;
-    --ok: #46a758;
-    --error: #ff7b72;
+    --danger: #ff453a;
+    --warn: #ffd60a;
+    --ok: #30d158;
+    --error: #ff6961;
     --mono: Consolas, "Cascadia Code", "Courier New", monospace;
-    --sans: "Segoe UI", system-ui, sans-serif;
+    --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     --left: 248px;
     --right: 420px;
     --bottom: 160px;
@@ -136,26 +137,13 @@ kbd {
     border-right: 1px solid var(--border);
 }
 
-.sb-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 16px 12px;
-}
-
-.sb-brand img {
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-}
-
 /* Navigation latérale neutre : pas de barre d'accent colorée ni de fond bleu « onglet d'IDE ».
    L'état actif se lit au contraste et à un repère fin, jamais à une couleur de marque. */
 .sb-tabs {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 0 10px;
+    padding: 10px 10px 0;
 }
 
 .sb-tab {
@@ -285,7 +273,8 @@ kbd {
     overflow: hidden;
 }
 
-/* Rail de navigation : occupe toute la hauteur, logo en haut, outils en bas. */
+/* Rail de navigation : occupe toute la hauteur, onglets en haut, outils en bas.
+   Le logo de l'application reste unique, dans la barre de titre. */
 #sidebar-tabs {
     grid-row: 2 / -1;
     min-height: 0;
@@ -518,12 +507,12 @@ kbd {
     height: 9px;
     border-radius: 50%;
     flex: none;
-    background: #6e7681;
+    background: var(--fg-faint);
 }
 
-.rojo-dot-live { background: #7ee787; box-shadow: 0 0 6px rgba(126, 231, 135, 0.7); }
-.rojo-dot-waiting { background: #ffb454; box-shadow: 0 0 6px rgba(255, 180, 84, 0.6); }
-.rojo-dot-offline { background: #6e7681; }
+.rojo-dot-live { background: var(--ok); box-shadow: 0 0 6px color-mix(in srgb, var(--ok) 70%, transparent); }
+.rojo-dot-waiting { background: var(--warn); box-shadow: 0 0 6px color-mix(in srgb, var(--warn) 60%, transparent); }
+.rojo-dot-offline { background: var(--fg-faint); }
 
 .rojo-actions {
     display: flex;
@@ -685,7 +674,7 @@ kbd {
 
 .resizer:hover::before,
 .resizer:focus-visible::before {
-    background: var(--accent, #f5a623);
+    background: var(--accent);
 }
 
 .resizer:focus-visible {
@@ -694,7 +683,7 @@ kbd {
 
 .resizer-h:hover,
 .resizer-h:focus-visible {
-    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 100% 2px no-repeat, var(--border);
+    background: linear-gradient(var(--accent), var(--accent)) center / 100% 2px no-repeat, var(--border);
     outline: none;
 }
 
@@ -705,7 +694,7 @@ html.layout-dragging #resizer-right {
 }
 
 html.layout-dragging #resizer-bottom {
-    background: linear-gradient(var(--accent, #f5a623), var(--accent, #f5a623)) center / 100% 2px no-repeat;
+    background: linear-gradient(var(--accent), var(--accent)) center / 100% 2px no-repeat;
 }
 
 /* Sash flottant style VS Code : pendant le glisser, un trait fin reste colle au bord
@@ -718,7 +707,7 @@ html.layout-dragging #resizer-bottom {
     width: 1px;
     pointer-events: none;
     z-index: 100000;
-    background: var(--fg-dim, #9a9da4);
+    background: var(--fg-dim);
     opacity: 0;
     will-change: transform;
     transform: translateX(0);
@@ -757,8 +746,8 @@ html:not(.layout-dragging) .resizer-sash-overlay {
     left: 0;
     padding: 3px 10px;
     border-radius: 6px;
-    background: var(--bg-side, #1a1b1e);
-    color: var(--fg, #d8dade);
+    background: var(--bg-side);
+    color: var(--fg);
     font: 500 11px/1.4 var(--mono, monospace);
     border: 1px solid var(--border-strong, rgba(255,255,255,.15));
     box-shadow: 0 2px 8px rgba(0,0,0,.4);
@@ -802,7 +791,7 @@ html:not(.layout-dragging) .resizer-sash-overlay {
     cursor: pointer;
     white-space: nowrap;
     color: var(--fg-dim);
-    background: #2d2d2d;
+    background: var(--bg-side);
 }
 
 .tab.active {
@@ -853,7 +842,7 @@ html:not(.layout-dragging) .resizer-sash-overlay {
     width: 56px;
     padding: 6px 10px 6px 0;
     text-align: right;
-    color: #858585;
+    color: var(--fg-faint);
     background: var(--bg);
     overflow: hidden;
     white-space: pre;
@@ -1170,15 +1159,15 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 .slash-menu div.active,
 .slash-menu div:hover {
     background: var(--accent);
-    color: var(--accent-ink);
+    color: color-mix(in srgb, var(--accent-ink) 62%, var(--accent));
 }
 
 /* Barre d'état */
 #statusbar {
     grid-row: 3;
     grid-column: 1 / -1;
-    background: var(--accent);
-    color: #fff;
+    background: var(--bg-side);
+    color: var(--fg-faint);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -1189,7 +1178,8 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 }
 
 #statusbar.busy {
-    background: #68217a;
+    background: var(--bg-active);
+    color: var(--fg-strong);
 }
 
 /* Rojo : indicateur de synchronisation Studio (port réel + état de connexion) */
@@ -1206,17 +1196,17 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 
 /* Vert : Studio connecté au serveur Rojo. Orange : serveur en attente de connexion. */
 #st-rojo.st-rojo-live {
-    color: #7ee787;
-    border-color: rgba(126, 231, 135, 0.45);
+    color: var(--ok);
+    border-color: color-mix(in srgb, var(--ok) 45%, transparent);
 }
 
 #st-rojo.st-rojo-waiting {
-    color: #ffb454;
-    border-color: rgba(255, 180, 84, 0.45);
+    color: var(--warn);
+    border-color: color-mix(in srgb, var(--warn) 45%, transparent);
 }
 
 #st-rojo.st-rojo-offline {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--fg-dim);
 }
 
 #st-rojo:focus-visible {
@@ -1364,11 +1354,11 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 }
 
 .git-action-msg.ok {
-    color: #89d185;
+    color: var(--ok);
 }
 
 .git-action-msg.error {
-    color: #f48771;
+    color: var(--danger);
 }
 
 .git-commit-box {
@@ -1555,13 +1545,13 @@ html:not(.layout-dragging) .resizer-sash-overlay {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #888;
+    background: var(--fg-faint);
     flex: none;
 }
 
-.ext-dot.running { background: #3fb950; }
-.ext-dot.failed { background: #f85149; }
-.ext-dot.starting { background: #d29922; }
+.ext-dot.running { background: var(--ok); }
+.ext-dot.failed { background: var(--danger); }
+.ext-dot.starting { background: var(--warn); }
 
 .ext-tag {
     font-size: 10px;
@@ -1578,7 +1568,7 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 }
 
 .ext-item-sub.error {
-    color: #f85149;
+    color: var(--danger);
     opacity: 1;
 }
 
@@ -1891,7 +1881,7 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 }
 
 .palette-item.active .detail {
-    color: #e0e0e0;
+    color: color-mix(in srgb, var(--accent-ink) 62%, var(--accent));
 }
 
 .palette-empty {
@@ -1918,8 +1908,8 @@ html:not(.layout-dragging) .resizer-sash-overlay {
 }
 
 .context-menu .item:hover {
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--bg-hover);
+    color: var(--fg-strong);
 }
 
 .context-menu .sep {

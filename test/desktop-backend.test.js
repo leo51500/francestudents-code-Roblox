@@ -26,12 +26,12 @@ test("info, warn, error et tool envoient des entrées nettoyées", () => {
     backend.info("\x1b[32mbonjour\x1b[0m");
     backend.warn("attention");
     backend.error("erreur");
-    backend.tool("read_file", "a.js");
+    backend.tool("read_file", "a.js", { reason: "Lire le script demandé" });
     assert.deepEqual(events.map((e) => e.channel), ["entry", "entry", "entry", "entry"]);
     assert.deepEqual(events[0].data, { type: "info", text: "bonjour" });
     assert.equal(events[1].data.type, "warn");
     assert.equal(events[2].data.type, "error");
-    assert.deepEqual(events[3].data, { type: "tool", name: "read_file", arg: "a.js" });
+    assert.deepEqual(events[3].data, { type: "tool", name: "read_file", arg: "a.js", reason: "Lire le script demandé" });
 });
 
 test("confirm se résout via resolvePrompt", async () => {

@@ -10,6 +10,11 @@ du dispatch serveur (« Unsupported tool ignored by the backend ») peut ainsi �
 récupéré sans contourner la validation locale. Si le modèle rapporte uniquement
 ce rejet dans sa réponse finale, l’agent lui rappelle le protocole une fois et
 reprend la tâche, sauf si un véritable refus ou échec local a déjà été reçu.
+Une action JSON dont la forme seule est fautive (retours à la ligne bruts dans une
+chaîne, virgule finale) est réparée avant la correction du protocole. Si la
+réponse ne contient aucun JSON, le texte libre est affiché comme conclusion
+locale sans exécuter d’outil ; le travail déjà commencé reste annoncé incomplet.
+Le mode Éco garde son arrêt immédiat, sans relance.
 
 `browse` fournit `network_errors` : URL, statut HTTP ou erreur réseau, méthode et
 type de ressource pour les requêtes en échec. La liste est limitée à 20 entrées ;

@@ -15,8 +15,11 @@ function renderAssistantText(text) {
     return value.length > 64000 ? `<div class="fs-long-message">${escapeHtml(value)}</div>` : renderMarkdown(value);
 }
 
-function toolRowHtml(e) {
-    return `<span class="tdot"></span><span class="name">${escapeHtml(toolLabel(e.name))}</span><span class="arg" title="${escapeHtml(e.arg || "")}">${escapeHtml(e.arg || "")}</span>`;
+function toolRowHtml(e, { reason = true } = {}) {
+    const why = reason && e.reason
+        ? `<span class="why" title="${escapeHtml(e.reason)}">${escapeHtml(e.reason)}</span>`
+        : "";
+    return `<span class="tdot"></span><span class="name">${escapeHtml(toolLabel(e.name))}</span><span class="arg" title="${escapeHtml(e.arg || "")}">${escapeHtml(e.arg || "")}</span>${why}`;
 }
 
 function plural(n, word) {
@@ -40,7 +43,7 @@ function addQuietTool(e) {
     g.summary.textContent = parts.join(" · ");
     const row = document.createElement("div");
     row.className = "entry tool";
-    row.innerHTML = toolRowHtml(e);
+    row.innerHTML = toolRowHtml(e, { reason: false });
     g.body.appendChild(row);
     g.awaitingResult = true;
     scrollDown();

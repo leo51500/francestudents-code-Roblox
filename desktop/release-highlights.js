@@ -1,6 +1,12 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
+    "1.5.47":{headline:"Tu vois enfin ce que fait l'assistant, dans un thème noir épuré.",items:[
+        {icon:"spark",title:"Étape en cours expliquée",text:"Sous l'étape en cours du plan s'affichent l'action réelle, sa cible et sa raison en français ; « Voir le détail des actions » ouvre l'onglet Activité, où chaque action garde sa raison et sa durée."},
+        {icon:"tools",title:"Diffs repliables",text:"Un changement de plus de 12 lignes est replié derrière un résumé avec le fichier et les ajouts/suppressions. Le nom du fichier reste cliquable, et un seul fichier modifié ne remplit plus toute la conversation."},
+        {icon:"chat",title:"Réponse hors format récupérée",text:"Une réponse mal formée (retours à la ligne bruts, virgule finale) est réparée au lieu de perdre l'action. Un texte libre s'affiche comme conclusion locale, sans faire perdre la demande."},
+        {icon:"clock",title:"Interface noir et logo unique",text:"Fond noir pur, accents blancs : le thème « Noir » remplace les gris bleutés. Un seul logo reste visible, dans la barre de titre, et l'icône de l'application n'a plus de tuile bleue."}
+    ]},
     "1.5.46":{headline:"Une longue demande part enfin à l'assistant, même avec « ou » et « dossiers ».",items:[
         {icon:"chat",title:"Le vrai message est traité",text:"Le raccourci « Projet actuel » ne se déclenche plus sur un simple « ou » dans une phrase : un cahier des charges ou une demande détaillée est transmis à l'agent au lieu de recevoir le seul chemin du projet."},
         {icon:"tools",title:"Questions courtes toujours reconnues",text:"« Quel est le projet actuel ? », « Où se trouve mon dossier ? » ou « Dans quel projet suis-je ? » renvoient toujours le chemin du projet, en une réponse immédiate."}

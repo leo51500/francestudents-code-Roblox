@@ -45,6 +45,7 @@
   "activate": "writable",
   "activeTerm": "writable",
   "activeTermKey": "writable",
+  "activityLine": "writable",
   "addAttachments": "writable",
   "addEntry": "writable",
   "addQuietTool": "writable",

@@ -18,11 +18,11 @@ Un éditeur Luau prêt pour Rojo, un studio EffectCraft pour l'UI et les animati
 >
 > **FranceStudent Code Roblox est une application distincte** (identifiant `fr.francestudent.code.roblox`, dossier de données `~/.francestudent-code-roblox`). Elle s’installe à côté d’une éventuelle version FranceStudent IDE sans partager ni écraser ses réglages.
 
-**Nouveautés 1.5.46 :** une longue demande qui contient « ou » ou parle de « dossiers » n'est plus confondue avec la question « Projet actuel » : elle est transmise à l'assistant, qui peut enfin lire et modifier les fichiers du projet.
+**Nouveautés 1.5.47 :** tu vois enfin ce que fait l'assistant : sous l'étape en cours s'affichent l'action réelle, sa cible et sa raison, chaque outil du fil explique pourquoi il tourne, et les gros changements de fichiers se replient au lieu d'inonder la conversation. Le thème passe au noir pur, avec le logo seul sur fond transparent.
+
+**Précédent — 1.5.46 :** une longue demande qui contient « ou » ou parle de « dossiers » n'est plus confondue avec la question « Projet actuel » : elle est transmise à l'assistant, qui peut enfin lire et modifier les fichiers du projet.
 
 **Précédent — 1.5.45 :** l'assistant retrouve un fichier par son nom approximatif, retient les repères stables de ton projet (Rojo, outils Luau, commande de test), peut écrire un jeu jouable complet dès le premier appel (`roblox_game`), et refuse une conclusion « terminé » sans vérification postérieure à la dernière modification — chaque réponse se termine par une checklist de fin de tâche.
-
-**Précédent — 1.5.44 :** l'assistant corrige ses remplacements en un seul essai quand le texte diffère légèrement, la vérification du Luau devient obligatoire avant de conclure, et les erreurs de tes scripts apparaissent directement dans le panneau Roblox avec un clic vers la ligne.
 
 ## Le mode Roblox Studio
 

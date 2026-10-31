@@ -7,12 +7,15 @@ function workPlanItems(items) {
         return { step: value.replace(/^(?:✓|✔|◉|●|○|\[[xX ~]?\])\s*/, ""), status: completed ? "completed" : current ? "in_progress" : "pending" };
     });
 }
-function renderWorkPlan(items, { status = "idle" } = {}) {
+function renderWorkPlan(items, { status = "idle", activity = null } = {}) {
     const host = $("agent-live-plan"); if (!host) return;
     const steps = (Array.isArray(items) ? items : []).filter(step => step && typeof step.step === "string" && step.step.trim()).map(step => ({
         step: step.step.trim(), status: ["completed", "in_progress"].includes(step.status) ? step.status : "pending"
     }));
-    const signature = JSON.stringify({ steps, status });
+    // L'étape en cours ne dit pas ce qui se passe réellement : on affiche l'action
+    // courante (outil + cible) sous cette étape, en français.
+    const now = typeof activity?.text === "string" ? activity.text.trim().slice(0, 240) : "";
+    const signature = JSON.stringify({ steps, status, now });
     if (host.dataset.signature === signature) return;
     host.dataset.signature = signature;
     if (!steps.length) { host.replaceChildren(); host.classList.add("hidden"); return; }
@@ -41,12 +44,27 @@ function renderWorkPlan(items, { status = "idle" } = {}) {
         const marker = document.createElement("span"); marker.className = "work-plan-marker"; marker.setAttribute("aria-hidden", "true");
         if (step.status === "completed") marker.innerHTML = '<svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></svg>';
         else marker.textContent = String(index + 1);
+        const main = document.createElement("div"); main.className = "work-plan-step-main";
         const text = document.createElement("span"); text.className = "work-plan-step-text"; text.textContent = step.step;
+        main.appendChild(text);
+        if (step.status === "in_progress" && now) {
+            const detailLine = document.createElement("span"); detailLine.className = "work-plan-step-detail"; detailLine.textContent = now;
+            main.appendChild(detailLine);
+        }
         const accessibleStatus = document.createElement("span"); accessibleStatus.className = "work-plan-sr-status";
         accessibleStatus.textContent = step.status === "completed" ? "Terminée : " : step.status === "in_progress" ? "En cours : " : "À venir : ";
-        row.append(marker, accessibleStatus, text); list.append(row);
+        row.append(marker, accessibleStatus, main); list.append(row);
     });
-    detail.append(summary, list); host.replaceChildren(detail); host.classList.remove("hidden");
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "work-plan-more";
+    more.textContent = "Voir le détail des actions";
+    more.title = "Ouvre l’onglet Activité : chaque action, sa raison et son résultat.";
+    more.onclick = (event) => {
+        event.preventDefault();
+        if (typeof setAgentTab === "function") setAgentTab("activity");
+    };
+    detail.append(summary, list, more); host.replaceChildren(detail); host.classList.remove("hidden");
     list.scrollTop = previousScroll;
     if (wasFocused) summary.focus();
 }

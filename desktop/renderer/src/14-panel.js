@@ -22,14 +22,14 @@ const termByPty = new Map();
 const earlyPty = new Map();
 const exitedPty = new Map();
 let ptyBroken = false;
-// Palette terminal alignée sur le thème « Onyx » (noirs neutres, curseur clair, aucune teinte bleue
-// hors des couleurs ANSI standard imposées par les programmes).
+// Palette terminal alignée sur le thème « Noir » (fond noir, texte blanc, aucune teinte
+// bleue hors des couleurs ANSI standard imposées par les programmes).
 const XTERM_THEME = {
-    background: "#050506",
-    foreground: "#d8dade",
-    cursor: "#f5f6f7",
-    cursorAccent: "#050506",
-    selectionBackground: "#2a2b2f",
+    background: "#000000",
+    foreground: "#f5f5f7",
+    cursor: "#ffffff",
+    cursorAccent: "#000000",
+    selectionBackground: "#232325",
     black: "#000000", red: "#cd3131", green: "#0dbc79", yellow: "#e5e510",
     blue: "#2472c8", magenta: "#bc3fbc", cyan: "#11a8cd", white: "#e5e5e5",
     brightBlack: "#666666", brightRed: "#f14c4c", brightGreen: "#23d18b", brightYellow: "#f5f543",
@@ -288,8 +288,8 @@ function termAppend(term, text) {
         let fg = s.fg;
         let bg = s.bg;
         if (s.inverse) {
-            fg = s.bg || "#050506";
-            bg = s.fg || "#d8dade";
+            fg = s.bg || "#000000";
+            bg = s.fg || "#f5f5f7";
         }
         if (fg) span.style.color = fg;
         if (bg) span.style.backgroundColor = bg;

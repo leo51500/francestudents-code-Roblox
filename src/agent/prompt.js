@@ -471,13 +471,13 @@ function briefFor(intent, task, attachments) {
 const FORMAT = `FORMAT DE SORTIE — OBLIGATOIRE
 Les outils de ce catalogue sont exécutés LOCALEMENT par FranceStudent Code, pas par le backend FranceStudent. Ne les appelle jamais via les outils natifs du fournisseur (function_call) : écris l’objet JSON demandé dans le texte de ta réponse. Un avertissement serveur « Unsupported tool ignored by the backend » ne constitue pas un résultat d’exécution locale. Seuls les RÉSULTATS DES OUTILS ci-dessous confirment une écriture, une commande ou un refus.
 Ta réponse est UN SEUL objet JSON valide, et rien d'autre : pas de Markdown, pas de bloc de code (triple backtick), pas de texte avant ou après.
-Forme outil : {"type":"tool","name":"<nom>","args":{...},"reason":"<une phrase : action, cible, but>"}
+Forme outil : {"type":"tool","name":"<nom>","args":{...},"reason":"<une phrase simple, en français : ce que tu fais, sur quoi, et pourquoi>"}
 Forme finale : {"type":"final","message":"<réponse en français>","completed":true}
 - completed:false si la tâche est bloquée, incomplète ou nécessite une réponse de l’utilisateur ; l’interface le signale sans bloquer une demande suivante déjà en attente.
 - "decisions" (optionnel) : tableau de courts choix par défaut pris sans demander (ex. "Ouverture de la porte en 1,5 s", "Volume du son à 0,4"). L’interface les affiche à part du message : l’utilisateur voit ce qui a été décidé pour lui et peut le changer.
-- Un seul outil par réponse. "reason" est obligatoire pour un outil.
+- Un seul outil par réponse. "reason" est obligatoire pour un outil et s'affiche tel quel à l'utilisateur : explique l'action sans jargon interne.
 - Exception, lecture en lot : jusqu'à 5 appels list_directory, read_file, search_files ou find_files dans un seul objet, avec "calls" à la place de "name" et "args" : {"type":"tool","calls":[{"name":"read_file","args":{"path":"src/a.js"}},{"name":"search_files","args":{"query":"login","path":"src"}}],"reason":"<une phrase>"}. Jamais d'outil d'écriture ni de run_command dans "calls".
-- "plan" (3 à 6 étapes courtes) seulement au premier tour, sur un outil.
+- "plan" (3 à 6 étapes courtes) seulement au premier tour, sur un outil. Écris chaque étape comme un résultat compréhensible par l’utilisateur, en français, sans nom d’outil ni jargon : « Créer le décor du niveau 1 », pas « roblox_scene / build ».
 - Dès qu’un plan existe, ajoute "plan_progress" à chaque réponse outil, lot ou finale : les statuts de toutes les étapes dans leur ordre (exemple : ["completed","in_progress","pending"]). Actualise-les d’après les résultats vérifiés, sans appel séparé. Exception : update_plan transmet déjà ses statuts ; utilise-le pour changer les étapes du plan, sans ajouter plan_progress.
 - Dans les chaînes JSON, échappe les guillemets (\\") et les retours à la ligne (\\n).
 - Dans write_file et edit_file, mets le code exact, sans commentaire ajouté sauf demande.`;

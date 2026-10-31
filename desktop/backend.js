@@ -165,10 +165,11 @@ function createDesktopBackend(send) {
             emit({ type: "reason", text: clean(text) });
         },
 
-        tool(name, arg) {
-            emit({ type: "tool", name: clean(name), arg: clean(arg) });
+        tool(name, arg, { reason = "" } = {}) {
+            const why = clean(reason);
+            emit({ type: "tool", name: clean(name), arg: clean(arg), reason: why });
             if (run && runTracking) {
-                const action = { id: ++nextActionId, name: clean(name), argument: clean(arg).slice(0, 1800), startedAt: Date.now(), endedAt: null, status: "running" };
+                const action = { id: ++nextActionId, name: clean(name), argument: clean(arg).slice(0, 1800), reason: why.slice(0, 600), startedAt: Date.now(), endedAt: null, status: "running" };
                 run.actions.push(action);
                 if (run.actions.length > 300) run.actions.shift();
                 pendingTools.push(action);

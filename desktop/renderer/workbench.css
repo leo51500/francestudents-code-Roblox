@@ -1,39 +1,40 @@
 /* Shared visual language for the workbench. Keep sizing inside each panel. */
-/* Thème « Onyx » : noirs neutres, aucun bleu. Les valeurs doivent rester identiques
-   à celles de theme.css pour qu'aucune feuille ne réintroduise une teinte froide. */
+/* Thème « Noir » : fond noir pur, surfaces étagées et accents blancs.
+   Les valeurs doivent rester identiques à celles de theme.css pour qu'aucune
+   feuille ne réintroduise une palette héritée. */
 :root {
     color-scheme: dark;
-    --bg: #08090a;
+    --bg: #000000;
     --bg-side: #050506;
     --bg-activity: #050506;
-    --bg-panel: #0d0e10;
-    --bg-input: #121315;
-    --bg-hover: #141518;
-    --bg-active: #1b1d21;
-    --border: #1a1b1e;
-    --border-strong: #26282c;
-    --fg: #d8dade;
-    --fg-strong: #f5f6f7;
-    --fg-dim: #9a9da4;
-    --fg-faint: #6e7178;
+    --bg-panel: #0a0a0b;
+    --bg-input: #111112;
+    --bg-hover: #18181a;
+    --bg-active: #232325;
+    --border: #19191c;
+    --border-strong: #2a2a2d;
+    --fg: #f5f5f7;
+    --fg-strong: #ffffff;
+    --fg-dim: #c9c9ce;
+    --fg-faint: #a6a6ad;
     --accent: #f2f3f5;
     --accent-hover: #ffffff;
-    --accent-soft: #ffffff0f;
-    --accent-ink: #08090a;
+    --accent-soft: #ffffff14;
+    --accent-ink: #000000;
     --link: #e6e8ea;
-    --radius: 10px;
-    --shadow: 0 24px 70px #000c;
+    --radius: 12px;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
     --titlebar: 34px;
 }
 html[data-studio-theme="midnight"] {
-    --bg: #050506; --bg-side: #050506; --bg-panel: #0b0c0e;
-    --bg-input: #121315; --bg-hover: #141518; --bg-active: #1b1d21;
-    --border: #1a1b1e; --border-strong: #26282c;
+    --bg: #000000; --bg-side: #050506; --bg-panel: #0a0a0b;
+    --bg-input: #111112; --bg-hover: #18181a; --bg-active: #232325;
+    --border: #19191c; --border-strong: #2a2a2d;
 }
-button { border-radius: 6px; }
+button { border-radius: 8px; }
 :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 button:disabled { cursor: default; }
-input:not([type="checkbox"]):not([type="range"]), select, textarea { border-radius: 6px; }
+input:not([type="checkbox"]):not([type="range"]), select, textarea { border-radius: 8px; }
 :is(.settings-card, .center-dialog, .git-view, .center-filters, .center-profile) :is(button, select, input:not([type="checkbox"])) {
     min-height: 32px;
 }
@@ -45,7 +46,7 @@ input:not([type="checkbox"]):not([type="range"]), select, textarea { border-radi
     background: var(--accent); border-color: transparent; color: var(--accent-ink);
 }
 :is(.settings-card, .center-dialog, .center-card-actions, .center-profile, .center-filters) button.primary:hover:not(:disabled) { background: var(--accent-hover); }
-.button-danger { color: #ffaaa5 !important; }
+.button-danger { color: var(--danger) !important; }
 #titlebar { background: var(--bg-activity); border-bottom: 1px solid var(--border); }
 .command-center { height: 28px; border-radius: 7px; background: var(--bg-side); border-color: var(--border-strong); }
 .tb-title { font-weight: 600; letter-spacing: -.15px; }
@@ -187,7 +188,7 @@ input:not([type="checkbox"]):not([type="range"]), select, textarea { border-radi
 .center-filters input { min-height: 36px; }
 dialog, .palette, .model-menu, .history-menu { border-radius: 12px; box-shadow: var(--shadow); }
 dialog { max-width: calc(100vw - 32px); max-height: calc(100vh - 40px); overflow: auto; }
-dialog::backdrop { background: #090c12b3; }
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .center-dialog { padding: 26px; }
 .center-dialog-head { gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
 .center-dialog-head h2 { font-size: 19px; letter-spacing: -.35px; }

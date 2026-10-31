@@ -71,3 +71,19 @@ test("parseAgentResponse accepte des étapes de plan objets", () => {
 test("parseAgentResponse lève une erreur sans objet JSON", () => {
     assert.throws(() => parseAgentResponse("pas de json"), /Aucun objet JSON/);
 });
+
+test("extractJsonObject répare un contenu multiligne non échappé", () => {
+    const text = '{"type":"tool","name":"write_file","args":{"path":"a.txt","content":"ligne 1\nligne 2"}}';
+    const action = extractJsonObject(text);
+
+    assert.equal(action.name, "write_file");
+    assert.equal(action.args.content, "ligne 1\nligne 2");
+});
+
+test("extractJsonObject répare une virgule finale", () => {
+    assert.equal(extractJsonObject('{"type":"final","message":"ok",}').message, "ok");
+});
+
+test("la réparation ne touche pas aux virgules des chaînes", () => {
+    assert.equal(extractJsonObject('{"type":"final","message":"fin,}"}').message, "fin,}");
+});

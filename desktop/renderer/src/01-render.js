@@ -3,10 +3,17 @@
 const TOOL_LABELS = {
     ask_user: "Question de l’agent",
     effectcraft: "EffectCraft",
-    list_directory: "Lister", read_file: "Lire", search_files: "Chercher",web_search_result:"Résultat web",view_image:"Examiner l’image",
+    list_directory: "Lister", read_file: "Lire", search_files: "Chercher", find_files: "Trouver des fichiers",
+    read_attachment: "Lire la pièce jointe", web_search_result: "Résultat web", view_image: "Examiner l’image",
     create_directory: "Créer le dossier", write_file: "Écrire", edit_file: "Éditer",
     move_path: "Déplacer", copy_path: "Copier", delete_path: "Supprimer",
-    remember: "Mémoriser", run_command: "Commande", web_search: "Rechercher sur le web", web_fetch: "Lire une source", update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics", browse: "Vérifier la page", job_output: "Lire la commande", job_stop: "Arrêter la commande"
+    remember: "Mémoriser", run_command: "Commande", web_search: "Rechercher sur le web", web_fetch: "Lire une source",
+    update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics",
+    browse: "Vérifier la page", job_output: "Lire la commande", job_stop: "Arrêter la commande",
+    task: "Sous-agent", use_skill: "Charger une compétence", mcp_call: "Appel MCP", github: "GitHub",
+    roblox_check: "Vérifier le jeu Roblox", roblox_game: "Créer le jeu Roblox", roblox_scene: "Construire la scène Roblox",
+    roblox_env: "Vérifier l’environnement Roblox", roblox_playtest: "Tester dans Roblox Studio",
+    roblox_graph: "Analyser la structure Roblox", rojo_serve: "Lancer le serveur Rojo", blender: "Blender"
 };
 
 function toolLabel(name) {
@@ -110,46 +117,65 @@ function diffLine(line) {
 }
 
 function buildDiffCard(entry) {
+    const lines = entry.lines || [];
     const card = document.createElement("div");
     card.className = "diff-card";
+    // Un changement volumineux masque le reste de la conversation : on garde un résumé
+    // lisible (fichier, +/-, nombre de lignes) et le détail s'ouvre au clic.
+    const detail = document.createElement("details");
+    detail.className = "diff-details";
+    detail.open = lines.length <= 12;
 
+    const head = document.createElement("summary");
+    head.className = "diff-head";
+    head.title = "Afficher ou masquer les lignes modifiées";
     if (entry.path) {
-        const head = document.createElement("div");
-        head.className = "diff-head";
         head.appendChild(fileIcon(entry.path, "file"));
         const p = document.createElement("span");
         p.className = "diff-path";
         p.textContent = entry.path;
         p.title = `${entry.path} — cliquez pour ouvrir`;
-        p.onclick = () => openFile(entry.path);
+        p.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openFile(entry.path);
+        };
         head.appendChild(p);
-        const stats = document.createElement("span");
-        stats.className = "diff-stats";
-        const add = document.createElement("b");
-        add.className = "add";
-        add.textContent = `+${entry.added ?? 0}`;
-        const del = document.createElement("b");
-        del.className = "del";
-        del.textContent = `-${entry.removed ?? 0}`;
-        stats.append(add, del);
-        head.appendChild(stats);
-        card.appendChild(head);
     } else {
-        const summary = document.createElement("div");
+        const summary = document.createElement("span");
         summary.className = "diff-summary";
-        summary.textContent = `+${entry.added ?? 0} / -${entry.removed ?? 0}`;
-        card.appendChild(summary);
+        summary.textContent = "Modification";
+        head.appendChild(summary);
     }
+
+    const stats = document.createElement("span");
+    stats.className = "diff-stats";
+    const add = document.createElement("b");
+    add.className = "add";
+    add.textContent = `+${entry.added ?? 0}`;
+    const del = document.createElement("b");
+    del.className = "del";
+    del.textContent = `-${entry.removed ?? 0}`;
+    stats.append(add, del);
+    head.appendChild(stats);
+
+    const chevron = document.createElement("span");
+    chevron.className = "diff-chevron";
+    chevron.setAttribute("aria-hidden", "true");
+    chevron.innerHTML = '<svg viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg>';
+    head.appendChild(chevron);
 
     const body = document.createElement("div");
     body.className = "diff";
-    body.innerHTML = (entry.lines || [])
+    body.innerHTML = lines
         .map((line) => {
             const d = diffLine(line);
             return `<div class="${d.cls}">${escapeHtml(d.text) || " "}</div>`;
         })
         .join("");
-    card.appendChild(body);
+
+    detail.append(head, body);
+    card.appendChild(detail);
     return card;
 }
 

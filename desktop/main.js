@@ -1404,8 +1404,8 @@ function createWindow() {
         backgroundColor: "#1f1f1f",
         title: "FranceStudent Code Roblox",
         titleBarStyle: "hidden",
-        // Doit rester aligné sur --titlebar et --bg-side du thème « Onyx » (1.5.18).
-        titleBarOverlay: { color: "#050506", symbolColor: "#d8dade", height: 34 },
+        // Doit rester aligné sur --titlebar et --bg-side du thème « Noir ».
+        titleBarOverlay: { color: "#050506", symbolColor: "#f5f5f7", height: 34 },
         ...(require("node:fs").existsSync(path.join(__dirname, "icon.png"))
             ? { icon: path.join(__dirname, "icon.png") }
             : {}),

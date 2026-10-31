@@ -220,10 +220,17 @@ const expanded = new Set();
 const TOOL_LABELS = {
     ask_user: "Question de l’agent",
     effectcraft: "EffectCraft",
-    list_directory: "Lister", read_file: "Lire", search_files: "Chercher",web_search_result:"Résultat web",view_image:"Examiner l’image",
+    list_directory: "Lister", read_file: "Lire", search_files: "Chercher", find_files: "Trouver des fichiers",
+    read_attachment: "Lire la pièce jointe", web_search_result: "Résultat web", view_image: "Examiner l’image",
     create_directory: "Créer le dossier", write_file: "Écrire", edit_file: "Éditer",
     move_path: "Déplacer", copy_path: "Copier", delete_path: "Supprimer",
-    remember: "Mémoriser", run_command: "Commande", web_search: "Rechercher sur le web", web_fetch: "Lire une source", update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics", browse: "Vérifier la page", job_output: "Lire la commande", job_stop: "Arrêter la commande"
+    remember: "Mémoriser", run_command: "Commande", web_search: "Rechercher sur le web", web_fetch: "Lire une source",
+    update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics",
+    browse: "Vérifier la page", job_output: "Lire la commande", job_stop: "Arrêter la commande",
+    task: "Sous-agent", use_skill: "Charger une compétence", mcp_call: "Appel MCP", github: "GitHub",
+    roblox_check: "Vérifier le jeu Roblox", roblox_game: "Créer le jeu Roblox", roblox_scene: "Construire la scène Roblox",
+    roblox_env: "Vérifier l’environnement Roblox", roblox_playtest: "Tester dans Roblox Studio",
+    roblox_graph: "Analyser la structure Roblox", rojo_serve: "Lancer le serveur Rojo", blender: "Blender"
 };
 
 function toolLabel(name) {
@@ -327,46 +334,65 @@ function diffLine(line) {
 }
 
 function buildDiffCard(entry) {
+    const lines = entry.lines || [];
     const card = document.createElement("div");
     card.className = "diff-card";
+    // Un changement volumineux masque le reste de la conversation : on garde un résumé
+    // lisible (fichier, +/-, nombre de lignes) et le détail s'ouvre au clic.
+    const detail = document.createElement("details");
+    detail.className = "diff-details";
+    detail.open = lines.length <= 12;
 
+    const head = document.createElement("summary");
+    head.className = "diff-head";
+    head.title = "Afficher ou masquer les lignes modifiées";
     if (entry.path) {
-        const head = document.createElement("div");
-        head.className = "diff-head";
         head.appendChild(fileIcon(entry.path, "file"));
         const p = document.createElement("span");
         p.className = "diff-path";
         p.textContent = entry.path;
         p.title = `${entry.path} — cliquez pour ouvrir`;
-        p.onclick = () => openFile(entry.path);
+        p.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openFile(entry.path);
+        };
         head.appendChild(p);
-        const stats = document.createElement("span");
-        stats.className = "diff-stats";
-        const add = document.createElement("b");
-        add.className = "add";
-        add.textContent = `+${entry.added ?? 0}`;
-        const del = document.createElement("b");
-        del.className = "del";
-        del.textContent = `-${entry.removed ?? 0}`;
-        stats.append(add, del);
-        head.appendChild(stats);
-        card.appendChild(head);
     } else {
-        const summary = document.createElement("div");
+        const summary = document.createElement("span");
         summary.className = "diff-summary";
-        summary.textContent = `+${entry.added ?? 0} / -${entry.removed ?? 0}`;
-        card.appendChild(summary);
+        summary.textContent = "Modification";
+        head.appendChild(summary);
     }
+
+    const stats = document.createElement("span");
+    stats.className = "diff-stats";
+    const add = document.createElement("b");
+    add.className = "add";
+    add.textContent = `+${entry.added ?? 0}`;
+    const del = document.createElement("b");
+    del.className = "del";
+    del.textContent = `-${entry.removed ?? 0}`;
+    stats.append(add, del);
+    head.appendChild(stats);
+
+    const chevron = document.createElement("span");
+    chevron.className = "diff-chevron";
+    chevron.setAttribute("aria-hidden", "true");
+    chevron.innerHTML = '<svg viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></svg>';
+    head.appendChild(chevron);
 
     const body = document.createElement("div");
     body.className = "diff";
-    body.innerHTML = (entry.lines || [])
+    body.innerHTML = lines
         .map((line) => {
             const d = diffLine(line);
             return `<div class="${d.cls}">${escapeHtml(d.text) || " "}</div>`;
         })
         .join("");
-    card.appendChild(body);
+
+    detail.append(head, body);
+    card.appendChild(detail);
     return card;
 }
 
@@ -650,8 +676,11 @@ function renderAssistantText(text) {
     return value.length > 64000 ? `<div class="fs-long-message">${escapeHtml(value)}</div>` : renderMarkdown(value);
 }
 
-function toolRowHtml(e) {
-    return `<span class="tdot"></span><span class="name">${escapeHtml(toolLabel(e.name))}</span><span class="arg" title="${escapeHtml(e.arg || "")}">${escapeHtml(e.arg || "")}</span>`;
+function toolRowHtml(e, { reason = true } = {}) {
+    const why = reason && e.reason
+        ? `<span class="why" title="${escapeHtml(e.reason)}">${escapeHtml(e.reason)}</span>`
+        : "";
+    return `<span class="tdot"></span><span class="name">${escapeHtml(toolLabel(e.name))}</span><span class="arg" title="${escapeHtml(e.arg || "")}">${escapeHtml(e.arg || "")}</span>${why}`;
 }
 
 function plural(n, word) {
@@ -675,7 +704,7 @@ function addQuietTool(e) {
     g.summary.textContent = parts.join(" · ");
     const row = document.createElement("div");
     row.className = "entry tool";
-    row.innerHTML = toolRowHtml(e);
+    row.innerHTML = toolRowHtml(e, { reason: false });
     g.body.appendChild(row);
     g.awaitingResult = true;
     scrollDown();
@@ -4430,14 +4459,14 @@ const termByPty = new Map();
 const earlyPty = new Map();
 const exitedPty = new Map();
 let ptyBroken = false;
-// Palette terminal alignée sur le thème « Onyx » (noirs neutres, curseur clair, aucune teinte bleue
-// hors des couleurs ANSI standard imposées par les programmes).
+// Palette terminal alignée sur le thème « Noir » (fond noir, texte blanc, aucune teinte
+// bleue hors des couleurs ANSI standard imposées par les programmes).
 const XTERM_THEME = {
-    background: "#050506",
-    foreground: "#d8dade",
-    cursor: "#f5f6f7",
-    cursorAccent: "#050506",
-    selectionBackground: "#2a2b2f",
+    background: "#000000",
+    foreground: "#f5f5f7",
+    cursor: "#ffffff",
+    cursorAccent: "#000000",
+    selectionBackground: "#232325",
     black: "#000000", red: "#cd3131", green: "#0dbc79", yellow: "#e5e510",
     blue: "#2472c8", magenta: "#bc3fbc", cyan: "#11a8cd", white: "#e5e5e5",
     brightBlack: "#666666", brightRed: "#f14c4c", brightGreen: "#23d18b", brightYellow: "#f5f543",
@@ -4696,8 +4725,8 @@ function termAppend(term, text) {
         let fg = s.fg;
         let bg = s.bg;
         if (s.inverse) {
-            fg = s.bg || "#050506";
-            bg = s.fg || "#d8dade";
+            fg = s.bg || "#000000";
+            bg = s.fg || "#f5f5f7";
         }
         if (fg) span.style.color = fg;
         if (bg) span.style.backgroundColor = bg;
@@ -6570,12 +6599,24 @@ function humanDuration(start, end) {
 function emptyStudioText(parent, text) {
     const note = document.createElement("p"); note.className = "muted"; note.textContent = text; parent.appendChild(note);
 }
+/** Dernière action en langage courant, pour l'étape en cours du plan. */
+function activityLine(action) {
+    if (!action) return "";
+    const label = toolLabel(action.name);
+    const target = String(action.argument || "").trim();
+    const why = String(action.reason || "").trim();
+    const state = action.status === "running" ? "En cours" : action.status === "done" ? "Dernière action terminée" : "Dernière action à vérifier";
+    return `${state} : ${target ? `${label} · ${target}` : label}${why ? ` — ${why}` : ""}`;
+}
 function renderAgentActivity(run) {
     const motion=typeof isMotionOpen==="function" && isMotionOpen();
     if(run && (!!run.motionDesign!==motion || !motion && run.workspace!==ui.workspace))run=null;
     studioRun = run;
     const steps = run?.steps || [];
-    if (!ui.replayingConversation) renderWorkPlan(steps, { status: run?.status || "idle" });
+    const actions = Array.isArray(run?.actions) ? run.actions : [];
+    const current = actions.length ? (actions.slice().reverse().find(action => action.status === "running") || actions[actions.length - 1]) : null;
+    const activity = current ? { text: activityLine(current) } : null;
+    if (!ui.replayingConversation) renderWorkPlan(steps, { status: run?.status || "idle", activity });
     const overview = $("activity-overview"); overview.replaceChildren();
     const timeline = $("activity-timeline"); timeline.replaceChildren();
     const sources = $("activity-sources"); sources.replaceChildren();
@@ -6609,7 +6650,9 @@ function renderAgentActivity(run) {
     for (const action of (run.actions || []).slice().reverse()) {
         const row = document.createElement("details"); row.className = `activity-action activity-action-${action.status}`;
         const summary = document.createElement("summary"); summary.textContent = `${action.status === "done" ? "✓" : action.status === "running" ? "◉" : "!"} ${toolLabel(action.name)} · ${humanDuration(action.startedAt, action.endedAt)}`;
-        const body = document.createElement("pre"); body.textContent = [action.argument, action.result].filter(Boolean).join("\n\n");
+        summary.title = [action.reason, action.argument].filter(Boolean).join(" — ");
+        const body = document.createElement("pre");
+        body.textContent = [action.reason && `Pourquoi : ${action.reason}`, action.argument, action.result].filter(Boolean).join("\n\n");
         row.append(summary, body); timeline.appendChild(row);
     }
     if (!run.actions?.length) emptyStudioText(timeline, "L’agent prépare sa prochaine action.");
@@ -10188,12 +10231,15 @@ function workPlanItems(items) {
         return { step: value.replace(/^(?:✓|✔|◉|●|○|\[[xX ~]?\])\s*/, ""), status: completed ? "completed" : current ? "in_progress" : "pending" };
     });
 }
-function renderWorkPlan(items, { status = "idle" } = {}) {
+function renderWorkPlan(items, { status = "idle", activity = null } = {}) {
     const host = $("agent-live-plan"); if (!host) return;
     const steps = (Array.isArray(items) ? items : []).filter(step => step && typeof step.step === "string" && step.step.trim()).map(step => ({
         step: step.step.trim(), status: ["completed", "in_progress"].includes(step.status) ? step.status : "pending"
     }));
-    const signature = JSON.stringify({ steps, status });
+    // L'étape en cours ne dit pas ce qui se passe réellement : on affiche l'action
+    // courante (outil + cible) sous cette étape, en français.
+    const now = typeof activity?.text === "string" ? activity.text.trim().slice(0, 240) : "";
+    const signature = JSON.stringify({ steps, status, now });
     if (host.dataset.signature === signature) return;
     host.dataset.signature = signature;
     if (!steps.length) { host.replaceChildren(); host.classList.add("hidden"); return; }
@@ -10222,12 +10268,27 @@ function renderWorkPlan(items, { status = "idle" } = {}) {
         const marker = document.createElement("span"); marker.className = "work-plan-marker"; marker.setAttribute("aria-hidden", "true");
         if (step.status === "completed") marker.innerHTML = '<svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></svg>';
         else marker.textContent = String(index + 1);
+        const main = document.createElement("div"); main.className = "work-plan-step-main";
         const text = document.createElement("span"); text.className = "work-plan-step-text"; text.textContent = step.step;
+        main.appendChild(text);
+        if (step.status === "in_progress" && now) {
+            const detailLine = document.createElement("span"); detailLine.className = "work-plan-step-detail"; detailLine.textContent = now;
+            main.appendChild(detailLine);
+        }
         const accessibleStatus = document.createElement("span"); accessibleStatus.className = "work-plan-sr-status";
         accessibleStatus.textContent = step.status === "completed" ? "Terminée : " : step.status === "in_progress" ? "En cours : " : "À venir : ";
-        row.append(marker, accessibleStatus, text); list.append(row);
+        row.append(marker, accessibleStatus, main); list.append(row);
     });
-    detail.append(summary, list); host.replaceChildren(detail); host.classList.remove("hidden");
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "work-plan-more";
+    more.textContent = "Voir le détail des actions";
+    more.title = "Ouvre l’onglet Activité : chaque action, sa raison et son résultat.";
+    more.onclick = (event) => {
+        event.preventDefault();
+        if (typeof setAgentTab === "function") setAgentTab("activity");
+    };
+    detail.append(summary, list, more); host.replaceChildren(detail); host.classList.remove("hidden");
     list.scrollTop = previousScroll;
     if (wasFocused) summary.focus();
 }

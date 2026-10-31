@@ -790,7 +790,7 @@ button.primary:not(:disabled):active {
 
 .log-error-count:not([hidden]) {
     background: rgb(229 72 77 / 18%);
-    color: #ff9b9e;
+    color: var(--danger);
 }
 
 /* ---------- Images clés ---------- */

@@ -123,7 +123,7 @@ test("e2e : tâches ajoutées, réordonnées, exécutées et suspendues sur bloc
         await page.locator("#agent-focus").click();
         assert.ok(await page.locator("#app").evaluate(el => el.classList.contains("focus-agent")));
         await page.locator("#agent-focus").click();
-        // Thème « Onyx » : l'accent est neutre (plus aucune teinte bleue héritée de l'ancien thème).
+        // Thème « Noir » : l'accent reste neutre (plus aucune teinte bleue héritée de l'ancien thème).
         assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()), "#f2f3f5");
         await page.evaluate(async () => {
             const queue = await window.frst.taskQueue("list");

@@ -2,7 +2,7 @@
 #app.view-ext #ext-view { display: block; position: fixed; top: var(--titlebar); bottom: 24px; left: calc(var(--rail, 168px) + var(--left) + 4px); right: calc(var(--right) + 4px); width: auto; padding: 0 24px 24px; box-sizing: border-box; background: var(--bg); z-index: 30; overflow: auto; }
 #app.view-ext.no-agent #ext-view { right: 0; }
 
-#ext-view > .sidebar-header { position: sticky; top: 0; height: 58px; background: var(--bg); z-index: 2; font-size: 19px; text-transform: none; letter-spacing: 0; padding: 0; gap: 12px; }
+#ext-view > .sidebar-header { position: sticky; top: 0; height: 58px; background: var(--bg); color: var(--fg-strong); z-index: 2; font-size: 19px; text-transform: none; letter-spacing: 0; padding: 0; gap: 12px; }
 #ext-view > :not(.sidebar-header) { max-width: 1100px; margin-left: auto; margin-right: auto; }
 .center-toolbar, .center-filters, .center-profile, .center-card-actions, .center-dialog-actions, .center-dialog-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .center-toolbar { justify-content: space-between; margin-bottom: 12px; }
