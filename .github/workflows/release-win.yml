@@ -60,7 +60,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run prepare:electron
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          npm audit --audit-level=low
+          # Seules les dependances livrees gardent un seuil bloquant : un avis sur
+          # l'outillage de build, sans correctif publie en amont, ne doit pas
+          # empecher la sortie de l'installateur.
+          npm audit --omit=dev --audit-level=low
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run lint
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

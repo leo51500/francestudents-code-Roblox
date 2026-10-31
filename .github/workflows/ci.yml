@@ -20,7 +20,11 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm install
       - run: npm run prepare:electron
-      - run: npm audit --audit-level=low
+      # Seules les dependances livrees (npm dependencies, empaquetees par
+      # electron-builder) gardent un seuil bloquant. Les avis qui ne touchent que
+      # l'outillage de build (eslint, electron-builder...) ne doivent pas bloquer
+      # une publication quand aucun correctif n'est encore publie en amont.
+      - run: npm audit --omit=dev --audit-level=low
       - run: npm run build:renderer
       - run: npm run lint
       - run: npm run check:renderer

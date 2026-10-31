@@ -1,9 +1,10 @@
 "use strict";
 // Maintain this short summary with each release. Unknown versions get a safe fallback.
 const releases={
-    "1.5.40":{headline:"Le trait de redimensionnement reste collé au bord, comme dans VS Code.",items:[
+    "1.5.41":{headline:"Le trait de redimensionnement reste collé au bord, comme dans VS Code.",items:[
         {icon:"tools",title:"Trait qui ne se détache plus",text:"À la limite de largeur, le trait continuait à suivre la souris et flottait au milieu des panneaux. Il est maintenant recalé sur le bord réel de la colonne à chaque mouvement : il s'arrête avec elle, même si la souris va plus loin."},
-        {icon:"spark",title:"Rendu VS Code",text:"1 px, gris discret, limité à la hauteur des panneaux et visible seulement pendant le glisser : plus de barre blanche en travers de l'interface."}
+        {icon:"spark",title:"Rendu VS Code",text:"1 px, gris discret, limité à la hauteur des panneaux et visible seulement pendant le glisser : plus de barre blanche en travers de l'interface."},
+        {icon:"clock",title:"Publication rétablie",text:"Un avis de sécurité sur un outil de build, sans correctif disponible en amont, bloquait la sortie des installateurs. Le contrôle porte désormais sur les dépendances réellement livrées, toujours à zéro vulnérabilité."}
     ]},
     "1.5.39":{headline:"La barre blanche du redimensionnement ne reste plus à l'écran.",items:[
         {icon:"tools",title:"Plus de trait figé",text:"Un glisser interrompu (souris relâchée hors de la fenêtre, Alt+Tab, perte de focus) laissait un trait blanc en travers des panneaux. L'état de glisser est maintenant effacé dès qu'il ne peut plus être en cours, et le trait n'apparaît que pendant le geste."},
