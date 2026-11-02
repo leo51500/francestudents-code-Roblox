@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "francestudents-code-Roblox : agent de programmation en ligne de commande",
   "maintainer": "GAB DESING",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leo51500/francestudents-code-Roblox.git"
+  },
   "main": "index.js",
   "bin": {
     "frstcli": "index.js",
@@ -121,6 +125,11 @@
     "directories": {
       "output": "release"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "leo51500",
+      "repo": "francestudents-code-Roblox"
+    },
     "files": [
       "desktop/**/*",
       "src/**/*",
@@ -129,7 +138,6 @@
     ],
     "win": {
       "icon": "desktop/icon.png",
-      "publisherName": "francestudents-code-Roblox",
       "target": [
         "portable",
         "nsis"

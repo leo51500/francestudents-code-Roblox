@@ -13,7 +13,7 @@ Ce fichier s’adresse à toute personne ou tout assistant qui reprend le dépô
 
 - **Produit** : francestudents-code-Roblox, application Electron en français ; CLI et TUI partagent son cœur Node.js.
 - **Origine** : projet de EsteG7 ; ce dépôt est le fork d’amélioration de extraopaa. Conserver les crédits et licences des composants tiers.
-- **Dépôt de ce fork** : `extraopaa/francestudents-ide`. Vérifier les remotes avant toute opération distante. Ne pas pousser dans l’amont par inadvertance.
+- **Dépôt de ce fork** : `leo51500/francestudents-code-Roblox`. Vérifier les remotes avant toute opération distante. Ne pas pousser dans l’amont par inadvertance.
 - **Interface** : modifier `desktop/renderer/src/*.js`, puis exécuter `npm run build:renderer`. `desktop/renderer/app.js` est généré **et versionné** ; ne pas l’éditer directement. Les modules sont concaténés par numéro et partagent une portée globale.
 - **Style** : réutiliser les tokens et composants existants, en particulier `desktop/renderer/surfaces.css` et `desktop/renderer/src/46-shared-surfaces.js`. Conserver les identifiants des contrôles et l’accessibilité clavier ; vérifier aussi les petites fenêtres.
 - **Périmètre produit** : l’application conserve l’agent de programmation, l’éditeur, les fichiers, le terminal, le Git local, les skills et MCP. Ne pas réintroduire les intégrations retirées sans demande explicite.
@@ -48,7 +48,7 @@ node --test --test-concurrency=4 e2e/*.e2e.test.js
 - Avant un commit, vérifier le diff et les fichiers sélectionnés ; éviter un ajout global quand des fichiers étrangers sont présents.
 - Ne pousser, taguer ou publier que dans le cadre d’une demande explicite du contributeur. Une demande de test ou de modification n’est pas une demande de release.
 - Pour une version, mettre à jour `package.json`, `CHANGELOG.md` **et** le résumé de `desktop/release-highlights.js` ; consulter la procédure de [CONTRIBUTING.md](CONTRIBUTING.md).
-- Les noms d’assets viennent de `package.json`, pas d’un ancien exemple. Les scripts de construction ne publient rien ; les portables restent locaux.
+- Les noms d’assets viennent de `package.json`, pas d’un ancien exemple. Chaque push sur `main` incrémente le correctif et déclenche la publication Windows avec un tag `vX.Y.Z`; les portables restent locaux et les releases NSIS contiennent les métadonnées nécessaires aux mises à jour.
 
 ## Maintenir ce contexte
 

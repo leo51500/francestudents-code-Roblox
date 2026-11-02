@@ -22,15 +22,13 @@ test("portable checks stable releases without downgrading or installing",async()
     await assert.rejects(checkPortableRelease("1.1.2",async()=>new Response("offline",{status:503}),repository),/indisponible/);
 });
 
-test("no portable release source is configured by default",async()=>{
-    assert.equal(configuredRepository({}),null);
-    let requests=0;
-    const result=await checkPortableRelease("0.1.0",async()=>{requests++;throw Error("unexpected request");},null);
-    assert.equal(requests,0);
-    assert.equal(result.status,"unavailable");
+test("the fork GitHub repository is the default update source",async()=>{
+    const repository={owner:"leo51500",repo:"francestudents-code-Roblox"};
+    assert.deepEqual(configuredRepository({}),repository);
+    const result=await checkPortableRelease("0.1.0",async(url)=>{assert.match(url,/leo51500\/francestudents-code-Roblox\/releases\/latest$/);return Response.json({tag_name:"v0.2.0"});});
+    assert.equal(result.status,"available");
     assert.equal(result.canInstall,false);
-    assert.equal(result.downloadUrl,null);
-    assert.match(result.message,/Aucune source de mise à jour/);
+    assert.match(result.downloadUrl,/github\.com\/leo51500\/francestudents-code-Roblox\/releases\/latest$/);
 });
 
 test("portable release source requires both repository fields",async()=>{

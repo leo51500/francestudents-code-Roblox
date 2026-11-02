@@ -51,7 +51,7 @@ Les modes de permission contrôlent les confirmations de l’agent, pas les droi
 
 Le panneau Git local affiche l’état, le diff, les commits et l’historique du dépôt ouvert. Il ne remplace pas l’usage explicite de Git depuis un terminal.
 
-Les mises à jour automatiques ne fonctionnent que pour les applications Windows installées et compatibles avec le fournisseur configuré. Aucun fournisseur n’est configuré par défaut : le système ne contacte pas l’ancien dépôt. Pour une vérification manuelle portable, définis `FS_UPDATE_OWNER` et `FS_UPDATE_REPO`. Pour réactiver les mises à jour automatiques de l’installateur, configure `build.publish` dans `package.json` avec le nouveau dépôt avant de préparer une release. Les exécutables portables ne s’installent jamais automatiquement.
+Les mises à jour automatiques utilisent les releases de `leo51500/francestudents-code-Roblox`. Elles sont disponibles pour l’application Windows installée par NSIS ; le paquet portable peut signaler une version publiée, mais doit être remplacé manuellement. Chaque push sur `main` déclenche `.github/workflows/release-win.yml`, qui incrémente le correctif de `package.json`, crée un tag `vX.Y.Z` et publie la release sous le même titre, avec le `.exe`, son `.blockmap`, `latest.yml` et `SHA256SUMS.txt`. `electron-updater` lit `latest.yml` dans la release GitHub. Les binaires ne sont pas signés par défaut ; aucun nom d’éditeur n’est imposé à la vérification des mises à jour.
 
 ## Données et crédits
 

@@ -3,7 +3,7 @@
 function configuredRepository(env = process.env) {
     const owner = String(env.FS_UPDATE_OWNER || "").trim();
     const repo = String(env.FS_UPDATE_REPO || "").trim();
-    return owner || repo ? { owner, repo } : null;
+    return owner || repo ? { owner, repo } : { owner: "leo51500", repo: "francestudents-code-Roblox" };
 }
 
 function unavailable(message) {

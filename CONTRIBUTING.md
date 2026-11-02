@@ -33,6 +33,8 @@ Ne versionne jamais de token, mot de passe, session ou fichier `.env`. Les dépe
 
 Décris le problème, le comportement attendu et les vérifications réalisées. Pour un bogue, indique la version et les étapes de reproduction, sans identifiants ni données sensibles. Vérifie le remote avant toute opération distante et ne pousse ou ne publie rien sans demande explicite.
 
+Chaque push sur `main` déclenche une release Windows : le workflow incrémente le correctif dans `package.json`, pousse le commit de version et le tag `vX.Y.Z`, puis crée une release dont le titre reprend ce tag. Pour éviter une release, travaille sur une branche et passe par une pull request sans fusionner dans `main`.
+
 ## Construire localement
 
 Le produit et les noms d’assets sont définis dans `package.json`. Conserve l’`appId`, le nom interne du paquet et le dossier de données historique afin de préserver les profils.

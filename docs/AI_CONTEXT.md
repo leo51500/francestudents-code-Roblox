@@ -20,6 +20,7 @@
 - Pour l’interface, modifier `desktop/renderer/src/*.js`, puis exécuter `npm run build:renderer`. `desktop/renderer/app.js` est généré et versionné ; ne pas le modifier directement.
 - Réutiliser les tokens et composants de `desktop/renderer/surfaces.css` et `desktop/renderer/src/46-shared-surfaces.js`. Préserver les identifiants utilisés par les événements, le clavier et les petites fenêtres.
 - L’application Electron est distribuée uniquement pour Windows x64. Les noms d’application et d’assets sont définis dans `package.json`.
+- Chaque push sur `main` déclenche `.github/workflows/release-win.yml`, qui incrémente le correctif dans `package.json`, crée et pousse le tag `vX.Y.Z`, puis publie une release Windows sur `leo51500/francestudents-code-Roblox` avec un titre identique au tag. La cible NSIS fournit `latest.yml` à `electron-updater`; l’installateur portable ne s’auto-installe pas.
 - Conserver les crédits et licences des composants tiers.
 
 ## Vérifications

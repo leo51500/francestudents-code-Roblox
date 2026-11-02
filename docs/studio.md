@@ -35,7 +35,7 @@ Le panneau Git affiche l’état du dépôt, les modifications, les différences
 
 ## Mises à jour
 
-Les mises à jour automatiques ne fonctionnent que pour les applications Windows installées et compatibles avec le fournisseur configuré. Aucun fournisseur n’est configuré par défaut : le système ne contacte pas l’ancien dépôt. Pour une vérification manuelle portable, définis `FS_UPDATE_OWNER` et `FS_UPDATE_REPO`. Les exécutables portables ne s’installent jamais automatiquement.
+Les mises à jour automatiques utilisent les releases de `leo51500/francestudents-code-Roblox` pour les installations Windows par NSIS. Les paquets portables peuvent signaler une version publiée, mais doivent être remplacés manuellement. Chaque push sur `main` fait incrémenter automatiquement le correctif, crée le tag `vX.Y.Z` et déclenche `release-win.yml`, qui publie l’installateur, son `.blockmap`, `latest.yml` et `SHA256SUMS.txt`. Le titre GitHub correspond au tag.
 
 ## Composants open source
 

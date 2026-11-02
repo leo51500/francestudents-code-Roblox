@@ -1,6 +1,6 @@
 # Résoudre un problème
 
-[← Les guides](README.md) · [Connexion](connexion.md) · [Signaler un problème](https://github.com/extraopaa/francestudents-ide/issues)
+[← Les guides](README.md) · [Connexion](connexion.md) · [Signaler un problème](https://github.com/leo51500/francestudents-code-Roblox/issues)
 
 Note la version de l’application, les étapes qui reproduisent le problème et le message d’erreur. Ne partage jamais de mot de passe, token ou contenu privé dans un rapport public.
 
