@@ -1,0 +1,53 @@
+<div align="center">
+
+<img src="desktop/icon.png" width="80" alt="Logo francestudents-code-Roblox" />
+
+# francestudents-code-Roblox
+
+**Un environnement de programmation en français, repris et adapté par GAB DESING.**
+
+[Guides](docs/README.md)
+
+</div>
+
+> **Origine :** projet créé par [EsteG7](https://github.com/EsteG7/francestudents-ide), puis maintenu par [extraopaa](https://github.com/extraopaa). Cette reprise est modifiée par **GAB DESING**, mainteneur actuel. Les auteurs, crédits et licences d’origine sont conservés ; ce fork n’est pas une version officielle du projet amont.
+
+**Version 0.1.0** — nouvelle base de version pour cette reprise. Aucun nouvel installateur n’est publié.
+
+## Fonctionnalités conservées
+
+- Éditeur de projet, explorateur de fichiers, terminal et outils de vérification.
+- Agent IA avec historique visible, reprise de conversations, plans et sauvegardes avant modification.
+- Git local pour consulter l’état, les changements et l’historique, puis créer des commits.
+- Skills installables et serveurs MCP configurables pour ajouter des outils.
+- Connexion au compte FranceStudent, sélection du modèle et profils de fournisseurs personnalisés.
+- Pièces jointes, recherche documentaire, aperçus Markdown et suivi du quota.
+
+Le projet est en cours d’adaptation pour les usages Roblox. Les intégrations Roblox Studio spécifiques ne sont pas incluses à ce stade ; MCP et les skills restent disponibles pour de futures extensions.
+
+## Démarrer depuis les sources
+
+Avec Node.js 22.13.0 ou plus récent et npm :
+
+```powershell
+npm install
+npm run desktop
+```
+
+Connecte-toi avec ton compte FranceStudent. L’application n’a pas besoin d’une clé API pour ce compte. Les outils et dépendances propres au projet ouvert restent à installer séparément.
+
+## Sauvegardes et autorisations
+
+L’onglet **Sauvegardes** permet de prévisualiser puis restaurer l’état des fichiers avant une demande à l’agent. Une sauvegarde de sécurité est créée avant la restauration. Les fichiers non enregistrés, les fichiers exclus et les actions externes ne sont pas couverts.
+
+Commence avec les confirmations activées et vérifie les modifications. **Full accès** permet à l’agent d’agir sans confirmation : réserve-le aux projets et outils auxquels tu fais confiance.
+
+## Documentation
+
+- [Guides illustrés](docs/README.md) · [Connexion](docs/connexion.md) · [Premiers pas](docs/guide-utilisation.md)
+- [Extensions, skills et MCP](docs/extensions.md) · [Pièces jointes](docs/attachments.md)
+- [Guide avancé](docs/avance.md) · [Dépannage](docs/depannage.md)
+- [Contribuer](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Crédits](CREDITS.md)
+- [Signaler un problème](https://github.com/extraopaa/francestudents-ide/issues)
+
+Pour le contexte de développement commun aux assistants, consulter [AGENTS.md](AGENTS.md) et [docs/AI_CONTEXT.md](docs/AI_CONTEXT.md).
