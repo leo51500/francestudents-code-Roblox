@@ -308,7 +308,7 @@ test("StatusBar : reste sur une seule ligne quand la fenêtre est étroite", asy
     const view = render(h(bundle.StatusBar, {
         mode: "code",
         model: "un-modele-avec-un-nom-assez-long",
-        workspace: "C:\\Users\\x\\Documents\\project-frstcli",
+        workspace: "C:\\Users\\x\\Documents\\francestudents-code-roblox",
         branch: "dev",
         autoApprove: true,
         jobs: 2,

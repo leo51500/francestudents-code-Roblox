@@ -9,7 +9,7 @@ const { CONFIG } = require("../config");
 /*
  * Mémoire du CLI
  *
- *  - PERSISTANTE (par projet, dans ~/.francestudent-cli/projects/<projet>/) :
+ *  - PERSISTANTE (par projet, dans ~/.francestudents-code-roblox/projects/<projet>/) :
  *      notes, journal des actions, pile d'annulation (+ sauvegardes et corbeille).
  *      Rien n'est écrit dans le dossier du projet lui-même.
  *

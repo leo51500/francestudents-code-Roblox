@@ -24,7 +24,7 @@ Sans raison enregistrée, le code reste FST-001 : une fermeture forcée n’est 
 
 ## Données locales
 
-Le journal `stability.json` se trouve dans le dossier de données FranceStudent (`FS_DATA_DIR`, ou `~/.francestudent-cli`). Il garde au plus 50 événements. Il n’enregistre pas les contenus des conversations ou fichiers, les messages complets d’exception, leurs traces, les jetons ni les mots de passe. Aucun diagnostic n’est envoyé automatiquement. Aucun dump mémoire n’est activé par ce mécanisme.
+Le journal `stability.json` se trouve dans le dossier de données de France-Students-code-Roblox (`FS_DATA_DIR`, ou `~/.francestudents-code-roblox`). Il garde au plus 50 événements. Il n’enregistre pas les contenus des conversations ou fichiers, les messages complets d’exception, leurs traces, les jetons ni les mots de passe. Aucun diagnostic n’est envoyé automatiquement. Aucun dump mémoire n’est activé par ce mécanisme.
 
 Les sorties fatales natives ne peuvent pas toutes être interceptées. Le marqueur de session permet alors seulement de reconnaître un arrêt non terminé normalement. Ne pas prétendre que chaque crash a une cause précise connue.
 

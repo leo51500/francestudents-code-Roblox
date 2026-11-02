@@ -37,7 +37,7 @@ Chaque push sur `main` déclenche une release Windows : le workflow incrémente 
 
 ## Construire localement
 
-Le produit et les noms d’assets sont définis dans `package.json`. Conserve l’`appId`, le nom interne du paquet et le dossier de données historique afin de préserver les profils.
+Le produit, l’identité Electron et les noms d’assets sont définis dans `package.json`. Conserve l’`appId` `com.gabdesing.francestudentscoderoblox` et le dossier de données dédié ; ne réutilise ni ne migre les profils de l’ancienne application.
 
 ```powershell
 npm run build:renderer

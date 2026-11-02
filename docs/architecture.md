@@ -12,7 +12,7 @@ francestudents-code-Roblox relie l'assistant FranceStudent à trois interfaces q
 - `api/api.js` : client HTTP pour l'API de chat en flux SSE.
 - `api/auth.js` : session et jetons courts (JWT) obtenus à partir du cookie de session.
 - `project/memory.js` : mémoire persistante par projet (notes, journal, pile d'annulation) et mémoire de session.
-- `project/profile.js` : pré-prompt personnalisé (utilisateur dans `~/.francestudent-cli/profile.json`, projet dans `profile.json` du dossier de données du projet) et faits appris dont le poids se renforce à chaque observation (`observe`, `reinforce`, `buildPreprompt`).
+- `project/profile.js` : pré-prompt personnalisé (utilisateur dans `~/.francestudents-code-roblox/profile.json`, projet dans `profile.json` du dossier de données du projet) et faits appris dont le poids se renforce à chaque observation (`observe`, `reinforce`, `buildPreprompt`).
 - `project/conversations.js` : conversations persistantes, une par projet et par mode (`chat` ou `agent`).
 - `project/project-context.js` : indexation du projet et génération ou réutilisation de `RESUME.md`.
 - `tools/security.js` : validation des chemins et blocage des accès sensibles.

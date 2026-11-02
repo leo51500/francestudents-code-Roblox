@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Processus principal de l'application de bureau francestudents-code-Roblox (Electron).
+ * Processus principal de l'application de bureau France-Students-code-Roblox (Electron).
  *
  * Le cœur du CLI (session, agent, outils) tourne ici, dans Node. La fenêtre
  * (desktop/renderer) affiche l'interface façon VS Code et communique par IPC :
@@ -12,8 +12,18 @@
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, safeStorage } = require("electron");
-// Keep package.name (project-frstcli) stable: Electron derives the legacy profile
-// directory from it, independently of the executable's new productName.
+const packageMetadata = require("../package.json");
+const PRODUCT_NAME = packageMetadata.build.productName;
+
+if (app.isPackaged) {
+    app.setName(PRODUCT_NAME);
+    const userDataDirectory = path.join(app.getPath("appData"), PRODUCT_NAME);
+    require("node:fs").mkdirSync(userDataDirectory, { recursive: true });
+    app.setPath("userData", userDataDirectory);
+    app.setPath("sessionData", userDataDirectory);
+    process.env.FS_DATA_DIR = userDataDirectory;
+    process.env.FS_STATE_DIR = userDataDirectory;
+}
 
 const { setUiBackend } = require("../src/ui-bridge");
 const { createDesktopBackend } = require("./backend");
@@ -562,7 +572,7 @@ function ptyCreate(cwdRel, cols, rows) {
     const pty = loadPty();
     if (!pty) throw new Error("node-pty indisponible : lancer « npm run rebuild:native ».");
     const shellInfo = require("./terminal-profiles").resolveTerminal(insideWorkspace(String(cwdRel || ".")));
-    const env = { ...process.env, TERM: "xterm-256color", COLORTERM: "truecolor", TERM_PROGRAM: "francestudents-code-Roblox" };
+    const env = { ...process.env, TERM: "xterm-256color", COLORTERM: "truecolor", TERM_PROGRAM: "francestudents-code-roblox" };
     delete env.NO_COLOR;
     if (!env.LANG) env.LANG = "fr_FR.UTF-8";
     const id = nextPtyId++;
@@ -1216,7 +1226,7 @@ function createWindow() {
         minWidth: 900,
         minHeight: 600,
         backgroundColor: "#1f1f1f",
-        title: "francestudents-code-Roblox",
+        title: PRODUCT_NAME,
         titleBarStyle: "hidden",
         titleBarOverlay: { color: "#181818", symbolColor: "#cccccc", height: 36 },
         ...(require("node:fs").existsSync(path.join(__dirname, "icon.png"))
@@ -1251,7 +1261,7 @@ function createWindow() {
         recovering = true;
         try {
             const { response } = await dialog.showMessageBox(createdWindow, {
-                type: "error", title: "Interface interrompue", message: "L’interface de francestudents-code-Roblox s’est arrêtée.",
+                type: "error", title: "Interface interrompue", message: `L’interface de ${PRODUCT_NAME} s’est arrêtée.`,
                 detail: `Code : ${rendererCode(details.reason)}. La tâche en cours est interrompue. Les modifications non enregistrées peuvent être perdues. Un diagnostic sera affiché à la réouverture.`,
                 buttons: ["Rouvrir l’interface", "Fermer"], defaultId: 0, cancelId: 1
             });
@@ -1264,7 +1274,7 @@ function createWindow() {
     });
     win.loadFile(path.join(__dirname, "renderer", "index.html")).catch(error => {
         stability.record("FST-104", { errorName: error.name, reason: "load-failed" });
-        dialog.showErrorBox("francestudents-code-Roblox — FST-104", "L’interface n’a pas pu être chargée. Relance l’application ou réinstalle le paquet officiel.");
+        dialog.showErrorBox(`${PRODUCT_NAME} — FST-104`, "L’interface n’a pas pu être chargée. Relance l’application ou réinstalle le paquet officiel.");
         app.quit();
     });
     win.on("closed", () => { win = null; });
@@ -1301,8 +1311,7 @@ if (!gotLock) {
         const updateSettings=require("../src/settings");
         const updateEnabled=app.isPackaged&&!process.env.PORTABLE_EXECUTABLE_DIR&&require("node:fs").existsSync(path.join(process.resourcesPath,"app-update.yml"));
         const startupUpdates=require("./startup-updates");
-        const updateRepository=startupUpdates.configuredRepository();
-        updates=require("./updates").createUpdateController({updater:updateEnabled?require("electron-updater").autoUpdater:null,enabled:updateEnabled,version:app.getVersion(),getPreference:()=>updateSettings.load().automaticUpdates!==false,savePreference:automaticUpdates=>updateSettings.save({automaticUpdates}),onChange:data=>send("appUpdate",data),checkRelease:app.isPackaged&&!updateEnabled&&updateRepository?version=>startupUpdates.checkPortableRelease(version,fetch,updateRepository):null,openDownload:url=>shell.openExternal(url)});
+        updates=require("./updates").createUpdateController({updater:updateEnabled?require("electron-updater").autoUpdater:null,enabled:updateEnabled,version:app.getVersion(),getPreference:()=>updateSettings.load().automaticUpdates!==false,savePreference:automaticUpdates=>updateSettings.save({automaticUpdates}),onChange:data=>send("appUpdate",data),checkRelease:app.isPackaged&&!updateEnabled?version=>startupUpdates.checkPortableRelease(version,fetch):null,openDownload:url=>shell.openExternal(url)});
 
         registerIpc();
         createWindow();
@@ -1312,7 +1321,7 @@ if (!gotLock) {
         setInterval(pushStatus, 2000).unref();
     }).catch(error => {
         stability.record("FST-402", { errorName: error.name, errorCode: error.code });
-        dialog.showErrorBox("francestudents-code-Roblox — FST-402", "L’application n’a pas pu démarrer. Un diagnostic sera proposé au prochain lancement.");
+        dialog.showErrorBox(`${PRODUCT_NAME} — FST-402`, "L’application n’a pas pu démarrer. Un diagnostic sera proposé au prochain lancement.");
         app.quit();
     });
 

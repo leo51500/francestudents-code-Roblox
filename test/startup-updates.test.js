@@ -13,29 +13,22 @@ test("startup offers the update before downloading, then preserves the ready ins
 });
 
 test("portable checks stable releases without downgrading or installing",async()=>{
-    const repository={owner:"gabdesing",repo:"francestudents-code-Roblox"};
     for(const [tag,status] of [["v1.1.3","available"],["v1.1.2","current"],["v1.1.1","current"],["v1.10.0","available"]]){
-        const result=await checkPortableRelease("1.1.2",async(url,options)=>{assert.match(url,/gabdesing\/francestudents-code-Roblox\/releases\/latest$/);assert.ok(options.signal);return Response.json({tag_name:tag});},repository);
+        const result=await checkPortableRelease("1.1.2",async(url,options)=>{assert.match(url,/leo51500\/francestudents-code-Roblox\/releases\/latest$/);assert.ok(options.signal);return Response.json({tag_name:tag});});
         assert.equal(result.status,status);
     }
-    await assert.rejects(checkPortableRelease("1.1.2",async()=>Response.json({tag_name:"v2.0.0",prerelease:true}),repository),/invalide/);
-    await assert.rejects(checkPortableRelease("1.1.2",async()=>new Response("offline",{status:503}),repository),/indisponible/);
+    await assert.rejects(checkPortableRelease("1.1.2",async()=>Response.json({tag_name:"v2.0.0",prerelease:true})),/invalide/);
+    await assert.rejects(checkPortableRelease("1.1.2",async()=>new Response("offline",{status:503})),/indisponible/);
 });
 
-test("the fork GitHub repository is the default update source",async()=>{
+test("the fork GitHub repository is the only update source",async()=>{
     const repository={owner:"leo51500",repo:"francestudents-code-Roblox"};
-    assert.deepEqual(configuredRepository({}),repository);
+    assert.deepEqual(configuredRepository(),repository);
+    assert.deepEqual(configuredRepository({FS_UPDATE_OWNER:"other-owner",FS_UPDATE_REPO:"other-repo"}),repository);
     const result=await checkPortableRelease("0.1.0",async(url)=>{assert.match(url,/leo51500\/francestudents-code-Roblox\/releases\/latest$/);return Response.json({tag_name:"v0.2.0"});});
     assert.equal(result.status,"available");
     assert.equal(result.canInstall,false);
     assert.match(result.downloadUrl,/github\.com\/leo51500\/francestudents-code-Roblox\/releases\/latest$/);
-});
-
-test("portable release source requires both repository fields",async()=>{
-    assert.deepEqual(configuredRepository({FS_UPDATE_OWNER:"gabdesing"}),{owner:"gabdesing",repo:""});
-    const result=await checkPortableRelease("0.1.0",async()=>{throw Error("unexpected request");},{owner:"gabdesing",repo:""});
-    assert.equal(result.status,"unavailable");
-    assert.match(result.message,/configuration .* invalide/i);
 });
 
 test("update controller stays unavailable when no source is configured",async()=>{

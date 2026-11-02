@@ -180,4 +180,4 @@ Ces identifiants ont été observés dans la capture réseau (`KNOWN_MODELS` dan
 ## Sécurité
 
 - Le cookie `next-auth.session-token` donne accès au compte. Ne le partage jamais et ne le commite jamais (`.env` est ignoré par git).
-- Le CLI enregistre la session dans `~/.francestudent-cli/session.json` (ou dans `FS_DATA_DIR`).
+- Le CLI enregistre la session dans `~/.francestudents-code-roblox/session.json` (ou dans `FS_DATA_DIR`).

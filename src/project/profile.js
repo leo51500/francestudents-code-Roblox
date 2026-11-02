@@ -10,7 +10,7 @@ const { CONFIG } = require("../config");
  * Profil évolutif : pré-prompt personnalisé + faits appris, avec un poids
  * renforcé à chaque nouvelle observation.
  *
- *  - "user"    : ~/.francestudent-cli/profile.json (commun à tous les projets)
+ *  - "user"    : ~/.francestudents-code-roblox/profile.json (commun à tous les projets)
  *  - "project" : <dossier du projet dans dataDir>/profile.json
  */
 

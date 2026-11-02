@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="desktop/icon.png" width="80" alt="Logo francestudents-code-Roblox" />
+<img src="desktop/icon.png" width="80" alt="Logo France-Students-code-Roblox" />
 
-# francestudents-code-Roblox
+# France-Students-code-Roblox
 
 **Un environnement de programmation en français, repris et adapté par GAB DESING.**
 
@@ -12,7 +12,7 @@
 
 > **Origine :** projet créé par [EsteG7](https://github.com/EsteG7/francestudents-ide), puis maintenu par [extraopaa](https://github.com/extraopaa). Cette reprise est modifiée par **GAB DESING**, mainteneur actuel. Les auteurs, crédits et licences d’origine sont conservés ; ce fork n’est pas une version officielle du projet amont.
 
-**Version 0.1.0** — nouvelle base de version pour cette reprise. Chaque push sur `main` incrémente automatiquement le numéro de correctif, crée un tag `vX.Y.Z` et publie une release Windows. Le titre de la release reprend le tag. L’installateur NSIS installé vérifie et télécharge les mises à jour depuis ces releases ; le paquet portable reste à mettre à jour manuellement.
+**Version 0.1.1** — chaque push sur `main` incrémente automatiquement le numéro de correctif, crée un tag `vX.Y.Z` et publie une release Windows. Le titre de la release reprend le tag. L’installateur NSIS installé vérifie et télécharge les mises à jour depuis ces releases ; le paquet portable reste à mettre à jour manuellement.
 
 ## Fonctionnalités conservées
 

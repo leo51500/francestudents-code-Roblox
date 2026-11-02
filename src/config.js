@@ -59,7 +59,7 @@ const CONFIG = {
     contextIgnoredFiles: ["package-lock.json"],
 
     // Persistance (mémoire, corbeille, sauvegardes, session)
-    dataDir: process.env.FS_DATA_DIR || path.join(os.homedir(), ".francestudent-cli"),
+    dataDir: process.env.FS_DATA_DIR || path.join(os.homedir(), ".francestudents-code-roblox"),
 
     debug: process.env.FS_DEBUG === "1"
 };

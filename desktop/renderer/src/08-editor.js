@@ -148,7 +148,7 @@ function syncEditorContext() {
 function updateBreadcrumbs(tab) {
     const bc = $("breadcrumbs");
     const name = tab ? tab.path.split("/").pop() : "";
-    document.title = tab ? `${name} — francestudents-code-Roblox` : "francestudents-code-Roblox";
+    document.title = tab ? `${name} — France-Students-code-Roblox` : "France-Students-code-Roblox";
     const tbTitle = $("tb-title");
     if (tbTitle) tbTitle.textContent = document.title;
     if (!bc) return;

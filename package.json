@@ -1,7 +1,7 @@
 {
-  "name": "project-frstcli",
+  "name": "francestudents-code-roblox",
   "version": "0.1.1",
-  "description": "francestudents-code-Roblox : agent de programmation en ligne de commande",
+  "description": "France-Students-code-Roblox : agent de programmation en ligne de commande",
   "maintainer": "GAB DESING",
   "repository": {
     "type": "git",
@@ -116,8 +116,8 @@
     "tsx": "^4.23.15"
   },
   "build": {
-    "appId": "fr.francestudent.code",
-    "productName": "francestudents-code-Roblox",
+    "appId": "com.gabdesing.francestudentscoderoblox",
+    "productName": "France-Students-code-Roblox",
     "asar": true,
     "extraMetadata": {
       "main": "desktop/main.js"
@@ -144,12 +144,14 @@
       ]
     },
     "portable": {
-      "artifactName": "francestudents-code-Roblox-${version}-portable.exe"
+      "artifactName": "France-Students-code-Roblox-${version}-portable.exe"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "francestudents-code-Roblox-${version}-setup.exe"
+      "shortcutName": "France-Students-code-Roblox",
+      "uninstallDisplayName": "France-Students-code-Roblox",
+      "artifactName": "France-Students-code-Roblox-${version}-setup.exe"
     }
   }
 }

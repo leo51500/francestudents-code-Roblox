@@ -8,7 +8,7 @@ function openReleaseHighlights(data,{automatic=false}={}){
     const top=centerNode("div","release-notes-top");top.append(centerNode("span","release-notes-badge",`NOUVEAUTÉS · ${data.version}`));
     const close=centerNode("button","release-notes-close","×");close.type="button";close.setAttribute("aria-label","Fermer les nouveautés");close.onclick=()=>releaseDialog.close();top.append(close);
     const heading=centerNode("h2","",data.headline);heading.id="release-highlights-title";
-    releaseDialog.append(top,centerNode("p","release-notes-brand","francestudents-code-Roblox"),heading,centerNode("p","release-notes-intro","Voici ce qui change dans cette version. Ton travail reste à sa place."));
+    releaseDialog.append(top,centerNode("p","release-notes-brand","France-Students-code-Roblox"),heading,centerNode("p","release-notes-intro","Voici ce qui change dans cette version. Ton travail reste à sa place."));
     const list=centerNode("div","release-notes-list");
     for(const item of data.items){const row=centerNode("div","release-notes-item"),icon=centerNode("span","release-notes-icon");icon.innerHTML=apiNoticeIcon(item.icon==="clock"?"wait":item.icon);const body=centerNode("div");body.append(centerNode("strong","",item.title),centerNode("p","",item.text));row.append(icon,body);list.append(row);}
     const footer=centerNode("div","release-notes-footer");
@@ -21,7 +21,7 @@ function openFileVersionsIntro(){
     const top=centerNode("div","release-notes-top");top.append(centerNode("span","release-notes-badge","NOUVEAU · VERSIONS DES FICHIERS"));
     const close=centerNode("button","release-notes-close","×");close.type="button";close.setAttribute("aria-label","Fermer la présentation");close.onclick=()=>releaseDialog.close();top.append(close);
     const heading=centerNode("h2","","Reviens avant une demande à l’agent");heading.id="release-highlights-title";
-    releaseDialog.append(top,centerNode("p","release-notes-brand","francestudents-code-Roblox"),heading,centerNode("p","release-notes-intro","Si une modification ne te convient pas, tu peux retrouver une version précédente de tes fichiers."));
+    releaseDialog.append(top,centerNode("p","release-notes-brand","France-Students-code-Roblox"),heading,centerNode("p","release-notes-intro","Si une modification ne te convient pas, tu peux retrouver une version précédente de tes fichiers."));
     const list=centerNode("div","release-notes-list");
     for(const [icon,title,text] of [
         ["clock","Une version locale avant la demande","Pour les projets ouverts, l’agent sauvegarde les fichiers enregistrés et non exclus avant chaque demande modifiable. Si la sauvegarde échoue, la demande est arrêtée."],

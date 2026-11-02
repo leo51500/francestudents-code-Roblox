@@ -11,14 +11,14 @@ Ce fichier s’adresse à toute personne ou tout assistant qui reprend le dépô
 
 ## Repères essentiels
 
-- **Produit** : francestudents-code-Roblox, application Electron en français ; CLI et TUI partagent son cœur Node.js.
+- **Produit** : France-Students-code-Roblox, application Electron en français ; CLI et TUI partagent son cœur Node.js.
 - **Origine** : projet de EsteG7 ; ce dépôt est le fork d’amélioration de extraopaa. Conserver les crédits et licences des composants tiers.
 - **Dépôt de ce fork** : `leo51500/francestudents-code-Roblox`. Vérifier les remotes avant toute opération distante. Ne pas pousser dans l’amont par inadvertance.
 - **Interface** : modifier `desktop/renderer/src/*.js`, puis exécuter `npm run build:renderer`. `desktop/renderer/app.js` est généré **et versionné** ; ne pas l’éditer directement. Les modules sont concaténés par numéro et partagent une portée globale.
 - **Style** : réutiliser les tokens et composants existants, en particulier `desktop/renderer/surfaces.css` et `desktop/renderer/src/46-shared-surfaces.js`. Conserver les identifiants des contrôles et l’accessibilité clavier ; vérifier aussi les petites fenêtres.
 - **Périmètre produit** : l’application conserve l’agent de programmation, l’éditeur, les fichiers, le terminal, le Git local, les skills et MCP. Ne pas réintroduire les intégrations retirées sans demande explicite.
 - **Historique** : le journal visible est distinct du contexte envoyé au modèle. Ne pas afficher les prompts internes ni supprimer les anciens échanges lors d’une compaction ou d’un nouveau chat.
-- **Données** : préserver l’identité de mise à jour (`build.appId`) et le dossier historique de données malgré le renommage du produit. Ne pas déplacer ou réinitialiser ces données sans migration explicite.
+- **Données** : l’application utilise `com.gabdesing.francestudentscoderoblox` et son propre dossier de profil `France-Students-code-Roblox`. Ne jamais relire, migrer ni supprimer les données de l’ancienne application.
 - **Stabilité** : maintenir le [répertoire des codes FST](docs/error-codes.md) avec le catalogue de `desktop/stability.js`. Ne pas inventer de cause quand seul un arrêt anormal est connu. Le diagnostic local reste limité aux métadonnées techniques, sans contenu de conversation, secret, trace complète ni envoi automatique.
 - **Plateforme** : l’application est distribuée uniquement pour Windows x64.
 - **Questions de l’agent** : `ask_user` déclenche le QCM ou le champ libre pendant une tâche ; ne pas détecter les questions à partir des points d’interrogation dans du texte arbitraire. Full accès n’auto-répond pas et Passer ne donne aucune autorisation. Conserver l’historique des questions et réponses.

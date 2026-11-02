@@ -20,7 +20,7 @@ function setup({ workspace = null, chatIdToCreate = "chat-123", deltas = [] } = 
         mode: state.mode,
     };
 
-    // Isole les tests du profil réel de l'utilisateur (~/.francestudent-cli/profile.json).
+    // Isole les tests du profil réel de l'utilisateur (~/.francestudents-code-roblox/profile.json).
     profile.buildPreprompt = () => "";
 
     const calls = { requestModel: [], promptContext: 0, touch: [] };

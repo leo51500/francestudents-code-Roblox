@@ -1,18 +1,16 @@
 "use strict";
 
-function configuredRepository(env = process.env) {
-    const owner = String(env.FS_UPDATE_OWNER || "").trim();
-    const repo = String(env.FS_UPDATE_REPO || "").trim();
-    return owner || repo ? { owner, repo } : { owner: "leo51500", repo: "francestudents-code-Roblox" };
+function configuredRepository() {
+    return { owner: "leo51500", repo: "francestudents-code-Roblox" };
 }
 
 function unavailable(message) {
     return { status: "unavailable", availableVersion: null, canInstall: false, downloadUrl: null, message };
 }
 
-// Portable builds may check a configured public repository, but never install themselves.
-async function checkPortableRelease(version, fetchImpl = fetch, repository = configuredRepository()) {
-    if (!repository) return unavailable("Aucune source de mise à jour n’est configurée.");
+// Portable builds can check public releases but never install themselves.
+async function checkPortableRelease(version, fetchImpl = fetch) {
+    const repository = configuredRepository();
     const { owner, repo } = repository;
     const validPart = value => typeof value === "string" && /^[A-Za-z0-9._-]{1,100}$/.test(value) && value !== "." && value !== "..";
     if (!validPart(owner) || !validPart(repo)) return unavailable("La configuration de la source de mise à jour est invalide.");

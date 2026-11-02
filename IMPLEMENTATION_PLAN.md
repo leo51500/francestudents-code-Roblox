@@ -16,7 +16,7 @@
   - `ink-select-input` (^6.2.0) : listes de choix (`ConfirmDialog` o/n/t, `/model`).
   - `ink-markdown` (^1.0.4) : rendu Markdown dans Ink. Paquet ancien : vérifier à l'étape 0 sa compatibilité avec Ink 8 et React 19, sinon garder `renderMarkdownLine`.
   - `tsx` (devDependency) : exécute directement les fichiers `.jsx` sans étape de build (développement, tests). Absent de `devDependencies` dans `package.json` au moment de la rédaction : à vérifier.
-- `index.js` appelle `run()` de `src/main.js` (plus de `dotenv` : chaque utilisateur se connecte au lancement, la session est stockée dans `~/.francestudent-cli/session.json`).
+- `index.js` appelle `run()` de `src/main.js` (plus de `dotenv` : chaque utilisateur se connecte au lancement, la session est stockée dans `~/.francestudents-code-roblox/session.json`).
 - `src/main.js` : `main()` = bannière, `initAuth()` / `promptAndLogin()`, restauration des conversations, puis boucle `askInput()` → `/commande` (`handleCommand`), question sur le projet, `runAgent()` ou `chatNormally()`.
 
 ### 1.2 Logique métier (à partager telle quelle)

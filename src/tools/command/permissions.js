@@ -150,7 +150,7 @@ function createStore(file) {
     return { file, load, list: listRules, add, remove, clear, allows, rules: rulesForDecision };
 }
 
-// Fichier du projet ouvert : ~/.francestudent-cli/projects/<projet>/permissions.json.
+// Fichier du projet ouvert : ~/.francestudents-code-roblox/projects/<projet>/permissions.json.
 function defaultFile() {
     return require("../../project/memory").projectPath(FILE_NAME);
 }

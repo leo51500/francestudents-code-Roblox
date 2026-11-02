@@ -195,7 +195,7 @@ function createClient({
         const result = await request("initialize", {
             protocolVersion: PROTOCOL_VERSION,
             capabilities: typeof getRoot === "function" ? { roots: { listChanged: false } } : {},
-            clientInfo: { name: "project-frstcli", version: "1.0.0" }
+            clientInfo: { name: "francestudents-code-roblox", version: require("../../package.json").version }
         });
 
         serverInfo = result.serverInfo || null;
