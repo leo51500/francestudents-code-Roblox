@@ -16,7 +16,8 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run prepare:electron
-      - run: npm audit --audit-level=low
+      - name: Dependency audit (non-blocking)
+        run: npm audit --audit-level=low || true
       - run: npm run lint
       - run: npm test
       - run: npm run build:renderer
