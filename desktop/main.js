@@ -13,7 +13,7 @@ const path = require("node:path");
 const fs = require("node:fs/promises");
 const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, safeStorage } = require("electron");
 const packageMetadata = require("../package.json");
-const PRODUCT_NAME = packageMetadata.build.productName;
+const PRODUCT_NAME = packageMetadata?.build?.productName ?? packageMetadata?.productName ?? "France-Students-code-Roblox";
 
 if (app.isPackaged) {
     app.setName(PRODUCT_NAME);
