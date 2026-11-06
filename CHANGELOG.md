@@ -1,5 +1,11 @@
 # Journal des modifications
 
+## 0.1.7 — Apparence et mode de réponse
+
+- Ajout des raccourcis `Ctrl++`, `Ctrl+-` et `Ctrl+0` pour régler le zoom de l’interface ; le niveau choisi est mémorisé.
+- Le mode Auto, Agent ou Discussion est maintenant visible près de la zone de saisie, avec une explication de chaque mode.
+- Assombrissement de l’interface et suppression du fond noir opaque de l’icône Windows.
+
 ## 0.1.3 — Correction du crash de démarrage
 
 - Correction d’un crash au démarrage de l’application lorsqu’`build.productName` n’était pas présent dans le package de configuration.

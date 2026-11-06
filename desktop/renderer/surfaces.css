@@ -153,7 +153,10 @@ dialog::backdrop { background: #080b12b3; backdrop-filter: blur(4px); }
 .chat-tools-menu .composer-icon-button {color:var(--fg);}
 .chat-tools-menu .composer-beta {margin-left:auto;}
 .chat-tools-menu .composer-icon-button span {font-size:12px;}
-.chat-mode-setting {display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;color:var(--fg-dim);padding:12px 8px 5px;margin-top:8px;border-top:1px solid var(--border);}
+.chat-response-setting {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 8px;padding:8px 10px 0;}
+.chat-response-setting label {font-size:11px;color:var(--fg-dim);}
+.chat-response-setting #mode-select {width:100%;max-width:none;height:28px;font-size:11px;}
+.chat-mode-description {grid-column:1/-1;min-width:0;font-size:10px;line-height:1.4;color:var(--fg-faint);}
 .chat-tools-menu #btn-clear {display:flex;gap:6px;align-items:center;padding:7px;border-radius:6px;}
 .entry.session-notices {font-size:11px;color:var(--fg-dim);padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:transparent;}
 .session-notices summary {cursor:pointer;}

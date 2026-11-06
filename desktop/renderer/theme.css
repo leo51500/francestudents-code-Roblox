@@ -1,21 +1,22 @@
 /* Thème noir francestudents-code-Roblox (surcharge de styles.css). */
 :root {
-    --bg: #000000;
-    --bg-side: #080808;
-    --bg-activity: #050505;
-    --bg-panel: #0c0c0c;
-    --bg-input: #111111;
-    --bg-hover: #1c1c1c;
-    --bg-active: #262626;
-    --border: #242424;
-    --border-strong: #404040;
-    --fg: #eeeeee;
+    --app-zoom: 1;
+    --bg: #050607;
+    --bg-side: #090b0d;
+    --bg-activity: #090b0d;
+    --bg-panel: #0d1114;
+    --bg-input: #10171b;
+    --bg-hover: #171d22;
+    --bg-active: #202a31;
+    --border: #1b2329;
+    --border-strong: #2b353d;
+    --fg: #edf2f6;
     --fg-strong: #ffffff;
-    --fg-dim: #a0a0a0;
-    --fg-faint: #777777;
-    --accent: #303030;
-    --accent-hover: #404040;
-    --accent-soft: rgba(255, 255, 255, 0.10);
+    --fg-dim: #b9c3cc;
+    --fg-faint: #83909b;
+    --accent: #2c353d;
+    --accent-hover: #3d4a56;
+    --accent-soft: rgba(255, 255, 255, 0.08);
     --link: #ffffff;
     --danger: #f85149;
     --warn: #cca700;
@@ -25,7 +26,7 @@
     --sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
     --titlebar: 36px;
     --shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
-    --brand: linear-gradient(135deg, #ffffff, #a0a0a0);
+    --brand: linear-gradient(135deg, #f5f7fa, #8ea0ad);
 }
 
 html,
@@ -36,6 +37,8 @@ body {
     font-size: 13px;
     -webkit-font-smoothing: antialiased;
 }
+
+body { zoom: var(--app-zoom, 1); }
 
 ::selection {
     background: #264f78;

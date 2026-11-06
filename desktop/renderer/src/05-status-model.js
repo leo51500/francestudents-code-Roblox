@@ -52,7 +52,10 @@ function applyStatus(s) {
     }
     renderQuota();
     refreshQuotaAtRequestCheckpoint(s.usage?.requests);
-    if (s.mode) $("mode-select").value = s.mode;
+    if (s.mode) {
+        $("mode-select").value = s.mode;
+        if (typeof updateChatModeDescription === "function") updateChatModeDescription();
+    }
 
     if ((s.workspace || null) !== ui.workspace) {
         ui.workspace = s.workspace || null;

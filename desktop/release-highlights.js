@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.7":{headline:"Une interface plus lisible et personnalisable.",items:[
+        {icon:"spark",title:"Zoom au clavier",text:"Ctrl++ et Ctrl+- ajustent le zoom ; Ctrl+0 le réinitialise. Le réglage est mémorisé."},
+        {icon:"chat",title:"Mode de réponse visible",text:"Choisis Auto, Agent ou Discussion près de la zone de saisie et consulte une explication de chaque mode."},
+        {icon:"tools",title:"Interface et icône affinées",text:"L’interface est plus sombre et l’icône Windows n’a plus de fond noir opaque."}
+    ]},
     "0.1.3":{headline:"Correction du crash au démarrage.",items:[
         {icon:"bug",title:"Crash de démarrage corrigé",text:"Le nom du produit est maintenant chargé avec une vérification sûre pour éviter l’erreur au lancement."},
         {icon:"shield",title:"Protection des données de configuration",text:"Un fallback est appliqué si la section build manque dans le package."},

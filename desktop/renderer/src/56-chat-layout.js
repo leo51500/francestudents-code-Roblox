@@ -21,10 +21,45 @@ const moreChatHeading = document.createElement("div"); moreChatHeading.className
 moreChatMenu.append(moreChatHeading, document.querySelector(".composer-topline"));
 const clearChatLabel = document.createElement("span"); clearChatLabel.textContent = "Effacer l’affichage";
 $("btn-clear").append(clearChatLabel); moreChatMenu.querySelector(".composer-utilities").append($("btn-clear"));
-const modeSetting = document.createElement("label"); modeSetting.className = "chat-mode-setting";
-const modeLabel = document.createElement("span"); modeLabel.textContent = "Mode de conversation";
-modeSetting.append(modeLabel, $("mode-select")); moreChatMenu.append(modeSetting);
 document.body.append(moreChatMenu);
+const responseSetting = document.createElement("div"); responseSetting.className = "chat-response-setting";
+const responseLabel = document.createElement("label"); responseLabel.htmlFor = "mode-select"; responseLabel.textContent = "Mode de réponse";
+const responseDescription = document.createElement("span"); responseDescription.id = "chat-mode-description"; responseDescription.className = "chat-mode-description";
+const responseSelect = $("mode-select");
+responseSelect.setAttribute("aria-label", "Mode de réponse");
+responseSelect.setAttribute("aria-describedby", responseDescription.id);
+responseSelect.title = "Choisis comment l’agent répond à tes demandes.";
+responseSetting.append(responseLabel, responseSelect, responseDescription);
+const composerBox = document.querySelector("#composer .composer-box");
+composerBox.insertBefore(responseSetting, composerBox.querySelector(".composer-topline"));
+function updateChatModeDescription() {
+    const descriptions = {
+        auto: "L’agent choisit les outils selon ta demande.",
+        agent: "L’agent utilise les outils du projet quand un dossier est ouvert.",
+        chat: "Discussion sans utilisation des outils du projet."
+    };
+    responseDescription.textContent = descriptions[responseSelect.value] || descriptions.auto;
+}
+responseSelect.addEventListener("change", updateChatModeDescription);
+updateChatModeDescription();
+const interfaceZoomStorageKey = "frst-ui-zoom";
+function applyInterfaceZoom(value) {
+    const zoom = Math.max(80, Math.min(140, Number(value) || 100));
+    document.documentElement.style.setProperty("--app-zoom", String(zoom / 100));
+    localStorage.setItem(interfaceZoomStorageKey, String(zoom));
+    return zoom;
+}
+applyInterfaceZoom(localStorage.getItem(interfaceZoomStorageKey) || 100);
+document.addEventListener("keydown", event => {
+    if (!event.ctrlKey || event.altKey || event.metaKey) return;
+    const zoomIn = event.key === "+" || event.code === "NumpadAdd";
+    const zoomOut = event.key === "-" || event.code === "NumpadSubtract";
+    const reset = event.key === "0" || event.code === "Numpad0";
+    if (!zoomIn && !zoomOut && !reset) return;
+    event.preventDefault();
+    const currentZoom = Number(localStorage.getItem(interfaceZoomStorageKey)) || 100;
+    applyInterfaceZoom(reset ? 100 : currentZoom + (zoomIn ? 10 : -10));
+});
 for (const [id, label] of [["favorite-open", "Prompts favoris"], ["draft-save-favorite", "Enregistrer le brouillon en favori"], ["conversation-export", "Exporter la conversation"]]) {
     const text = document.createElement("span"); text.textContent = label; $(id).append(text);
 }
