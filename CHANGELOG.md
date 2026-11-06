@@ -1,5 +1,10 @@
 # Journal des modifications
 
+## 0.1.9 — Une conversation plus claire
+
+- Refonte visuelle du chat avec des bulles de message sobres, un fil de lecture mieux espacé et une zone de saisie recentrée.
+- Alignement corrigé des icônes et dimensions mieux maîtrisées pour éviter les boutons qui débordent.
+
 ## 0.1.8 — Animations et mises à jour plus simples
 
 - Ajout d’animations discrètes pour les messages, menus, panneaux, indicateurs d’activité et barres de progression, désactivées avec la réduction des animations.

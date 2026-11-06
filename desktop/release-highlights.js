@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.9":{headline:"Une conversation plus claire et plus agréable.",items:[
+        {icon:"chat",title:"Chat repensé",text:"Les messages, les réponses et le code sont mieux espacés dans une conversation recentrée."},
+        {icon:"spark",title:"Saisie plus confortable",text:"La zone de saisie et ses outils sont regroupés dans un panneau compact, adapté aux petites fenêtres."},
+        {icon:"tools",title:"Boutons mieux ajustés",text:"Les icônes sont centrées et les boutons restent dans les limites de leur conteneur."}
+    ]},
     "0.1.8":{headline:"Des animations discrètes et des mises à jour plus simples.",items:[
         {icon:"spark",title:"Animations plus fluides",text:"Les messages, panneaux, menus et indicateurs apparaissent en douceur, avec respect de la réduction des animations."},
         {icon:"tools",title:"Mise à jour sans assistant",text:"Les nouvelles versions téléchargées s’installent sans afficher la fenêtre NSIS à chaque mise à jour."},
