@@ -1,11 +1,6 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
-    "0.1.11":{headline:"Le workflow peut signer les futures versions Windows.",items:[
-        {icon:"shield",title:"Prise en charge d’un certificat approuvé",text:"electron-builder peut signer les exécutables avec un certificat PFX configuré de façon sécurisée dans les secrets GitHub."},
-        {icon:"tools",title:"Certificat temporaire",text:"Le certificat est décodé uniquement sur le runner Windows et supprimé après la compilation."},
-        {icon:"chat",title:"Configuration nécessaire",text:"Les releases restent non signées tant que les secrets du certificat et de son mot de passe ne sont pas configurés."}
-    ]},
     "0.1.10":{headline:"Les mises à jour gardent leur confirmation Windows.",items:[
         {icon:"tools",title:"Téléchargement automatique conservé",text:"Les mises à jour continuent de se télécharger en arrière-plan."},
         {icon:"shield",title:"Confirmation de l’installateur",text:"À l’installation, la fenêtre Windows reste visible pour confirmer le lancement de l’installateur."},

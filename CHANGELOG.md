@@ -1,10 +1,5 @@
 # Journal des modifications
 
-## 0.1.11 — Préparation de la signature Windows
-
-- Le workflow de publication accepte un certificat PFX approuvé via les secrets GitHub `WIN_CSC_LINK` et `WIN_CSC_KEY_PASSWORD`.
-- Sans certificat configuré, la release reste non signée ; aucune signature n’est activée automatiquement.
-
 ## 0.1.10 — Confirmation Windows lors de l’installation
 
 - L’installateur s’ouvre lors de l’installation d’une mise à jour afin de permettre la confirmation Windows.

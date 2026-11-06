@@ -36,47 +36,8 @@ jobs:
           }
           "tag=$tag" >> $env:GITHUB_OUTPUT
       - run: npm run build:renderer
-      - name: Prepare Windows signing certificate
-        id: signing
-        shell: pwsh
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: |
-          $hasCertificate = -not [string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)
-          $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)
-          if ($hasCertificate -ne $hasPassword) {
-            throw "Configure les secrets WIN_CSC_LINK et WIN_CSC_KEY_PASSWORD ensemble."
-          }
-          if (-not $hasCertificate) {
-            Write-Warning "Certificat absent : cette release sera non signée. Configure les secrets WIN_CSC_LINK et WIN_CSC_KEY_PASSWORD."
-            "csc_link=" >> $env:GITHUB_OUTPUT
-            exit 0
-          }
-          try {
-            $certificateBytes = [Convert]::FromBase64String($env:WIN_CSC_LINK)
-          } catch {
-            throw "WIN_CSC_LINK doit contenir le certificat PFX encodé en Base64."
-          }
-          if ($certificateBytes.Length -eq 0) {
-            throw "Le certificat PFX configuré dans WIN_CSC_LINK est vide."
-          }
-          $certificatePath = Join-Path $env:RUNNER_TEMP "windows-signing.pfx"
-          [IO.File]::WriteAllBytes($certificatePath, $certificateBytes)
-          "csc_link=$certificatePath" >> $env:GITHUB_OUTPUT
       - name: Build Windows installer
         run: npx electron-builder --win nsis --x64 --publish never --config.npmRebuild=false
-        env:
-          CSC_LINK: ${{ steps.signing.outputs.csc_link }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-      - name: Remove temporary signing certificate
-        if: always()
-        shell: pwsh
-        run: |
-          $certificatePath = Join-Path $env:RUNNER_TEMP "windows-signing.pfx"
-          if (Test-Path -LiteralPath $certificatePath) {
-            Remove-Item -LiteralPath $certificatePath -Force
-          }
       - name: Generate SHA256SUMS
         shell: pwsh
         run: |
