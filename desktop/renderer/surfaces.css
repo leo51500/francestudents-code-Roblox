@@ -232,3 +232,155 @@ dialog::backdrop { background: #080b12b3; backdrop-filter: blur(4px); }
     color: #ffffff !important;
     border-color: var(--border-strong) !important;
 }
+
+:is(#app, body) button {
+    border-radius: 11px;
+    transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+:is(#app, body) button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+:is(#app, body) button:active:not(:disabled) {
+    transform: translateY(0);
+}
+:is(#app, body) button.icon-btn,
+:is(#app, body) button.icon-control {
+    border-radius: 50%;
+}
+:is(#app, body) button.primary {
+    background: #e4ebf0 !important;
+    border-color: transparent !important;
+    color: #10161b !important;
+    font-weight: 650;
+}
+:is(#app, body) button.primary:hover:not(:disabled) {
+    background: #ffffff !important;
+    border-color: transparent !important;
+    color: #10161b !important;
+}
+:is(#app, body) button:focus-visible {
+    outline: 2px solid #dfe7ef;
+    outline-offset: 2px;
+}
+:is(#app, body) :is(input:not([type="checkbox"]):not([type="range"]), select, textarea) {
+    border-radius: 9px;
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(#app, body) button { transition: none; }
+    :is(#app, body) button:hover:not(:disabled),
+    :is(#app, body) button:active:not(:disabled) { transform: none; }
+}
+
+.transcript > .entry {
+    animation: fs-message-in .18s cubic-bezier(.2,.7,.25,1) both;
+}
+.chat-access-menu:popover-open,
+.palette:not(.hidden),
+#model-menu:not(.hidden),
+.context-menu:not(.hidden),
+.slash-menu:not(.hidden),
+.modal:not(.hidden),
+#agent-favorites:not(.hidden),
+#prompt-zone:not(.hidden),
+dialog[open]:not(.release-highlights) {
+    animation: fs-overlay-in .16s ease-out both;
+}
+#app.view-settings #settings-view,
+#app.view-ext #ext-view,
+#agent[data-tab="activity"] #agent-activity,
+#agent[data-tab="backups"] #agent-backups,
+#agent[data-tab="usage"] #agent-usage {
+    animation: fs-panel-in .18s cubic-bezier(.2,.7,.25,1) both;
+}
+.spinner .dot {
+    position: relative;
+    animation: fs-loading-dot .9s ease-in-out infinite;
+}
+.spinner .dot::before,
+.spinner .dot::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--link);
+}
+.spinner .dot::before { left: -12px; animation: fs-loading-dot .9s .15s ease-in-out infinite; }
+.spinner .dot::after { left: 12px; animation: fs-loading-dot .9s .3s ease-in-out infinite; }
+.usage-progress > span,
+.agent-live-plan progress::-webkit-progress-value,
+#startup-update-progress::-webkit-progress-value,
+#studio-update-progress::-webkit-progress-value {
+    transition: width .35s ease;
+}
+@keyframes fs-message-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fs-overlay-in {
+    from { opacity: 0; transform: translateY(5px) scale(.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fs-panel-in {
+    from { opacity: 0; transform: translateX(7px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fs-loading-dot {
+    0%, 60%, 100% { opacity: .35; transform: scale(.8); }
+    30% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .transcript > .entry,
+    .chat-access-menu:popover-open,
+    .palette:not(.hidden),
+    #model-menu:not(.hidden),
+    .context-menu:not(.hidden),
+    .slash-menu:not(.hidden),
+    .modal:not(.hidden),
+    #agent-favorites:not(.hidden),
+    #prompt-zone:not(.hidden),
+    dialog[open]:not(.release-highlights),
+    #app.view-settings #settings-view,
+    #app.view-ext #ext-view,
+    #agent[data-tab="activity"] #agent-activity,
+    #agent[data-tab="backups"] #agent-backups,
+    #agent[data-tab="usage"] #agent-usage,
+    .spinner .dot,
+    .spinner .dot::before,
+    .spinner .dot::after {
+        animation: none;
+    }
+    .usage-progress > span,
+    .agent-live-plan progress::-webkit-progress-value,
+    #startup-update-progress::-webkit-progress-value,
+    #studio-update-progress::-webkit-progress-value {
+        transition: none;
+    }
+}
+.studio-reduced-motion .transcript > .entry,
+.studio-reduced-motion .chat-access-menu:popover-open,
+.studio-reduced-motion .palette:not(.hidden),
+.studio-reduced-motion #model-menu:not(.hidden),
+.studio-reduced-motion .context-menu:not(.hidden),
+.studio-reduced-motion .slash-menu:not(.hidden),
+.studio-reduced-motion .modal:not(.hidden),
+.studio-reduced-motion #agent-favorites:not(.hidden),
+.studio-reduced-motion #prompt-zone:not(.hidden),
+.studio-reduced-motion dialog[open]:not(.release-highlights),
+.studio-reduced-motion #app.view-settings #settings-view,
+.studio-reduced-motion #app.view-ext #ext-view,
+.studio-reduced-motion #agent[data-tab="activity"] #agent-activity,
+.studio-reduced-motion #agent[data-tab="backups"] #agent-backups,
+.studio-reduced-motion #agent[data-tab="usage"] #agent-usage,
+.studio-reduced-motion .spinner .dot,
+.studio-reduced-motion .spinner .dot::before,
+.studio-reduced-motion .spinner .dot::after {
+    animation: none !important;
+}
+.studio-reduced-motion .usage-progress > span,
+.studio-reduced-motion .agent-live-plan progress::-webkit-progress-value,
+.studio-reduced-motion #startup-update-progress::-webkit-progress-value,
+.studio-reduced-motion #studio-update-progress::-webkit-progress-value {
+    transition: none !important;
+}

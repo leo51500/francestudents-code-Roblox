@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.8":{headline:"Des animations discrètes et des mises à jour plus simples.",items:[
+        {icon:"spark",title:"Animations plus fluides",text:"Les messages, panneaux, menus et indicateurs apparaissent en douceur, avec respect de la réduction des animations."},
+        {icon:"tools",title:"Mise à jour sans assistant",text:"Les nouvelles versions téléchargées s’installent sans afficher la fenêtre NSIS à chaque mise à jour."},
+        {icon:"shield",title:"Installation après fermeture",text:"L’installation reste déclenchée par la mise à jour téléchargée et la fermeture de l’application."}
+    ]},
     "0.1.7":{headline:"Une interface plus lisible et personnalisable.",items:[
         {icon:"spark",title:"Zoom au clavier",text:"Ctrl++ et Ctrl+- ajustent le zoom ; Ctrl+0 le réinitialise. Le réglage est mémorisé."},
         {icon:"chat",title:"Mode de réponse visible",text:"Choisis Auto, Agent ou Discussion près de la zone de saisie et consulte une explication de chaque mode."},

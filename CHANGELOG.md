@@ -1,5 +1,10 @@
 # Journal des modifications
 
+## 0.1.8 — Animations et mises à jour plus simples
+
+- Ajout d’animations discrètes pour les messages, menus, panneaux, indicateurs d’activité et barres de progression, désactivées avec la réduction des animations.
+- Installation silencieuse des mises à jour téléchargées pour éviter l’assistant NSIS à chaque mise à jour.
+
 ## 0.1.7 — Apparence et mode de réponse
 
 - Ajout des raccourcis `Ctrl++`, `Ctrl+-` et `Ctrl+0` pour régler le zoom de l’interface ; le niveau choisi est mémorisé.
