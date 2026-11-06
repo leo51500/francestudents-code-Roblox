@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.10":{headline:"Les mises à jour gardent leur confirmation Windows.",items:[
+        {icon:"tools",title:"Téléchargement automatique conservé",text:"Les mises à jour continuent de se télécharger en arrière-plan."},
+        {icon:"shield",title:"Confirmation de l’installateur",text:"À l’installation, la fenêtre Windows reste visible pour confirmer le lancement de l’installateur."},
+        {icon:"spark",title:"Pas de certificat requis pour ce changement",text:"Le comportement interactif permet de répondre à Windows sans modifier la signature des versions."}
+    ]},
     "0.1.9":{headline:"Une conversation plus claire et plus agréable.",items:[
         {icon:"chat",title:"Chat repensé",text:"Les messages, les réponses et le code sont mieux espacés dans une conversation recentrée."},
         {icon:"spark",title:"Saisie plus confortable",text:"La zone de saisie et ses outils sont regroupés dans un panneau compact, adapté aux petites fenêtres."},

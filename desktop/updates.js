@@ -35,7 +35,7 @@ function createUpdateController({updater,enabled=false,version="",getPreference=
             await downloading;
         }else if(type==="install"){
             if(state.status!=="downloaded")throw new Error("Télécharge d’abord la mise à jour.");
-            updater.quitAndInstall(true,true);
+            updater.quitAndInstall(false,true);
         }else throw new Error("Action de mise à jour inconnue.");
         return {...state};
     }

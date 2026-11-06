@@ -1,5 +1,10 @@
 # Journal des modifications
 
+## 0.1.10 — Confirmation Windows lors de l’installation
+
+- L’installateur s’ouvre lors de l’installation d’une mise à jour afin de permettre la confirmation Windows.
+- Le téléchargement en arrière-plan des mises à jour reste automatique.
+
 ## 0.1.9 — Une conversation plus claire
 
 - Refonte visuelle du chat avec des bulles de message sobres, un fil de lecture mieux espacé et une zone de saisie recentrée.
