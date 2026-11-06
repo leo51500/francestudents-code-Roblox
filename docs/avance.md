@@ -51,7 +51,18 @@ Les modes de permission contrôlent les confirmations de l’agent, pas les droi
 
 Le panneau Git local affiche l’état, le diff, les commits et l’historique du dépôt ouvert. Il ne remplace pas l’usage explicite de Git depuis un terminal.
 
-Les mises à jour automatiques utilisent les releases de `leo51500/francestudents-code-Roblox`. Elles sont disponibles pour l’application Windows installée par NSIS ; le paquet portable peut signaler une version publiée, mais doit être remplacé manuellement. Chaque push sur `main` déclenche `.github/workflows/release-win.yml`, qui incrémente le correctif de `package.json`, crée un tag `vX.Y.Z` et publie la release sous le même titre, avec le `.exe`, son `.blockmap`, `latest.yml` et `SHA256SUMS.txt`. `electron-updater` lit `latest.yml` dans la release GitHub. Les binaires ne sont pas signés par défaut ; aucun nom d’éditeur n’est imposé à la vérification des mises à jour.
+Les mises à jour automatiques utilisent les releases de `leo51500/francestudents-code-Roblox`. Elles sont disponibles pour l’application Windows installée par NSIS ; le paquet portable peut signaler une version publiée, mais doit être remplacé manuellement. Chaque push sur `main` déclenche `.github/workflows/release-win.yml`, qui incrémente le correctif de `package.json`, crée un tag `vX.Y.Z` et publie la release sous le même titre, avec le `.exe`, son `.blockmap`, `latest.yml` et `SHA256SUMS.txt`.
+
+Le workflow signe l’application Windows avec electron-builder si les secrets GitHub `WIN_CSC_LINK` et `WIN_CSC_KEY_PASSWORD` sont configurés. `WIN_CSC_LINK` doit contenir le certificat de signature PFX encodé en Base64 ; le workflow le décode temporairement sur le runner Windows et efface le fichier après la compilation. `WIN_CSC_KEY_PASSWORD` contient son mot de passe. Sans ces deux secrets, la compilation continue mais la release reste non signée et Smart App Control peut la bloquer. Il faut un certificat de signature de code approuvé par Windows ; un certificat auto-signé ne convient pas à cette fin. `electron-updater` lit `latest.yml` dans la release GitHub et vérifie la signature de l’installateur mis à jour.
+
+Pour préparer les secrets, obtenir d’abord un certificat PFX auprès d’un fournisseur de signature de code reconnu, puis depuis un poste sûr, avec GitHub CLI connecté au dépôt :
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\chemin\certificat.pfx")) | gh secret set WIN_CSC_LINK --repo leo51500/francestudents-code-Roblox
+gh secret set WIN_CSC_KEY_PASSWORD --repo leo51500/francestudents-code-Roblox
+```
+
+La seconde commande demande le mot de passe sans l’inscrire dans le dépôt. Ne jamais committer le PFX ou son mot de passe, ni les envoyer dans une conversation.
 
 ## Données et crédits
 
