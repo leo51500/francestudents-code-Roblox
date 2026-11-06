@@ -15,7 +15,7 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run prepare:electron
-      - run: npm audit --audit-level=low
+      - run: npm audit --audit-level=low --package-lock-only
       - run: npm run build:renderer
       - run: npm run lint
       - run: npm run check:renderer
