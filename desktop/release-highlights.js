@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.14":{headline:"Les mises à jour sont automatiques et l’interface encore plus sombre.",items:[
+        {icon:"tools",title:"Mise à jour en arrière-plan",text:"Les versions installées se téléchargent automatiquement et s’installent à la fermeture de l’application."},
+        {icon:"shield",title:"Installateur simplifié",text:"L’assistant ne redemande plus le choix entre installation utilisateur et installation pour tous."},
+        {icon:"spark",title:"Thème noir renforcé",text:"Les panneaux, menus et boutons principaux utilisent désormais des surfaces beaucoup plus sombres."}
+    ]},
     "0.1.13":{headline:"Un espace Roblox + Blender, un lanceur et des notifications.",items:[
         {icon:"tools",title:"Pipeline Roblox + Blender",text:"Des skills et connexions MCP intégrés accompagnent la création dans Blender, les LOD, l’upload et l’insertion dans Studio."},
         {icon:"spark",title:"Applications et fichiers",text:"Détecte et ouvre les applications Windows, puis ouvre un fichier ou dossier dans VS Code, l’Explorateur ou une autre application."},

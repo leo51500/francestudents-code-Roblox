@@ -64,12 +64,4 @@ const CONFIG = {
     debug: process.env.FS_DEBUG === "1"
 };
 
-// Identifiants d'agents observés dans la capture réseau.
-const KNOWN_MODELS = [
-    { id: -1002, name: "GPT 6 Luna" },
-    { id: -1003, name: "GPT 6.1 Sol" },
-    { id: -2002, name: "Claude Haiku 5.5" },
-    { id: -2001, name: "Claude Opus 5.5" }
-];
-
-module.exports = { CONFIG, KNOWN_MODELS };
+module.exports = { CONFIG };

@@ -61,6 +61,7 @@ document.addEventListener("mousedown", (ev) => {
     if (!modelMenuEl.classList.contains("hidden") &&
         !modelMenuEl.contains(ev.target) &&
         !ev.target.closest("#btn-model") &&
+        !ev.target.closest("#btn-project") &&
         !ev.target.closest("#btn-history") &&
         !ev.target.closest("#st-model")) {
         hideModelMenu();
@@ -228,4 +229,3 @@ api.onEvent((channel, data) => {
             break;
     }
 });
-

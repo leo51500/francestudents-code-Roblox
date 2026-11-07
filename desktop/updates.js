@@ -25,7 +25,7 @@ function createUpdateController({updater,enabled=false,version="",getPreference=
         if(!enabled||!updater)return {...state};
         if(type==="check"){
             if(["downloading","downloaded"].includes(state.status))return {...state};
-            if(!checking)checking=Promise.resolve().then(()=>{if(payload.startup)updater.autoDownload=false;return updater.checkForUpdates();}).catch(()=>publish({status:"error",message:"Impossible de vérifier la version publiée. Vérifie la connexion ou réessaie plus tard."})).finally(()=>{updater.autoDownload=state.automatic;checking=null;});
+            if(!checking)checking=Promise.resolve().then(()=>updater.checkForUpdates()).catch(()=>publish({status:"error",message:"Impossible de vérifier la version publiée. Vérifie la connexion ou réessaie plus tard."})).finally(()=>{checking=null;});
             await checking;
         }else if(type==="download"){
             if(downloading||state.status==="downloading"||state.status==="downloaded")return {...state};

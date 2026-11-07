@@ -1,16 +1,17 @@
 :root {
+    color-scheme: dark;
     --bg: #000000;
-    --bg-side: #080808;
-    --bg-activity: #050505;
-    --bg-panel: #0c0c0c;
-    --bg-input: #111111;
-    --bg-hover: #1c1c1c;
-    --bg-active: #262626;
-    --border: #242424;
+    --bg-side: #040404;
+    --bg-activity: #030303;
+    --bg-panel: #080808;
+    --bg-input: #0b0b0b;
+    --bg-hover: #141414;
+    --bg-active: #1b1b1b;
+    --border: #171717;
     --fg: #eeeeee;
     --fg-dim: #a0a0a0;
-    --accent: #303030;
-    --accent-hover: #404040;
+    --accent: #242424;
+    --accent-hover: #303030;
     --danger: #c74e39;
     --warn: #cca700;
     --ok: #89d185;

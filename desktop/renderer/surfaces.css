@@ -264,15 +264,15 @@ dialog::backdrop { background: #080b12b3; backdrop-filter: blur(4px); }
     padding: 0;
 }
 :is(#app, body) button.primary {
-    background: #e4ebf0 !important;
+    background: var(--accent) !important;
     border-color: transparent !important;
-    color: #10161b !important;
+    color: var(--fg-strong) !important;
     font-weight: 650;
 }
 :is(#app, body) button.primary:hover:not(:disabled) {
-    background: #ffffff !important;
+    background: var(--accent-hover) !important;
     border-color: transparent !important;
-    color: #10161b !important;
+    color: var(--fg-strong) !important;
 }
 :is(#app, body) button:focus-visible {
     outline: 2px solid #dfe7ef;
@@ -419,7 +419,7 @@ dialog[open]:not(.release-highlights) {
     box-sizing: border-box;
     margin: 0 0 0 auto;
     padding: 12px 16px;
-    border: 1px solid #292929;
+    border: 1px solid var(--border-strong);
     border-radius: 18px 18px 5px 18px;
     background: #111111;
     line-height: 1.7;

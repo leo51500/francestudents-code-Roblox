@@ -103,10 +103,10 @@ async function renderDir(container, rel, depth) {
     }
 }
 
-async function openProject() {
+async function openProject(directory = null) {
     if (ui.tabs.some((t) => t.dirty) && !await confirmStudioAction("Des fichiers ne sont pas enregistrés. Changer de projet quand même ?")) return;
     try {
-        const ws = await api.openProject();
+        const ws = await api.openProject(directory);
         if (ws && ws !== ui.workspace) {
             ui.workspace = ws;
             onWorkspaceChanged();
@@ -125,4 +125,3 @@ function onWorkspaceChanged() {
     clearChanges();
     renderTree();
 }
-

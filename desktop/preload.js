@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld("frst", {
     setModel: (id) => call("setModel", id),
     setEditorContext: (files, active) => call("setEditorContext", files, active),
     openProject: (dir) => call("openProject", dir ?? null),
+    knownProjects: () => call("knownProjects"),
     listDir: (rel) => call("listDir", rel ?? "."),
     readFile: (rel) => call("readFile", rel),
     writeFile: (rel, content,options) => call("writeFile", rel, content,options||{}),

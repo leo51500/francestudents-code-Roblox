@@ -280,7 +280,7 @@ function createDesktopBackend(send) {
 
         // ---- Appelées par le processus principal (hors port) ----
 
-        /** Liste des agents (modèles) disponibles. Ne lève jamais. */
+        /** Liste des agents du service et des fournisseurs personnalisés. Ne lève jamais. */
         async models() {
             const agentsApi = require("../src/api/agents");
             const { agents, source, error } = await agentsApi.listAgents({ refresh: true });

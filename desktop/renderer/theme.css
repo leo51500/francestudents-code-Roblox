@@ -1,22 +1,23 @@
 /* Thème noir francestudents-code-Roblox (surcharge de styles.css). */
 :root {
     --app-zoom: 1;
-    --bg: #050607;
-    --bg-side: #090b0d;
-    --bg-activity: #090b0d;
-    --bg-panel: #0d1114;
-    --bg-input: #10171b;
-    --bg-hover: #171d22;
-    --bg-active: #202a31;
-    --border: #1b2329;
-    --border-strong: #2b353d;
+    color-scheme: dark;
+    --bg: #000000;
+    --bg-side: #040404;
+    --bg-activity: #030303;
+    --bg-panel: #080808;
+    --bg-input: #0b0b0b;
+    --bg-hover: #141414;
+    --bg-active: #1b1b1b;
+    --border: #171717;
+    --border-strong: #292929;
     --fg: #edf2f6;
     --fg-strong: #ffffff;
     --fg-dim: #b9c3cc;
     --fg-faint: #83909b;
-    --accent: #2c353d;
-    --accent-hover: #3d4a56;
-    --accent-soft: rgba(255, 255, 255, 0.08);
+    --accent: #242424;
+    --accent-hover: #303030;
+    --accent-soft: rgba(255, 255, 255, 0.06);
     --link: #ffffff;
     --danger: #f85149;
     --warn: #cca700;
@@ -877,7 +878,7 @@ body.resizing-y .xterm {
     overflow: hidden;
     white-space: normal;
     word-break: normal;
-    background: #181818;
+    background: var(--bg);
     position: relative;
 }
 
@@ -887,7 +888,7 @@ body.resizing-y .xterm {
 }
 
 .term-view.xterm-host .xterm-viewport {
-    background-color: #181818 !important;
+    background-color: var(--bg) !important;
 }
 
 .terminal-line.hidden {
@@ -1026,7 +1027,7 @@ body.resizing-y .xterm {
     position: relative;
     margin: 8px 0;
     padding: 10px 12px;
-    background: #141414;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 6px;
     overflow: auto;
@@ -1166,7 +1167,7 @@ body.resizing-y .xterm {
 }
 
 .diff {
-    background: #141414;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 6px;
     overflow: auto;
@@ -1259,7 +1260,7 @@ body.resizing-y .xterm {
 
 .composer-box {
     padding: 8px 10px 6px;
-    background: #232323;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -1469,7 +1470,7 @@ body.resizing-y .xterm {
     right: 12px;
     bottom: calc(100% - 4px);
     padding: 4px;
-    background: #222222;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 8px;
     box-shadow: var(--shadow);
@@ -1496,7 +1497,7 @@ body.resizing-y .xterm {
     max-height: 260px;
     overflow: auto;
     padding: 4px;
-    background: #222222;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 8px;
     box-shadow: var(--shadow);
@@ -1678,11 +1679,11 @@ body.resizing-y .xterm {
 
 #cm-host .cm-activeLine,
 #cm-host .cm-activeLineGutter {
-    background: #151515;
+    background: var(--bg-panel);
 }
 
 #cm-host .cm-selectionBackground {
-    background: #3a3a3a !important;
+    background: #282828 !important;
 }
 
 #cm-host .cm-cursor {
@@ -1745,7 +1746,7 @@ body.resizing-y .xterm {
     top: 44px;
     width: 620px;
     padding: 8px;
-    background: #222222;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
@@ -1782,7 +1783,7 @@ body.resizing-y .xterm {
 /* Menu contextuel et boîtes de dialogue */
 .context-menu {
     padding: 4px;
-    background: #222222;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 8px;
     box-shadow: var(--shadow);
@@ -2001,7 +2002,7 @@ body.resizing-y .xterm {
     position: fixed;
     z-index: 1300;
     padding: 6px;
-    background: #222222;
+    background: var(--bg-panel);
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     box-shadow: var(--shadow);

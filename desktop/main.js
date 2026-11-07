@@ -359,6 +359,8 @@ async function openProject(directory) {
     if (busy) throw new Error("Une demande est en cours : attends sa fin avant de changer de projet.");
     taskQueue.pause();
 
+    const { state } = require("../src/state");
+    const previousWorkspace = state.workspace;
     busy = true;
     pushStatus();
     try {
@@ -367,7 +369,21 @@ async function openProject(directory) {
         busy = false;
         pushStatus();
     }
-    const { state } = require("../src/state");
+    if (state.workspace !== previousWorkspace) {
+        const mode = state.mode === "chat" ? "chat" : "agent";
+        const conversationId = state.chatIds[mode];
+        send("clear");
+        if (conversationId) {
+            try {
+                await openDesktopConversation(conversationId);
+            } catch (error) {
+                send("entry", { type: "warn", text: `Projet ouvert ; historique de sa conversation indisponible : ${error.message}` });
+                pushStatus();
+            }
+        } else {
+            pushStatus();
+        }
+    }
     return state.workspace;
 }
 
@@ -1072,6 +1088,11 @@ function registerIpc() {
         return result;
     });
     handle("openProject", openProject);
+    handle("knownProjects", async () => {
+        const projects = require("../src/project/projects");
+        await projects.prune();
+        return projects.list();
+    });
     handle("setEditorContext", (files, active) => {
         const { state } = require("../src/state");
         state.openFiles = Array.isArray(files)

@@ -29,6 +29,17 @@ test("renderer : app.js assemblé est du JavaScript valide", () => {
     assert.doesNotThrow(() => new vm.Script(assemble(), { filename: "app.js" }));
 });
 
+test("renderer : les surfaces, commandes principales et contrôles natifs restent en thème noir", () => {
+    const rendererDir = path.join(__dirname, "..", "desktop", "renderer");
+    const workbench = fs.readFileSync(path.join(rendererDir, "workbench.css"), "utf8");
+    const surfaces = fs.readFileSync(path.join(rendererDir, "surfaces.css"), "utf8");
+    assert.match(workbench, /color-scheme:\s*dark/);
+    assert.match(workbench, /--bg:\s*#000000/);
+    assert.match(workbench, /--bg-panel:\s*#080808/);
+    assert.match(surfaces, /button\.primary\s*\{[^}]*background:\s*var\(--accent\)/s);
+    assert.doesNotMatch(surfaces, /button\.primary\s*\{[^}]*background:\s*#e4ebf0/is);
+});
+
 test("renderer : escapeHtml, inline, renderMarkdown et toolLabel", () => {
     const r = loadPure(["01-render.js"], "{ escapeHtml, inline, renderMarkdown, toolLabel }");
     assert.equal(r.escapeHtml("<a href=\"x\">&</a>"), "&lt;a href=&quot;x&quot;&gt;&amp;&lt;/a&gt;");

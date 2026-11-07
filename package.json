@@ -147,8 +147,9 @@
       "artifactName": "France-Students-code-Roblox-${version}-portable.exe"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
       "shortcutName": "France-Students-code-Roblox",
       "uninstallDisplayName": "France-Students-code-Roblox",
       "artifactName": "France-Students-code-Roblox-${version}-setup.exe"

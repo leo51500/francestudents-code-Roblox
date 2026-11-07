@@ -207,18 +207,18 @@
 #app.focus-agent #agent { display: flex !important; padding:0; }
 #app.focus-agent #activity-bar,#app.focus-agent #statusbar { display:none; }
 .hidden { display: none !important; }
-.startup-loading { position: fixed; inset: 36px 0 0; z-index: 10000; display: grid; place-items: center; background: #1f1f1f; color: #ccc; }
+.startup-loading { position: fixed; inset: 36px 0 0; z-index: 10000; display: grid; place-items: center; background: var(--bg); color: var(--fg); }
 .startup-loading[hidden] { display: none; }
 .startup-card { width: min(440px, 80vw); text-align: center; }
 .startup-card img { margin-bottom: 12px; }
-.startup-brand { letter-spacing: 3px; color: #9d9d9d; font-size: 10px; }
+.startup-brand { letter-spacing: 3px; color: var(--fg-faint); font-size: 10px; }
 .startup-card h1 { font-size: 25px; font-weight: 500; margin: 18px 0 28px; color: #eee; }
-.startup-track { height: 3px; border-radius: 3px; overflow: hidden; background: #333; }
-.startup-track span { display: block; width: 35%; height: 100%; background: #007acc; animation: startup-progress 1.4s ease-in-out infinite alternate; }
+.startup-track { height: 3px; border-radius: 3px; overflow: hidden; background: var(--bg-active); }
+.startup-track span { display: block; width: 35%; height: 100%; background: var(--link); animation: startup-progress 1.4s ease-in-out infinite alternate; }
 #startup-message { font-size: 13px; line-height: 1.6; margin-top: 22px; }
-.startup-hint { font-size: 11px; color: #9d9d9d; line-height: 1.7; }
-#startup-continue { margin-top: 18px; padding: 8px 14px; border: 1px solid #454545; background: #292929; border-radius: 5px; color: #ccc; cursor: pointer; }
-#startup-continue:hover { background: #343434; border-color: #007acc; }
+.startup-hint { font-size: 11px; color: var(--fg-faint); line-height: 1.7; }
+#startup-continue { margin-top: 18px; padding: 8px 14px; border: 1px solid var(--border-strong); background: var(--bg-panel); border-radius: 5px; color: var(--fg); cursor: pointer; }
+#startup-continue:hover { background: var(--bg-hover); border-color: var(--fg-faint); }
 @keyframes startup-progress { from { transform: translateX(-50%); } to { transform: translateX(240%); } }
 @media (prefers-reduced-motion: reduce) { .startup-track span { animation: none; width: 100%; opacity: .7; } }
 .attachment-readability-warning { color:var(--warning,#d7ba7d);font-size:10px;white-space:nowrap;margin-left:5px; }

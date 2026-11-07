@@ -25,16 +25,16 @@ const API_AGENTS = [
     { id: -9999, name: "Ancien modèle", namespace: "fs", description: "", model: "old", modelProvider: "x", isActive: false, isDefault: false },
 ];
 
-test("listAgents se replie sur KNOWN_MODELS si l'API échoue", { concurrency: false }, async () => {
+test("listAgents n'invente pas de modèles si l'API échoue", { concurrency: false }, async () => {
     agents.resetCache();
     prepareAuth();
     global.fetch = async () => new Response("non", { status: 500 });
 
     const result = await agents.listAgents();
-    assert.equal(result.source, "local");
+    assert.equal(result.source, "unavailable");
     assert.ok(result.error);
-    assert.ok(result.agents.some((a) => a.id === -2001 && a.name === "Claude Opus 5.5"));
-    assert.equal(agents.agentName(-1003), "GPT 6.1 Sol");
+    assert.deepEqual(result.agents, []);
+    assert.equal(agents.agentName(-1003), "-1003");
     assert.equal(agents.agentName(12345), "12345");
 });
 
@@ -61,7 +61,8 @@ test("listAgents appelle GET /chats/agents avec le token et filtre les agents in
     assert.equal(agents.agentName(-3001), "Mistral Large 4");
     global.fetch = async () => new Response("non", { status: 503 });
     const again = await agents.listAgents({ refresh: true });
-    assert.equal(again.source, "api");
+    assert.equal(again.source, "cache");
+    assert.ok(again.error);
     assert.deepEqual(again.agents.map((a) => a.id), [-1002, -3001]);
 });
 

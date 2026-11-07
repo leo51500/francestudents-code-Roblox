@@ -43,7 +43,7 @@ api.onEvent(channel=>{if(channel==="webResearch")refreshStudioResearch().catch((
 
 /* Paramètres des mises à jour de la version installée. */
 const updateSettings=document.createElement("section");updateSettings.className="settings-card";
-updateSettings.innerHTML=`<h3>Application et mises à jour</h3><p id="studio-app-version" class="settings-help"></p><label class="setting-toggle"><span><b>Mises à jour automatiques</b><small>Vérifier et télécharger les versions publiées. Sur Windows installé, une mise à jour téléchargée est appliquée à la fermeture. Les projets et réglages restent dans leurs dossiers.</small></span><input type="checkbox" role="switch" id="studio-automatic-updates"></label><p id="studio-update-message" class="settings-help" role="status"></p><progress id="studio-update-progress" max="100" value="0" class="hidden"></progress><div class="studio-actions"><button type="button" id="studio-update-check">Vérifier maintenant</button><button type="button" id="studio-update-download" class="hidden">Télécharger la mise à jour</button><button type="button" id="studio-update-install" class="primary hidden">Enregistrer et redémarrer</button></div><p class="settings-help">Le fournisseur est défini dans la configuration de distribution. Aucun build ni aucune version n’est publié automatiquement par cette interface.</p>`;
+updateSettings.innerHTML=`<h3>Application et mises à jour</h3><p id="studio-app-version" class="settings-help"></p><label class="setting-toggle"><span><b>Mises à jour automatiques</b><small>Vérifier et télécharger les versions publiées en arrière-plan. Sur Windows installé, elles s’installent automatiquement à la fermeture de l’application, sans relancer l’installateur. Les projets et réglages restent dans leurs dossiers.</small></span><input type="checkbox" role="switch" id="studio-automatic-updates"></label><p id="studio-update-message" class="settings-help" role="status"></p><progress id="studio-update-progress" max="100" value="0" class="hidden"></progress><div class="studio-actions"><button type="button" id="studio-update-check">Vérifier maintenant</button><button type="button" id="studio-update-download" class="hidden">Télécharger la mise à jour</button><button type="button" id="studio-update-install" class="primary hidden">Enregistrer et redémarrer</button></div><p class="settings-help">Le fournisseur est défini dans la configuration de distribution. Aucun build ni aucune version n’est publié automatiquement par cette interface.</p>`;
 $("settings-view").insertBefore(updateSettings,$("settings-message"));
 function renderStudioUpdates(data){$("studio-app-version").textContent=`Version de l’application : ${data.version}`;$("studio-automatic-updates").checked=data.automatic;$("studio-automatic-updates").disabled=["unavailable","unsupported"].includes(data.status);$("studio-update-message").textContent=data.message;$("studio-update-progress").value=data.progress;$("studio-update-progress").classList.toggle("hidden",data.status!=="downloading");$("studio-update-check").disabled=["unavailable","unsupported","checking","downloading"].includes(data.status);$("studio-update-download").classList.toggle("hidden",(data.status!=="available"||(data.canInstall===false&&!data.downloadUrl)));$("studio-update-install").classList.toggle("hidden",data.status!=="downloaded");}
 api.updates().then(renderStudioUpdates).catch(()=>{});
@@ -84,6 +84,11 @@ async function runStartupUpdateCheck() {
     const offer=data=>{
         current=data;
         const available=["available","downloading","downloaded"].includes(data.status);
+        if(data.automatic&&data.canInstall!==false&&available){
+            openButton.classList.add("hidden");
+            if(!finished)close();
+            return;
+        }
         openButton.classList.toggle("hidden",!available);
         if(finished)return;
         overlay.querySelector(".startup-track").classList.toggle("hidden",data.status!=="checking");
@@ -117,7 +122,7 @@ async function runStartupUpdateCheck() {
                 if(ui.tabs.some(tab=>tab.dirty))throw new Error("Enregistre tes fichiers avant de redémarrer.");
                 await api.updates("install");return;
             }
-            if(current?.status==="error"){offer(await api.updates("check",{startup:true}));return;}
+            if(current?.status==="error"){offer(await api.updates("check"));return;}
             offer(await api.updates("download"));
         }catch(error){message.textContent=error.message;}
         finally{primary.disabled=current?.status==="downloading";}
@@ -125,7 +130,7 @@ async function runStartupUpdateCheck() {
     const start=Date.now();
     try {
         const result=await Promise.race([
-            api.updates("check",{startup:true}),
+            api.updates("check"),
             new Promise(resolve=>{deadline=setTimeout(()=>resolve({status:"timeout",message:"La vérification continue en arrière-plan. Ouverture de l’IDE…"}),8000);})
         ]);
         if(finished)return;

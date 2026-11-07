@@ -89,6 +89,18 @@ async function last() {
     return best;
 }
 
+async function list() {
+    await load();
+    return Object.values(projects)
+        .filter(project => project && typeof project.path === "string" && project.path)
+        .sort((a, b) => String(b.lastOpenedAt || "").localeCompare(String(a.lastOpenedAt || "")))
+        .map(project => ({
+            path: project.path,
+            createdAt: project.createdAt || null,
+            lastOpenedAt: project.lastOpenedAt || null
+        }));
+}
+
 /**
  * Ouvre un projet. S'il est inconnu, il est créé. S'il existe, il est repris tel quel,
  * sauf avec newConv : ses deux conversations sont alors oubliées.
@@ -153,4 +165,4 @@ async function prune() {
     return removed;
 }
 
-module.exports = { open, get, last, setConversation, prune, FILE, REPO_ROOT, STATE_DIR };
+module.exports = { open, get, last, list, setConversation, prune, FILE, REPO_ROOT, STATE_DIR };

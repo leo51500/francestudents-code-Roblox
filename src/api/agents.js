@@ -6,11 +6,10 @@
  *   GET {apiUrl}/chats/agents -> Agent[]
  *   Agent : { id: int32, name, namespace, description, model, modelProvider, isActive, isDefault }
  *
- * La liste est mise en cache 5 minutes. Si l'API ne répond pas, on se replie sur
- * KNOWN_MODELS (src/config.js).
+ * La liste est mise en cache 5 minutes. Si l'API ne répond pas, seuls les agents
+ * précédemment récupérés depuis cette API peuvent être réutilisés.
  */
 
-const { KNOWN_MODELS } = require("../config");
 const account = require("./account");
 const { modelContext, OBSERVED_IDS } = require("./model-context");
 
@@ -35,8 +34,6 @@ function normalize(raw) {
     };
 }
 
-const fallbackAgents = () => KNOWN_MODELS.map(normalize).filter(Boolean);
-
 /** Appel direct de l'API (agents actifs seulement). */
 async function fetchAgents() {
     const data = await account.getJson("/chats/agents");
@@ -44,7 +41,7 @@ async function fetchAgents() {
     return list.map(normalize).filter(agent => agent && agent.isActive);
 }
 
-/** { agents, source: "api" | "local", error? } ; ne lève jamais. */
+/** { agents, source: "api" | "cache" | "unavailable", error? } ; ne lève jamais. */
 async function listAgents({ refresh = false } = {}) {
     if (!refresh && cache && Date.now() - cache.at < TTL_MS) return { agents: cache.agents, source: "api" };
     try {
@@ -53,7 +50,7 @@ async function listAgents({ refresh = false } = {}) {
         cache = { agents, at: Date.now() };
         return { agents, source: "api" };
     } catch (error) {
-        return { agents: cache ? cache.agents : fallbackAgents(), source: cache ? "api" : "local", error };
+        return { agents: cache ? cache.agents : [], source: cache ? "cache" : "unavailable", error };
     }
 }
 
@@ -82,9 +79,9 @@ function resolveAgent(query, agents) {
     return { agent: partial.length === 1 ? partial[0] : null, matches: partial };
 }
 
-/** Nom lisible d'un agent (cache API, sinon KNOWN_MODELS, sinon l'identifiant). */
+/** Nom lisible d'un agent déjà confirmé par l'API, sinon son identifiant. */
 function agentName(id) {
-    const all = cache ? cache.agents : fallbackAgents();
+    const all = cache ? cache.agents : [];
     const agent = all.find(a => a.id === Number(id));
     return agent ? agent.name : String(id);
 }

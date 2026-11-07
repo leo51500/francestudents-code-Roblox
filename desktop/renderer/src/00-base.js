@@ -40,6 +40,7 @@ const ui = {
     changes: new Map(),      // chemin -> { added, removed }
     changesOrder: [],
     models: null,            // { agents, source, error, current }
+    projects: null,
     currentModelId: null,
     highlightTimer: null,
     quota: null,             // { percent, bucket, resetAt, powerUp, limits }

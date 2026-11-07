@@ -35,6 +35,8 @@ function applyStatus(s) {
     $("st-mode").textContent = s.mode ? `mode : ${s.mode}` : "";
     $("st-model").textContent = s.model || "";
     $("model-label").textContent = s.model || "modèle";
+    $("project-label").textContent = s.workspace ? s.workspace.replace(/[\\/]+$/, "").split(/[\\/]/).pop() : "Choisir un projet";
+    $("project-label").title = s.workspace || "Ouvre un dossier pour travailler sur un projet";
     if (s.modelId != null) ui.currentModelId = s.modelId;
     const u = s.usage;
     let tokensText = "";
@@ -124,7 +126,7 @@ function hideModelMenu() {
 
 function positionModelMenu(anchor) {
     const rect = anchor.getBoundingClientRect();
-    const width = Math.min(modelMenuEl.dataset.kind === "history" ? 520 : Math.max(300, rect.width), window.innerWidth - 16);
+    const width = Math.min(modelMenuEl.dataset.kind === "history" ? 520 : modelMenuEl.dataset.kind === "project" ? 420 : Math.max(300, rect.width), window.innerWidth - 16);
     modelMenuEl.style.minWidth = "0";
     modelMenuEl.style.width = `${width}px`;
     const below=Math.max(0,window.innerHeight-rect.bottom-14),above=Math.max(0,rect.top-14);
@@ -137,7 +139,7 @@ function positionModelMenu(anchor) {
 }
 
 window.addEventListener("resize", () => {
-    if (!modelMenuEl.classList.contains("hidden")) positionModelMenu($(modelMenuEl.dataset.kind === "history" ? "btn-history" : "btn-model"));
+    if (!modelMenuEl.classList.contains("hidden")) positionModelMenu($(modelMenuEl.dataset.kind === "history" ? "btn-history" : modelMenuEl.dataset.kind === "project" ? "btn-project" : "btn-model"));
 });
 
 const HISTORY_DELETE_CONFIRM_KEY = "frst.history.confirm-delete";
@@ -191,61 +193,25 @@ function modelLogo(agent, className = "model-logo") {
     return img;
 }
 
-function modelUseGroup(agent) {
-    const model = String(agent.model || agent.name || "").toLowerCase().trim().replace(/\s+/g, "-");
-    if (/^gpt-5\.6-luna(?:-|$)/.test(model) || /^gemini-3\.8-flash(?:-|$)/.test(model)) return "simple";
-    if (/^gpt-5\.6-terra(?:-|$)/.test(model)) return "everyday";
-    if (agent.isDefault) return "start";
-    if (/^claude-haiku-/.test(model) || /^gpt-6-luna(?:-|$)/.test(model)) return "simple";
-    if (/^claude-sonnet-/.test(model) || /^gpt-6\.1-terra(?:-|$)/.test(model)) return "everyday";
-    if (/^claude-(?:opus|fable)-/.test(model) || /^gemini-(?:[\d.]+-)?pro(?:-|$)/.test(model) || /^gpt-6(?:\.1)?-sol(?:-|$)/.test(model)) return "complex";
-    return "other";
-}
-
 function renderModelMenu(data) {
     const agents = (data && data.agents) || [];
+    const remoteAgents = agents.filter(agent => typeof agent.id === "number");
+    const customAgents = agents.filter(agent => typeof agent.id === "string" && agent.id.startsWith("custom:"));
     modelMenuEl.innerHTML = "";
 
     const head = document.createElement("div");
     head.className = "model-menu-head";
-    head.textContent = data && data.source === "api" ? "Modèles FranceStudent" : "Modèles (liste locale)";
+    head.textContent = data?.source === "cache" ? "Dernière liste FranceStudent" : "Modèles synchronisés depuis FranceStudent";
     modelMenuEl.appendChild(head);
 
     if (!agents.length) {
         const empty = document.createElement("div");
         empty.className = "model-empty";
-        empty.textContent = "Aucun modèle disponible.";
+        empty.textContent = data?.error ? "La liste des modèles n’est pas disponible. Vérifie ta connexion puis rouvre ce menu." : "Aucun modèle actif n’a été renvoyé par FranceStudent.";
         modelMenuEl.appendChild(empty);
-        return;
     }
 
-    const intro = document.createElement("p");
-    intro.className = "model-guide-intro";
-    intro.textContent = agents.some(agent => agent.isDefault)
-        ? "Pour commencer, essaie le modèle par défaut. Classement indicatif : chaque modèle peut servir à d’autres usages."
-        : "Classement indicatif : chaque modèle peut servir à d’autres usages. Choisis librement selon tes besoins.";
-    modelMenuEl.appendChild(intro);
-    const groups = [
-        ["start", "Pour commencer", "Le choix par défaut du service"],
-        ["simple", "Demandes simples", "Questions courtes, reformulation, petites corrections"],
-        ["everyday", "Au quotidien", "Rédaction, code et projets courants"],
-        ["complex", "Tâches complexes", "Analyse approfondie et problèmes difficiles"],
-        ["other", "Autres modèles", "Choisis librement selon tes préférences"]
-    ];
-    for (const [key, title, hint] of groups) {
-        const items = agents.filter(agent => modelUseGroup(agent) === key);
-        if (!items.length) continue;
-        const group = document.createElement("section");
-        group.className = "model-guide-group";
-        const heading = document.createElement("h3");
-        heading.className = "model-guide-heading";
-        heading.textContent = title;
-        const description = document.createElement("p");
-        description.className = "model-guide-description";
-        description.textContent = hint;
-        group.append(heading, description);
-        modelMenuEl.appendChild(group);
-        for (const agent of items) {
+    function appendModel(agent, parent) {
         const row = document.createElement("button");
         row.type = "button";
         row.className = "model-item" + (agent.id === ui.currentModelId ? " active" : "");
@@ -278,14 +244,25 @@ function renderModelMenu(data) {
         row.appendChild(check);
 
         row.onclick = () => selectModel(agent.id);
-        group.appendChild(row);
-        }
+        parent.appendChild(row);
     }
 
+    if (remoteAgents.length) {
+        for (const agent of remoteAgents) appendModel(agent, modelMenuEl);
+    }
+    if (customAgents.length) {
+        const customHeading = document.createElement("div");
+        customHeading.className = "model-menu-head";
+        customHeading.textContent = "Fournisseurs personnalisés";
+        modelMenuEl.appendChild(customHeading);
+        for (const agent of customAgents) appendModel(agent, modelMenuEl);
+    }
     if (data && data.error) {
         const err = document.createElement("div");
         err.className = "model-error";
-        err.textContent = `API indisponible : ${data.error}`;
+        err.textContent = data.source === "cache"
+            ? `Synchronisation impossible ; dernière liste récupérée affichée. ${data.error}`
+            : `Impossible de récupérer les modèles de FranceStudent. ${data.error}`;
         modelMenuEl.appendChild(err);
     }
 }
@@ -316,6 +293,77 @@ async function openModelMenu() {
 function toggleModelMenu() {
     if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "model") hideModelMenu();
     else openModelMenu();
+}
+
+function renderProjectMenu(projects) {
+    modelMenuEl.replaceChildren();
+    modelMenuEl.dataset.kind = "project";
+    const head = document.createElement("div");
+    head.className = "model-menu-head";
+    head.textContent = "Projet de cette discussion";
+    const intro = document.createElement("p");
+    intro.className = "history-intro";
+    intro.textContent = "Chaque projet reprend sa propre conversation. Les fichiers de ce dossier seront accessibles à l’agent.";
+    modelMenuEl.append(head, intro);
+    const currentWorkspace = ui.workspace || null;
+    for (const project of projects) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "model-item" + (project.path === currentWorkspace ? " active" : "");
+        row.title = project.path;
+        const main = document.createElement("span");
+        main.className = "model-item-main";
+        const name = document.createElement("span");
+        name.className = "model-item-name";
+        name.textContent = project.path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || project.path;
+        const pathLabel = document.createElement("span");
+        pathLabel.className = "model-item-sub";
+        pathLabel.textContent = project.path;
+        main.append(name, pathLabel);
+        row.appendChild(main);
+        const check = document.createElement("span");
+        check.className = "model-check";
+        check.textContent = project.path === currentWorkspace ? "✓" : "";
+        row.appendChild(check);
+        row.onclick = async () => {
+            hideModelMenu();
+            if (project.path === currentWorkspace) return;
+            await openProject(project.path);
+        };
+        modelMenuEl.appendChild(row);
+    }
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "history-open";
+    open.textContent = "Ouvrir un autre dossier…";
+    open.onclick = () => { hideModelMenu(); openProject(); };
+    modelMenuEl.appendChild(open);
+}
+
+async function openProjectMenu() {
+    const anchor = $("btn-project");
+    modelMenuEl.classList.remove("hidden");
+    modelMenuEl.dataset.kind = "project";
+    modelMenuEl.innerHTML = '<div class="model-empty">Chargement des projets…</div>';
+    positionModelMenu(anchor);
+    try {
+        const projects = await api.knownProjects();
+        ui.projects = projects;
+        if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") {
+            renderProjectMenu(projects);
+            positionModelMenu(anchor);
+        }
+    } catch (error) {
+        if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") {
+            modelMenuEl.innerHTML = `<div class="model-error">${escapeHtml(error.message)}</div>`;
+            positionModelMenu(anchor);
+        }
+    }
+}
+
+function toggleProjectMenu() {
+    if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") hideModelMenu();
+    else openProjectMenu();
 }
 
 async function selectModel(id) {

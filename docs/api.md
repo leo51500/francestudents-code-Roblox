@@ -166,16 +166,12 @@ N'importe quel événement peut contenir `chat_id`. Pour continuer la conversati
 
 ---
 
-## Agents connus (`agentId`)
+## Agents (`agentId`)
 
-Ces identifiants ont été observés dans la capture réseau (`KNOWN_MODELS` dans `src/config.js`) :
-
-| agentId | Nom |
-| --- | --- |
-| -1002 | GPT 6 Luna (par défaut, `FS_AGENT_ID`) |
-| -1003 | GPT 6.1 Sol |
-| -2002 | Claude Haiku 5.5 |
-| -2001 | Claude Opus 5.5 |
+La liste des agents disponibles est synchronisée depuis `GET /chats/agents`.
+L’application ne maintient pas de catalogue local d’identifiants ou de noms inventés.
+Si le service est indisponible, elle affiche uniquement la dernière liste récupérée
+avec succès, lorsqu’un cache existe.
 
 ## Sécurité
 

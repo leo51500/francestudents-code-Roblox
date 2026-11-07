@@ -54,8 +54,11 @@ function updateStudioStatus(status) {
     }
 }
 function updateAgentProjectLabel(workspace=ui.workspace){
-    $("agent-project-name").textContent=workspace?workspace.replace(/[\\/]+$/, "").split(/[\\/]/).pop():"Aucun projet";
+    const label=workspace?workspace.replace(/[\\/]+$/, "").split(/[\\/]/).pop():"Aucun projet";
+    $("agent-project-name").textContent=label;
     $("agent-project-name").title=workspace || "Ouvre un dossier pour travailler sur un projet";
+    $("project-label").textContent=workspace?label:"Choisir un projet";
+    $("btn-project").title=workspace ? `Projet de cette discussion : ${workspace}` : "Choisir le projet de cette discussion";
 }
 function recordStudioEntry(entry) {
     if (entry.type === "user" && /^\/new\b/.test(entry.text || "")) studioEntries.length = 0;

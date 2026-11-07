@@ -12,7 +12,7 @@
 
 > **Origine :** projet créé par [EsteG7](https://github.com/EsteG7/francestudents-ide), puis maintenu par [extraopaa](https://github.com/extraopaa). Cette reprise est modifiée par **GAB DESING**, mainteneur actuel. Les auteurs, crédits et licences d’origine sont conservés ; ce fork n’est pas une version officielle du projet amont.
 
-**Version 0.1.1** — chaque push sur `main` incrémente automatiquement le numéro de correctif, crée un tag `vX.Y.Z` et publie une release Windows. Le titre de la release reprend le tag. L’installateur NSIS installé vérifie et télécharge les mises à jour depuis ces releases ; le paquet portable reste à mettre à jour manuellement.
+Chaque push sur `main` incrémente automatiquement le numéro de correctif, crée un tag `vX.Y.Z` et publie une release Windows. Le titre de la release reprend le tag. L’application installée vérifie et télécharge les mises à jour en arrière-plan, puis les installe à sa fermeture sans relancer l’assistant d’installation. Le paquet portable reste à mettre à jour manuellement.
 
 ## Fonctionnalités conservées
 

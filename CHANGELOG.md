@@ -1,5 +1,11 @@
 # Journal des modifications
 
+## 0.1.14 — Mises à jour sans intervention et thème plus sombre
+
+- Les versions installées se téléchargent au démarrage en arrière-plan et s’installent automatiquement à la fermeture de l’application.
+- L’installateur NSIS se lance en un clic et ne redemande plus le choix entre installation utilisateur et installation pour tous.
+- Assombrissement des panneaux, menus, commandes principales et écran de démarrage ; les contrôles natifs utilisent aussi le thème sombre.
+
 ## 0.1.13 — Outils Roblox, lanceur et notifications
 
 - Ajout des skills Roblox + Blender et des connexions MCP prêtes à l’emploi pour le pipeline de création, LOD, upload et insertion dans Studio.
