@@ -400,11 +400,6 @@
                     <span>Agent</span>
                 </div>
                 <div class="agent-actions">
-                    <button type="button" id="btn-project" class="model-btn" title="Choisir le projet de cette discussion" aria-label="Choisir le projet de cette discussion">
-                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H10l2 2h7.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>
-                        <span id="project-label">Choisir un projet</span>
-                        <svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-                    </button>
                     <button type="button" id="btn-model" class="model-btn" title="Choisir le modèle (/model)">
                         <svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7-4.7-1.8 4.7-1.8z"/></svg>
                         <span id="model-label">modèle</span>
@@ -435,7 +430,22 @@
                 </div>
                 <button type="button" id="agent-focus" title="Agrandir l’espace agent" aria-label="Agrandir l’espace agent">⤢</button>
             </div>
-            <div class="agent-context-bar"><span id="agent-project-name">Aucun projet</span><button type="button" id="agent-access" title="Ouvrir les paramètres de permissions">Sur approbation</button></div>
+            <div class="agent-context-bar">
+                <span id="agent-project-name" class="hidden">Aucun projet</span>
+                <label class="chat-project-scope" for="agent-fr-project">
+                    <span>Discussions dans</span>
+                    <select id="agent-fr-project" title="Les nouvelles discussions seront créées dans ce projet FranceStudent">
+                        <option value="">Chargement des projets…</option>
+                    </select>
+                </label>
+                <button type="button" id="agent-fr-project-refresh" class="chat-project-create chat-project-refresh" title="Actualiser la liste des projets FranceStudent" aria-label="Actualiser la liste des projets FranceStudent">↻</button>
+                <button type="button" id="agent-fr-project-create" class="chat-project-create" title="Créer un projet FranceStudent" aria-label="Créer un projet FranceStudent">+</button>
+                <button type="button" id="agent-fr-project-chats" class="chat-project-create chat-project-chats" title="Choisis un projet pour voir ses discussions" aria-label="Ouvrir une discussion du projet FranceStudent" aria-haspopup="dialog" disabled>
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4V5ZM8 9h8M8 12h5"/></svg>
+                </button>
+                <button type="button" id="agent-access" title="Ouvrir les paramètres de permissions">Sur approbation</button>
+            </div>
+            <div id="agent-fr-project-state" class="chat-project-state" role="status" aria-live="polite">Chargement des projets FranceStudent…</div>
             <section id="agent-live-plan" class="agent-live-plan hidden" aria-label="Plan de travail"></section>
             <div id="agent-starter" class="agent-starter">
                 <h2>Commencer une tâche</h2>

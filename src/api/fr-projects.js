@@ -50,7 +50,34 @@ async function requestJson(method, route, body, retried = false) {
 
 async function listProjects() {
     const data = await requestJson("GET", "/projects");
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data : Array.isArray(data?.projects) ? data.projects : [];
+}
+
+/** Projets personnels et partagés accessibles au compte. */
+async function listAvailableProjects() {
+    const owned = await listProjects();
+    let shared = [];
+    try {
+        const data = await requestJson("GET", "/projects/shared");
+        shared = Array.isArray(data) ? data : Array.isArray(data?.projects) ? data.projects : [];
+    } catch (error) {
+        if (![400, 403, 404, 405].includes(error.status)) throw error;
+    }
+    return [...new Map([...owned, ...shared]
+        .filter(project => project && project.id)
+        .map(project => [String(project.id), project])).values()];
+}
+
+/** Discussions du projet FranceStudent avec pagination par identifiant. */
+async function listProjectChats(projectId, { limit = 30, cursorChatId = "" } = {}) {
+    if (!projectId) throw new Error("Choisis d’abord un projet FranceStudent.");
+    const query = new URLSearchParams({ limit: String(Math.min(100, Math.max(1, Number(limit) || 30))) });
+    if (cursorChatId) query.set("cursor_chat_id", String(cursorChatId));
+    const data = await requestJson("GET", `/projects/${encodeURIComponent(projectId)}/chats?${query}`);
+    return {
+        chats: Array.isArray(data?.chats) ? data.chats : Array.isArray(data) ? data : [],
+        hasMore: Boolean(data?.hasMore)
+    };
 }
 
 const createProject = name => requestJson("POST", "/projects", { name });
@@ -66,7 +93,7 @@ async function findOrCreateProject(name) {
     }
 
     const wanted = normalizeName(clean);
-    const existing = (await listProjects()).find(project => normalizeName(project?.name) === wanted);
+    const existing = (await listAvailableProjects()).find(project => normalizeName(project?.name) === wanted);
     if (existing) return { project: existing, created: false };
 
     const project = await createProject(clean);
@@ -128,6 +155,8 @@ async function ensureAttached(chatId) {
 
 module.exports = {
     listProjects,
+    listAvailableProjects,
+    listProjectChats,
     createProject,
     attachChat,
     ensureAttached,

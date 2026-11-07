@@ -1,5 +1,11 @@
 # Journal des modifications
 
+## 0.1.15 — Projets FranceStudent dans la discussion
+
+- La barre « Discussions dans » synchronise les projets personnels et partagés avec FranceStudent.
+- Création de projet, actualisation de la liste et reprise des discussions d’un projet depuis l’application.
+- Le projet FranceStudent qui classe les discussions reste distinct du dossier local ouvert dans l’explorateur.
+
 ## 0.1.14 — Mises à jour sans intervention et thème plus sombre
 
 - Les versions installées se téléchargent au démarrage en arrière-plan et s’installent automatiquement à la fermeture de l’application.

@@ -17,10 +17,6 @@ $("btn-model").onclick = (ev) => {
     ev.stopPropagation();
     toggleModelMenu();
 };
-$("btn-project").onclick = (ev) => {
-    ev.stopPropagation();
-    toggleProjectMenu();
-};
 $("st-model").onclick = () => toggleModelMenu();
 $("btn-history").onclick = (ev) => {
     ev.stopPropagation();

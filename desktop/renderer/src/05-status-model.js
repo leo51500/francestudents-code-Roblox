@@ -35,8 +35,7 @@ function applyStatus(s) {
     $("st-mode").textContent = s.mode ? `mode : ${s.mode}` : "";
     $("st-model").textContent = s.model || "";
     $("model-label").textContent = s.model || "modèle";
-    $("project-label").textContent = s.workspace ? s.workspace.replace(/[\\/]+$/, "").split(/[\\/]/).pop() : "Choisir un projet";
-    $("project-label").title = s.workspace || "Ouvre un dossier pour travailler sur un projet";
+    if (typeof syncFranceStudentProjectSelection === "function") syncFranceStudentProjectSelection(s.frProject || null);
     if (s.modelId != null) ui.currentModelId = s.modelId;
     const u = s.usage;
     let tokensText = "";
@@ -126,7 +125,7 @@ function hideModelMenu() {
 
 function positionModelMenu(anchor) {
     const rect = anchor.getBoundingClientRect();
-    const width = Math.min(modelMenuEl.dataset.kind === "history" ? 520 : modelMenuEl.dataset.kind === "project" ? 420 : Math.max(300, rect.width), window.innerWidth - 16);
+    const width = Math.min(modelMenuEl.dataset.kind === "history" ? 520 : Math.max(300, rect.width), window.innerWidth - 16);
     modelMenuEl.style.minWidth = "0";
     modelMenuEl.style.width = `${width}px`;
     const below=Math.max(0,window.innerHeight-rect.bottom-14),above=Math.max(0,rect.top-14);
@@ -139,7 +138,7 @@ function positionModelMenu(anchor) {
 }
 
 window.addEventListener("resize", () => {
-    if (!modelMenuEl.classList.contains("hidden")) positionModelMenu($(modelMenuEl.dataset.kind === "history" ? "btn-history" : modelMenuEl.dataset.kind === "project" ? "btn-project" : "btn-model"));
+    if (!modelMenuEl.classList.contains("hidden")) positionModelMenu($(modelMenuEl.dataset.kind === "history" ? "btn-history" : "btn-model"));
 });
 
 const HISTORY_DELETE_CONFIRM_KEY = "frst.history.confirm-delete";
@@ -293,77 +292,6 @@ async function openModelMenu() {
 function toggleModelMenu() {
     if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "model") hideModelMenu();
     else openModelMenu();
-}
-
-function renderProjectMenu(projects) {
-    modelMenuEl.replaceChildren();
-    modelMenuEl.dataset.kind = "project";
-    const head = document.createElement("div");
-    head.className = "model-menu-head";
-    head.textContent = "Projet de cette discussion";
-    const intro = document.createElement("p");
-    intro.className = "history-intro";
-    intro.textContent = "Chaque projet reprend sa propre conversation. Les fichiers de ce dossier seront accessibles à l’agent.";
-    modelMenuEl.append(head, intro);
-    const currentWorkspace = ui.workspace || null;
-    for (const project of projects) {
-        const row = document.createElement("button");
-        row.type = "button";
-        row.className = "model-item" + (project.path === currentWorkspace ? " active" : "");
-        row.title = project.path;
-        const main = document.createElement("span");
-        main.className = "model-item-main";
-        const name = document.createElement("span");
-        name.className = "model-item-name";
-        name.textContent = project.path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || project.path;
-        const pathLabel = document.createElement("span");
-        pathLabel.className = "model-item-sub";
-        pathLabel.textContent = project.path;
-        main.append(name, pathLabel);
-        row.appendChild(main);
-        const check = document.createElement("span");
-        check.className = "model-check";
-        check.textContent = project.path === currentWorkspace ? "✓" : "";
-        row.appendChild(check);
-        row.onclick = async () => {
-            hideModelMenu();
-            if (project.path === currentWorkspace) return;
-            await openProject(project.path);
-        };
-        modelMenuEl.appendChild(row);
-    }
-    const open = document.createElement("button");
-    open.type = "button";
-    open.className = "history-open";
-    open.textContent = "Ouvrir un autre dossier…";
-    open.onclick = () => { hideModelMenu(); openProject(); };
-    modelMenuEl.appendChild(open);
-}
-
-async function openProjectMenu() {
-    const anchor = $("btn-project");
-    modelMenuEl.classList.remove("hidden");
-    modelMenuEl.dataset.kind = "project";
-    modelMenuEl.innerHTML = '<div class="model-empty">Chargement des projets…</div>';
-    positionModelMenu(anchor);
-    try {
-        const projects = await api.knownProjects();
-        ui.projects = projects;
-        if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") {
-            renderProjectMenu(projects);
-            positionModelMenu(anchor);
-        }
-    } catch (error) {
-        if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") {
-            modelMenuEl.innerHTML = `<div class="model-error">${escapeHtml(error.message)}</div>`;
-            positionModelMenu(anchor);
-        }
-    }
-}
-
-function toggleProjectMenu() {
-    if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") hideModelMenu();
-    else openProjectMenu();
 }
 
 async function selectModel(id) {

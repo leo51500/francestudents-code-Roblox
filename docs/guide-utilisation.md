@@ -4,9 +4,11 @@
 
 ## 1. Se connecter et ouvrir un projet
 
-Connecte-toi avec ton compte FranceStudent, puis choisis le dossier de ton projet. Aucun token ni clé API n’est requis pour utiliser ce compte. Les profils de fournisseurs personnalisés sont facultatifs.
+Connecte-toi avec ton compte FranceStudent, puis choisis le dossier de code à ouvrir dans l’explorateur. Aucun token ni clé API n’est requis pour utiliser ce compte. Les profils de fournisseurs personnalisés sont facultatifs.
 
 Pour une question générale, tu peux commencer sans projet. Pour modifier des fichiers, ouvre leur dossier et vérifie que le nom du projet affiché est le bon.
+
+La barre **Discussions dans** sélectionne séparément un projet FranceStudent synchronisé avec le site. Les nouvelles conversations seront classées dans ce groupe ; le bouton **+** en crée un, et l’icône de discussion permet de reprendre une conversation déjà présente dans ce projet. Le dossier local ouvert dans l’explorateur reste indépendant de ce classement.
 
 ## 2. Travailler avec l’agent
 

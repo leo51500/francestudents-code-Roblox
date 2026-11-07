@@ -12,6 +12,10 @@
         const result = await api.bootstrap();
         if (result.origin) connectionOrigin = result.origin;
         if(result.credentialWarning)studioFeedback(result.credentialWarning);
+        if (result.ok) {
+            try { await refreshFranceStudentProjects(); }
+            catch (error) { setFranceStudentProjectState(`Impossible de charger les projets FranceStudent : ${error.message}`, true); }
+        }
         if (!result.ok) {
             openConnectionGuide(1);
             if (!result.needsLogin) guideError(result.reason);

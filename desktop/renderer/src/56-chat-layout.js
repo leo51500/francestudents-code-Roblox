@@ -5,7 +5,7 @@ const chatNavigation = $("agent").querySelector(".agent-navigation");
 chatNavigationActions.append(...document.querySelector("#agent .agent-actions").children, $("agent-focus"));
 chatNavigation.append(chatNavigationActions);
 document.querySelector("#agent .agent-header").hidden = true;
-document.querySelector("#agent .agent-context-bar").hidden = true;
+document.querySelector("#agent .agent-context-bar").hidden = false;
 const moreChatTools = document.createElement("button");
 moreChatTools.type = "button"; moreChatTools.id = "chat-more-tools"; moreChatTools.className = "attach-btn";
 moreChatTools.title = "Outils du chat"; moreChatTools.setAttribute("aria-label", "Outils du chat");

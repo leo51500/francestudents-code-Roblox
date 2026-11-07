@@ -40,7 +40,6 @@ const ui = {
     changes: new Map(),      // chemin -> { added, removed }
     changesOrder: [],
     models: null,            // { agents, source, error, current }
-    projects: null,
     currentModelId: null,
     highlightTimer: null,
     quota: null,             // { percent, bucket, resetAt, powerUp, limits }
@@ -1025,8 +1024,7 @@ function applyStatus(s) {
     $("st-mode").textContent = s.mode ? `mode : ${s.mode}` : "";
     $("st-model").textContent = s.model || "";
     $("model-label").textContent = s.model || "modèle";
-    $("project-label").textContent = s.workspace ? s.workspace.replace(/[\\/]+$/, "").split(/[\\/]/).pop() : "Choisir un projet";
-    $("project-label").title = s.workspace || "Ouvre un dossier pour travailler sur un projet";
+    if (typeof syncFranceStudentProjectSelection === "function") syncFranceStudentProjectSelection(s.frProject || null);
     if (s.modelId != null) ui.currentModelId = s.modelId;
     const u = s.usage;
     let tokensText = "";
@@ -1116,7 +1114,7 @@ function hideModelMenu() {
 
 function positionModelMenu(anchor) {
     const rect = anchor.getBoundingClientRect();
-    const width = Math.min(modelMenuEl.dataset.kind === "history" ? 520 : modelMenuEl.dataset.kind === "project" ? 420 : Math.max(300, rect.width), window.innerWidth - 16);
+    const width = Math.min(modelMenuEl.dataset.kind === "history" ? 520 : Math.max(300, rect.width), window.innerWidth - 16);
     modelMenuEl.style.minWidth = "0";
     modelMenuEl.style.width = `${width}px`;
     const below=Math.max(0,window.innerHeight-rect.bottom-14),above=Math.max(0,rect.top-14);
@@ -1129,7 +1127,7 @@ function positionModelMenu(anchor) {
 }
 
 window.addEventListener("resize", () => {
-    if (!modelMenuEl.classList.contains("hidden")) positionModelMenu($(modelMenuEl.dataset.kind === "history" ? "btn-history" : modelMenuEl.dataset.kind === "project" ? "btn-project" : "btn-model"));
+    if (!modelMenuEl.classList.contains("hidden")) positionModelMenu($(modelMenuEl.dataset.kind === "history" ? "btn-history" : "btn-model"));
 });
 
 const HISTORY_DELETE_CONFIRM_KEY = "frst.history.confirm-delete";
@@ -1283,77 +1281,6 @@ async function openModelMenu() {
 function toggleModelMenu() {
     if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "model") hideModelMenu();
     else openModelMenu();
-}
-
-function renderProjectMenu(projects) {
-    modelMenuEl.replaceChildren();
-    modelMenuEl.dataset.kind = "project";
-    const head = document.createElement("div");
-    head.className = "model-menu-head";
-    head.textContent = "Projet de cette discussion";
-    const intro = document.createElement("p");
-    intro.className = "history-intro";
-    intro.textContent = "Chaque projet reprend sa propre conversation. Les fichiers de ce dossier seront accessibles à l’agent.";
-    modelMenuEl.append(head, intro);
-    const currentWorkspace = ui.workspace || null;
-    for (const project of projects) {
-        const row = document.createElement("button");
-        row.type = "button";
-        row.className = "model-item" + (project.path === currentWorkspace ? " active" : "");
-        row.title = project.path;
-        const main = document.createElement("span");
-        main.className = "model-item-main";
-        const name = document.createElement("span");
-        name.className = "model-item-name";
-        name.textContent = project.path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || project.path;
-        const pathLabel = document.createElement("span");
-        pathLabel.className = "model-item-sub";
-        pathLabel.textContent = project.path;
-        main.append(name, pathLabel);
-        row.appendChild(main);
-        const check = document.createElement("span");
-        check.className = "model-check";
-        check.textContent = project.path === currentWorkspace ? "✓" : "";
-        row.appendChild(check);
-        row.onclick = async () => {
-            hideModelMenu();
-            if (project.path === currentWorkspace) return;
-            await openProject(project.path);
-        };
-        modelMenuEl.appendChild(row);
-    }
-    const open = document.createElement("button");
-    open.type = "button";
-    open.className = "history-open";
-    open.textContent = "Ouvrir un autre dossier…";
-    open.onclick = () => { hideModelMenu(); openProject(); };
-    modelMenuEl.appendChild(open);
-}
-
-async function openProjectMenu() {
-    const anchor = $("btn-project");
-    modelMenuEl.classList.remove("hidden");
-    modelMenuEl.dataset.kind = "project";
-    modelMenuEl.innerHTML = '<div class="model-empty">Chargement des projets…</div>';
-    positionModelMenu(anchor);
-    try {
-        const projects = await api.knownProjects();
-        ui.projects = projects;
-        if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") {
-            renderProjectMenu(projects);
-            positionModelMenu(anchor);
-        }
-    } catch (error) {
-        if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") {
-            modelMenuEl.innerHTML = `<div class="model-error">${escapeHtml(error.message)}</div>`;
-            positionModelMenu(anchor);
-        }
-    }
-}
-
-function toggleProjectMenu() {
-    if (!modelMenuEl.classList.contains("hidden") && modelMenuEl.dataset.kind === "project") hideModelMenu();
-    else openProjectMenu();
 }
 
 async function selectModel(id) {
@@ -3099,10 +3026,6 @@ $("mode-select").onchange = (ev) => send(`/mode ${ev.target.value}`);
 $("btn-model").onclick = (ev) => {
     ev.stopPropagation();
     toggleModelMenu();
-};
-$("btn-project").onclick = (ev) => {
-    ev.stopPropagation();
-    toggleProjectMenu();
 };
 $("st-model").onclick = () => toggleModelMenu();
 $("btn-history").onclick = (ev) => {
@@ -5141,7 +5064,6 @@ document.addEventListener("mousedown", (ev) => {
     if (!modelMenuEl.classList.contains("hidden") &&
         !modelMenuEl.contains(ev.target) &&
         !ev.target.closest("#btn-model") &&
-        !ev.target.closest("#btn-project") &&
         !ev.target.closest("#btn-history") &&
         !ev.target.closest("#st-model")) {
         hideModelMenu();
@@ -6598,6 +6520,9 @@ function setAgentTab(tab) {
 function updateStudioStatus(status) {
     const workspace = status.workspace || null;
     updateAgentProjectLabel(workspace);
+    $("agent-fr-project").disabled = Boolean(status.busy);
+    $("agent-fr-project-create").disabled = Boolean(status.busy);
+    $("agent-fr-project-chats").disabled = Boolean(status.busy) || !$("agent-fr-project").value;
     $("agent-access").textContent = status.fullAccess ? "Full accès" : status.autoApprove && status.autoApproveCommands ? "Automatique" : "Sur approbation";
     $("agent-access").classList.toggle("full-access", Boolean(status.fullAccess));
     if (studioWorkspace !== workspace) {
@@ -6615,9 +6540,223 @@ function updateAgentProjectLabel(workspace=ui.workspace){
     const label=workspace?workspace.replace(/[\\/]+$/, "").split(/[\\/]/).pop():"Aucun projet";
     $("agent-project-name").textContent=label;
     $("agent-project-name").title=workspace || "Ouvre un dossier pour travailler sur un projet";
-    $("project-label").textContent=workspace?label:"Choisir un projet";
-    $("btn-project").title=workspace ? `Projet de cette discussion : ${workspace}` : "Choisir le projet de cette discussion";
 }
+
+let franceStudentProjects = [];
+
+function setFranceStudentProjectState(message, error = false) {
+    const status = $("agent-fr-project-state");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("error", Boolean(error));
+}
+
+function renderFranceStudentProjects(data) {
+    const select = $("agent-fr-project");
+    if (!select) return;
+    franceStudentProjects = Array.isArray(data?.projects) ? data.projects.filter(project => project?.id) : franceStudentProjects;
+    const selected = data?.selected || null;
+    select.replaceChildren(new Option("Aucun projet (historique général)", ""));
+    for (const project of franceStudentProjects) {
+        const option = new Option(String(project.name || "Projet sans nom"), String(project.id));
+        select.appendChild(option);
+    }
+    if (selected?.id && !franceStudentProjects.some(project => String(project.id) === String(selected.id))) {
+        select.appendChild(new Option(String(selected.name || "Projet FranceStudent"), String(selected.id)));
+    }
+    select.value = selected?.id ? String(selected.id) : "";
+    const selectedProject = franceStudentProjects.find(project => String(project.id) === select.value) || selected;
+    const chatsButton = $("agent-fr-project-chats");
+    select.disabled = Boolean(ui.status.busy);
+    $("agent-fr-project-create").disabled = Boolean(ui.status.busy);
+    chatsButton.disabled = Boolean(ui.status.busy) || !select.value;
+    chatsButton.title = select.value ? "Ouvrir une discussion de ce projet" : "Choisis un projet pour voir ses discussions";
+    select.title = select.value
+        ? `Les nouvelles discussions seront classées dans « ${selectedProject?.name || "Projet FranceStudent"} »`
+        : "Choisis le projet FranceStudent des nouvelles discussions";
+    setFranceStudentProjectState(select.value
+        ? `Les nouvelles discussions sont classées dans « ${selectedProject?.name || "Projet FranceStudent"} ».`
+        : "Sans projet : les discussions restent dans l’historique général.");
+    if (data?.forgotten !== undefined) {
+        setFranceStudentProjectState(`Le projet « ${data.forgotten || "mémorisé"} » n’existe plus ou n’est plus accessible. Sans projet : les discussions restent dans l’historique général.`, true);
+    }
+}
+
+function syncFranceStudentProjectSelection(selected) {
+    const select = $("agent-fr-project");
+    if (!select || !Array.isArray(franceStudentProjects)) return;
+    renderFranceStudentProjects({ projects: franceStudentProjects, selected });
+}
+
+async function refreshFranceStudentProjects() {
+    const data = await api.franceStudentProjects("list");
+    renderFranceStudentProjects(data);
+    return data;
+}
+
+$("agent-fr-project-refresh").onclick = async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    setFranceStudentProjectState("Actualisation des projets FranceStudent…");
+    try {
+        await refreshFranceStudentProjects();
+    } catch (error) {
+        setFranceStudentProjectState(`Impossible d’actualiser les projets : ${error.message}`, true);
+    } finally {
+        button.disabled = false;
+    }
+};
+
+$("agent-fr-project").addEventListener("change", async event => {
+    const select = event.currentTarget;
+    select.disabled = true;
+    try {
+        const data = await api.franceStudentProjects(select.value ? "select" : "clear", select.value ? { id: select.value } : {});
+        renderFranceStudentProjects(data);
+        applyStatus(await api.status());
+        studioFeedback(data.selected
+            ? `Les nouvelles discussions seront classées dans « ${data.selected.name} ».`
+            : "Les nouvelles discussions ne seront rattachées à aucun projet FranceStudent.");
+    } catch (error) {
+        studioFeedback(error.message);
+        syncFranceStudentProjectSelection(ui.status.frProject || null);
+        try { await refreshFranceStudentProjects(); }
+        catch (refreshError) { setFranceStudentProjectState(`Impossible d’actualiser les projets : ${refreshError.message}`, true); }
+    } finally {
+        select.disabled = Boolean(ui.status.busy);
+    }
+});
+
+function openFranceStudentProjectDialog() {
+    const dialog = document.createElement("dialog");
+    dialog.className = "center-dialog";
+    dialog.innerHTML = '<form method="dialog"><div class="center-dialog-head"><h2>Créer un projet FranceStudent</h2><button type="button" data-close>Fermer</button></div><p class="history-intro">Donne un nom à ce groupe de conversations. Il sera créé dans FranceStudent.</p><label class="center-code-label">Nom du projet<input name="name" required maxlength="255" autocomplete="off" placeholder="Mon projet Roblox"></label><p class="studio-message" data-error role="status"></p><div class="center-dialog-actions"><button type="button" data-cancel>Annuler</button><button type="submit" class="primary">Créer et sélectionner</button></div></form>';
+    const form = dialog.querySelector("form");
+    const nameInput = form.elements.name;
+    const error = dialog.querySelector("[data-error]");
+    const close = () => { if (dialog.open) dialog.close(); };
+    dialog.querySelector("[data-close]").onclick = close;
+    dialog.querySelector("[data-cancel]").onclick = close;
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        const name = nameInput.value.trim();
+        if (!name) return;
+        const submit = form.querySelector('button[type="submit"]');
+        submit.disabled = true;
+        error.textContent = "Création en cours…";
+        try {
+            const data = await api.franceStudentProjects("create", { name });
+            renderFranceStudentProjects(data);
+            close();
+            applyStatus(await api.status());
+            studioFeedback(data.created
+                ? `Projet « ${data.selected.name} » créé. Les nouvelles discussions y seront classées.`
+                : `Projet « ${data.selected.name} » sélectionné.`);
+        } catch (createError) {
+            error.textContent = createError.message;
+            submit.disabled = false;
+        }
+    });
+    dialog.addEventListener("close", () => dialog.remove(), { once: true });
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    nameInput.focus();
+}
+
+$("agent-fr-project-create").onclick = openFranceStudentProjectDialog;
+
+async function openFranceStudentProjectChats() {
+    const projectId = $("agent-fr-project").value;
+    if (!projectId) {
+        studioFeedback("Choisis d’abord un projet FranceStudent.");
+        return;
+    }
+    const project = franceStudentProjects.find(item => String(item.id) === projectId);
+    const dialog = document.createElement("dialog");
+    dialog.className = "center-dialog fs-project-chats-dialog";
+    const heading = document.createElement("div");
+    heading.className = "center-dialog-head";
+    const title = document.createElement("h2");
+    title.textContent = "Discussions du projet";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "Fermer";
+    heading.append(title, close);
+    const description = document.createElement("p");
+    description.className = "history-intro";
+    description.textContent = `Reprends une conversation de « ${project?.name || "Projet FranceStudent"} ».`;
+    const status = document.createElement("p");
+    status.className = "settings-help";
+    status.setAttribute("role", "status");
+    const list = document.createElement("div");
+    list.className = "fs-project-chat-list";
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "history-open";
+    more.textContent = "Charger plus";
+    more.hidden = true;
+    dialog.append(heading, description, status, list, more);
+    const previous = document.activeElement;
+    dialog.addEventListener("close", () => {
+        dialog.remove();
+        requestAnimationFrame(() => { if (previous?.isConnected) previous.focus(); });
+    }, { once: true });
+    close.onclick = () => dialog.close();
+    let cursor = "";
+    const load = async () => {
+        more.disabled = true;
+        status.textContent = "Chargement des discussions…";
+        try {
+            const data = await api.franceStudentProjects("chats", { id: projectId, limit: 30, cursorChatId: cursor });
+            const chats = Array.isArray(data?.chats) ? data.chats : [];
+            for (const chat of chats) {
+                const id = String(chat?.id || chat?.chatId || "");
+                if (!id) continue;
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "fs-project-chat-item";
+                const updated = chat.updatedAt || chat.updated_at || chat.lastMessageAt || chat.createdAt || chat.created_at;
+                const date = updated && !Number.isNaN(new Date(updated).getTime())
+                    ? new Date(updated).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+                    : "";
+                const chatTitle = document.createElement("strong");
+                chatTitle.textContent = chat.title || chat.name || chat.chatName || "Discussion sans titre";
+                const detail = document.createElement("span");
+                detail.textContent = [date, chat.model].filter(Boolean).join(" · ") || `ID ${id}`;
+                item.append(chatTitle, detail);
+                item.title = `Reprendre cette discussion (${id})`;
+                item.onclick = async () => {
+                    if (ui.status.busy) {
+                        studioFeedback("Une demande est en cours : attends sa fin avant de changer de conversation.");
+                        return;
+                    }
+                    dialog.close();
+                    try {
+                        await api.conversationsOpen(id);
+                        setAgentTab("conversation");
+                    } catch (error) {
+                        studioFeedback(error.message);
+                    }
+                };
+                list.appendChild(item);
+            }
+            const last = chats.at(-1);
+            cursor = last ? String(last.id || last.chatId || "") : "";
+            more.hidden = !data?.hasMore || !cursor;
+            status.textContent = list.children.length ? "" : "Aucune discussion dans ce projet pour l’instant.";
+        } catch (error) {
+            status.textContent = `Impossible de charger les discussions : ${error.message}`;
+        } finally {
+            more.disabled = false;
+        }
+    };
+    more.onclick = load;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    await load();
+}
+
+$("agent-fr-project-chats").onclick = () => openFranceStudentProjectChats();
 function recordStudioEntry(entry) {
     if (entry.type === "user" && /^\/new\b/.test(entry.text || "")) studioEntries.length = 0;
     if (["user", "assistant", "tool", "result", "error", "warn", "plan"].includes(entry.type)) {
@@ -8670,7 +8809,7 @@ const chatNavigation = $("agent").querySelector(".agent-navigation");
 chatNavigationActions.append(...document.querySelector("#agent .agent-actions").children, $("agent-focus"));
 chatNavigation.append(chatNavigationActions);
 document.querySelector("#agent .agent-header").hidden = true;
-document.querySelector("#agent .agent-context-bar").hidden = true;
+document.querySelector("#agent .agent-context-bar").hidden = false;
 const moreChatTools = document.createElement("button");
 moreChatTools.type = "button"; moreChatTools.id = "chat-more-tools"; moreChatTools.className = "attach-btn";
 moreChatTools.title = "Outils du chat"; moreChatTools.setAttribute("aria-label", "Outils du chat");
@@ -8850,6 +8989,10 @@ function chooseZipFiles(attachment){
         const result = await api.bootstrap();
         if (result.origin) connectionOrigin = result.origin;
         if(result.credentialWarning)studioFeedback(result.credentialWarning);
+        if (result.ok) {
+            try { await refreshFranceStudentProjects(); }
+            catch (error) { setFranceStudentProjectState(`Impossible de charger les projets FranceStudent : ${error.message}`, true); }
+        }
         if (!result.ok) {
             openConnectionGuide(1);
             if (!result.needsLogin) guideError(result.reason);

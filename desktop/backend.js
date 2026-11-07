@@ -338,6 +338,7 @@ function createDesktopBackend(send) {
                 modelId: state.model,
                 chatContextKey: `${state.mode === "chat" ? "chat" : "agent"}:${state.chatIds[state.mode === "chat" ? "chat" : "agent"] || ""}:${state.model}`,
                 workspace: state.workspace,
+                frProject: state.frProject ? { ...state.frProject } : null,
                 fullAccess: Boolean(state.fullAccess),
                 autoApprove: Boolean(state.autoApprove),
                 autoApproveCommands: Boolean(state.autoApproveCommands),

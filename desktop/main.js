@@ -1093,6 +1093,49 @@ function registerIpc() {
         await projects.prune();
         return projects.list();
     });
+    handle("franceStudentProjects", async (action = "list", payload = {}) => {
+        if (!booted) throw new Error("Connecte-toi pour accéder aux projets FranceStudent.");
+        const frProjects = require("../src/api/fr-projects");
+        const { state } = require("../src/state");
+        if (action !== "list" && action !== "chats" && busy) {
+            throw new Error("Une demande est en cours : attends sa fin avant de changer de projet.");
+        }
+        if (action === "list") {
+            const saved = state.frProject || await frProjects.loadSelected();
+            const projects = await frProjects.listAvailableProjects();
+            const selected = saved && projects.some(project => String(project.id) === String(saved.id)) ? saved : null;
+            if (saved && !selected) await frProjects.saveSelected(null);
+            return { projects, selected, forgotten: saved && !selected ? saved.name || "" : undefined };
+        }
+        if (action === "select") {
+            const id = String(payload.id || "");
+            if (!id) throw new Error("Projet FranceStudent invalide.");
+            const projects = await frProjects.listAvailableProjects();
+            const project = projects.find(item => String(item?.id || "") === id);
+            if (!project || !project.id) throw new Error("Ce projet FranceStudent n’existe plus.");
+            const selected = await frProjects.saveSelected(project);
+            pushStatus();
+            return { projects, selected };
+        }
+        if (action === "create") {
+            const { project, created } = await frProjects.findOrCreateProject(String(payload.name || ""));
+            const selected = await frProjects.saveSelected(project);
+            const projects = await frProjects.listAvailableProjects();
+            pushStatus();
+            return { projects, selected, created };
+        }
+        if (action === "clear") {
+            const selected = await frProjects.saveSelected(null);
+            const projects = await frProjects.listAvailableProjects();
+            pushStatus();
+            return { projects, selected };
+        }
+        if (action === "chats") {
+            const id = String(payload.id || state.frProject?.id || "");
+            return frProjects.listProjectChats(id, { limit: payload.limit, cursorChatId: payload.cursorChatId });
+        }
+        throw new Error("Action de projet FranceStudent inconnue.");
+    });
     handle("setEditorContext", (files, active) => {
         const { state } = require("../src/state");
         state.openFiles = Array.isArray(files)

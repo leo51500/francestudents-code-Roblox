@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.15":{headline:"Les projets FranceStudent sont maintenant accessibles dans la discussion.",items:[
+        {icon:"chat",title:"Discussions classées par projet",text:"Choisis dans la barre du chat le projet FranceStudent où ranger tes nouvelles discussions."},
+        {icon:"tools",title:"Projets synchronisés",text:"Actualise la liste des projets personnels et partagés, ou crée un nouveau projet depuis l’application."},
+        {icon:"spark",title:"Reprendre une discussion",text:"Parcours les discussions d’un projet et ouvre un échange existant sans confondre projet web et dossier local."}
+    ]},
     "0.1.14":{headline:"Les mises à jour sont automatiques et l’interface encore plus sombre.",items:[
         {icon:"tools",title:"Mise à jour en arrière-plan",text:"Les versions installées se téléchargent automatiquement et s’installent à la fermeture de l’application."},
         {icon:"shield",title:"Installateur simplifié",text:"L’assistant ne redemande plus le choix entre installation utilisateur et installation pour tous."},
