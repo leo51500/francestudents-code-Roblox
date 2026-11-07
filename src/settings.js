@@ -13,7 +13,23 @@ const path = require("path");
 const { CONFIG } = require("./config");
 
 const FILE_NAME = "settings.json";
-const DEFAULTS = { version: 1, autoApproveAlways: false, autoApproveCommandsAlways: false, fullAccessAlways: false };
+const DEFAULTS = {
+    version: 1,
+    autoApproveAlways: false,
+    autoApproveCommandsAlways: false,
+    fullAccessAlways: false,
+    disabledBuiltinSkills: [],
+    programPaths: {}
+};
+
+function programPaths(value) {
+    const paths = {};
+    if (!value || typeof value !== "object" || Array.isArray(value)) return paths;
+    for (const key of ["blender", "robloxStudio"]) {
+        if (typeof value[key] === "string" && value[key].trim()) paths[key] = value[key].trim();
+    }
+    return paths;
+}
 
 function file() {
     return path.join(CONFIG.dataDir, FILE_NAME);
@@ -28,7 +44,11 @@ function load() {
             ...raw,
             autoApproveAlways: raw.autoApproveAlways === true,
             fullAccessAlways: raw.fullAccessAlways === true,
-            autoApproveCommandsAlways: raw.autoApproveCommandsAlways === true
+            autoApproveCommandsAlways: raw.autoApproveCommandsAlways === true,
+            disabledBuiltinSkills: Array.isArray(raw.disabledBuiltinSkills)
+                ? raw.disabledBuiltinSkills.filter(item => typeof item === "string")
+                : [],
+            programPaths: programPaths(raw.programPaths)
         };
     } catch {
         return { ...DEFAULTS };

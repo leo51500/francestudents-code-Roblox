@@ -12,6 +12,9 @@ const TOOL_LABELS = {
     delete_path: "Supprimer",
     remember: "Mémoriser",
     run_command: "Commande",
+    open_program: "Ouvrir",
+    open_app: "Ouvrir une application",
+    open_in: "Ouvrir avec",
     web_fetch: "Web"
 };
 

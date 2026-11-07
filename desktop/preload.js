@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld("frst", {
     skillsList: () => call("skillsList"),
     extensionAction: (action, payload) => call("extensionAction", String(action || "list"), payload || {}),
     mcpManage: (action, payload) => call("mcpManage", String(action || ""), payload || {}),
+    programs: (action, payload) => call("programs", String(action || "detect"), payload || {}),
     preferences: (action, payload) => call("preferences", String(action || "get"), payload || {}),
     checkpointPreference: (action, value) => call("checkpointPreference", String(action || "get"), value),
     customProviders: (action, payload) => call("customProviders", String(action || "list"), payload || {}),

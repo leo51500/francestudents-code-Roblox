@@ -1,5 +1,12 @@
 # Journal des modifications
 
+## 0.1.13 — Outils Roblox, lanceur et notifications
+
+- Ajout des skills Roblox + Blender et des connexions MCP prêtes à l’emploi pour le pipeline de création, LOD, upload et insertion dans Studio.
+- Détection et lancement de Blender, Roblox Studio et des applications du menu Démarrer, Steam et Microsoft Store.
+- L’agent peut ouvrir un fichier ou dossier du projet dans une application choisie.
+- Ajout d’une notification sonore quand une tâche de l’agent se termine pendant que l’application n’est pas au premier plan.
+
 ## 0.1.10 — Confirmation Windows lors de l’installation
 
 - L’installateur s’ouvre lors de l’installation d’une mise à jour afin de permettre la confirmation Windows.

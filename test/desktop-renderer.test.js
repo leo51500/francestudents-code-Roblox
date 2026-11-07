@@ -38,6 +38,8 @@ test("renderer : escapeHtml, inline, renderMarkdown et toolLabel", () => {
     assert.match(html, /<ul><li>a<\/li><li>b<\/li><\/ul>/);
     assert.match(html, /<pre><code>&lt;x&gt;<\/code><\/pre>/);
     assert.equal(r.toolLabel("read_file"), "Lire");
+    assert.equal(r.toolLabel("open_app"), "Ouvrir une application");
+    assert.equal(r.toolLabel("open_in"), "Ouvrir avec");
     assert.equal(r.toolLabel("inconnu"), "inconnu");
 });
 

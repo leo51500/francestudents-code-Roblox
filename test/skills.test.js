@@ -53,11 +53,13 @@ test("skills : création, liste, catalogue, chargement, priorité projet, désac
         const projectBase = skills.projectSkillsDir(workspace);
         writeSkill(projectBase, "commun", "---\nname: commun\ndescription: version projet\n---\nProjet");
 
-        const list = await skills.listSkills(workspace);
+        const all = await skills.listSkills(workspace);
+        const list = all.filter(s => s.scope !== skills.BUILTIN_SCOPE);
         assert.deepEqual(list.map(s => s.name), ["commun", "eteint", "mon-skill", "sans-meta"]);
         assert.equal(list.find(s => s.name === "commun").scope, "projet");
         assert.equal(list.find(s => s.name === "sans-meta").description, "Résumé auto");
         assert.ok(list.every(s => s.body === undefined));
+        assert.ok(all.some(s => s.scope === skills.BUILTIN_SCOPE), "les skills intégrés sont livrés");
 
         const catalog = await skills.catalog(workspace);
         assert.match(catalog, /"commun" \(projet\) : version projet/);
@@ -80,6 +82,34 @@ test("skills : création, liste, catalogue, chargement, priorité projet, désac
         fs.rmSync(userDir, { recursive: true, force: true });
         fs.rmSync(workspace, { recursive: true, force: true });
     }
+});
+
+test("skills intégrés : pipeline Roblox + Blender, lecture seule, désactivation via settings", async () => {
+    const builtins = (await skills.listSkills(null)).filter(s => s.scope === skills.BUILTIN_SCOPE);
+    assert.ok(builtins.some(s => s.name === "roblox-blender"));
+    assert.ok(builtins.some(s => s.name === "roblox-lod"));
+
+    const model = await skills.getSkill("roblox-blender", null);
+    assert.match(model.description, /Blender/);
+    assert.match(model.instructions, /bpy\.ops\.rbx\.upload/);
+    assert.match(model.instructions, /Roblox Package ID/);
+    assert.match(model.instructions, /LOD0/);
+
+    const lod = await skills.getSkill("roblox-lod", null);
+    assert.match(lod.instructions, /LOD3/);
+    assert.match(lod.instructions, /Decimate/);
+
+    const off = await skills.setSkillDisabled("roblox-blender", true, null);
+    assert.equal(off.scope, skills.BUILTIN_SCOPE);
+    assert.equal(off.disabled, true);
+    assert.equal(off.changed, true);
+    await assert.rejects(skills.getSkill("roblox-blender", null), /inconnu ou désactivé/);
+    assert.doesNotMatch(await skills.catalog(null), /roblox-blender/);
+
+    const on = await skills.setSkillDisabled("roblox-blender", false, null);
+    assert.equal(on.disabled, false);
+    assert.equal(on.changed, true);
+    assert.match(await skills.catalog(null), /roblox-blender/);
 });
 
 test("setFrontmatterValue : remplace, ajoute, conserve BOM/CRLF, crée le frontmatter", () => {

@@ -173,21 +173,233 @@ function extMessage(list, text) {
     list.appendChild(empty);
 }
 
+function foldProgramText(value) {
+    return String(value || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("fr");
+}
+
+function filterApplications(applications, query) {
+    const terms = foldProgramText(query).trim().split(/\s+/).filter(Boolean);
+    if (!terms.length) return applications;
+    return applications.filter(app => {
+        const haystack = foldProgramText(`${app.name} ${app.source}`);
+        return terms.every(term => haystack.includes(term));
+    });
+}
+
+function renderPrograms(programs, applications = []) {
+    const box = document.createElement("div");
+    box.className = "ext-programs";
+    const title = document.createElement("div");
+    title.className = "ext-item-sub";
+    title.textContent = "Applications";
+    box.appendChild(title);
+    for (const program of programs) {
+        const tag = program.running ? "Ouvert" : program.found ? "Détecté" : "Introuvable";
+        const sub = program.found
+            ? `${program.path}${program.source ? ` · ${program.source}` : ""}${program.configuredMissing ? " · chemin choisi introuvable" : ""}`
+            : "Installe l’application ou choisis son fichier .exe.";
+        const item = extItem(program.label, {
+            dot: program.running ? "running" : program.found ? "starting" : "failed",
+            tag,
+            sub,
+            error: !program.found
+        });
+        const actions = document.createElement("div");
+        actions.className = "center-card-actions";
+
+        const open = document.createElement("button");
+        open.type = "button";
+        open.textContent = program.running ? "Déjà ouvert" : "Ouvrir";
+        open.disabled = !program.found || program.running;
+        open.onclick = async () => {
+            open.disabled = true;
+            try {
+                await api.programs("launch", { id: program.id });
+                await refreshMcp();
+            } catch (error) {
+                open.disabled = false;
+                extMessage($("mcp-list"), `Application : ${error.message}`);
+            }
+        };
+        actions.appendChild(open);
+
+        const choose = document.createElement("button");
+        choose.type = "button";
+        choose.textContent = "Choisir l’exécutable…";
+        choose.onclick = async () => {
+            choose.disabled = true;
+            try {
+                await api.programs("choose", { id: program.id });
+                await refreshMcp();
+            } catch (error) {
+                choose.disabled = false;
+                extMessage($("mcp-list"), `Application : ${error.message}`);
+            }
+        };
+        actions.appendChild(choose);
+
+        if (program.configured) {
+            const reset = document.createElement("button");
+            reset.type = "button";
+            reset.textContent = "Chemin auto";
+            reset.onclick = async () => {
+                reset.disabled = true;
+                try {
+                    await api.programs("clear", { id: program.id });
+                    await refreshMcp();
+                } catch (error) {
+                    reset.disabled = false;
+                    extMessage($("mcp-list"), `Application : ${error.message}`);
+                }
+            };
+            actions.appendChild(reset);
+        }
+
+        item.appendChild(actions);
+        box.appendChild(item);
+    }
+
+    const section = document.createElement("div");
+    section.className = "ext-item-sub";
+    section.textContent = "Toutes les applications";
+    box.appendChild(section);
+
+    const search = document.createElement("input");
+    search.type = "search";
+    search.className = "ext-app-search";
+    search.placeholder = "Rechercher : Calculatrice, Steam, Paint…";
+    search.setAttribute("aria-label", "Rechercher une application");
+    box.appendChild(search);
+
+    const results = document.createElement("div");
+    results.className = "ext-app-results";
+    box.appendChild(results);
+
+    const status = document.createElement("div");
+    status.className = "ext-app-status";
+    box.appendChild(status);
+
+    const renderResults = () => {
+        results.innerHTML = "";
+        status.textContent = "";
+        const matches = filterApplications(applications, search.value).slice(0, 40);
+        if (!applications.length) {
+            const empty = document.createElement("div");
+            empty.className = "ext-empty";
+            empty.textContent = "Liste des applications indisponible sur ce système.";
+            results.appendChild(empty);
+            return;
+        }
+        if (!matches.length) {
+            const empty = document.createElement("div");
+            empty.className = "ext-empty";
+            empty.textContent = "Aucune application ne correspond.";
+            results.appendChild(empty);
+            return;
+        }
+        for (const app of matches) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "ext-app-result";
+            button.title = app.target;
+            const name = document.createElement("span");
+            name.textContent = app.name;
+            const source = document.createElement("span");
+            source.className = "ext-app-source";
+            source.textContent = app.source;
+            button.append(name, source);
+            button.onclick = async () => {
+                button.disabled = true;
+                try {
+                    const result = await api.programs("launch-app", { appId: app.id });
+                    status.textContent = result?.message || `${app.name} : ouverture demandée.`;
+                } catch (error) {
+                    status.textContent = `Application : ${error.message}`;
+                } finally {
+                    button.disabled = false;
+                }
+            };
+            results.appendChild(button);
+        }
+    };
+    search.oninput = renderResults;
+    renderResults();
+
+    const file = document.createElement("button");
+    file.type = "button";
+    file.className = "ext-app-file";
+    file.textContent = "Ouvrir un fichier…";
+    file.onclick = async () => {
+        file.disabled = true;
+        try {
+            const result = await api.programs("open-file");
+            if (result) status.textContent = result.message;
+        } catch (error) {
+            status.textContent = `Fichier : ${error.message}`;
+        } finally {
+            file.disabled = false;
+        }
+    };
+    box.appendChild(file);
+
+    return box;
+}
+
 async function refreshMcp(action = "") {
     const list = $("mcp-list");
     extMessage(list, action === "restart" ? "Redémarrage des serveurs…" : "Démarrage des serveurs…");
     try {
-        const data = await api.mcpList(action);
+        const [data, programData, appData] = await Promise.all([
+            api.mcpList(action),
+            api.programs("detect").catch(() => ({ programs: [] })),
+            api.programs("apps", { refresh: action === "restart" }).catch(() => ({ applications: [] }))
+        ]);
         list.innerHTML = "";
+        if (programData.programs?.length || appData.applications?.length) {
+            list.appendChild(renderPrograms(programData.programs || [], appData.applications || []));
+        }
         if (!data.servers.length) {
-            extMessage(list, `Aucun serveur configuré. Ajoute-les dans ${data.configFile} (format mcpServers).`);
-            return;
+            const empty = document.createElement("div");
+            empty.className = "ext-empty";
+            empty.textContent = `Aucun serveur configuré. Ajoute-les dans ${data.configFile} (format mcpServers).`;
+            list.appendChild(empty);
         }
         for (const server of data.servers) {
             const sub = server.status === "running"
                 ? `${server.tools.length} outil(s) : ${server.tools.join(", ")}`
                 : server.error || server.status;
             list.appendChild(renderMcpCard(server, sub));
+        }
+        const missing = (data.presets || []).filter(preset => !data.servers.some(server => server.name === preset.name));
+        if (missing.length) {
+            const box = document.createElement("div");
+            box.className = "ext-presets";
+            const title = document.createElement("div");
+            title.className = "ext-item-sub";
+            title.textContent = "Connexions rapides Roblox + Blender";
+            box.appendChild(title);
+            for (const preset of missing) {
+                const card = extItem(preset.label, { tag: "Non configuré", sub: preset.description });
+                const actions = document.createElement("div");
+                actions.className = "center-card-actions";
+                const button = document.createElement("button");
+                button.type = "button";
+                button.textContent = `Ajouter ${preset.label}`;
+                button.onclick = async () => {
+                    button.disabled = true;
+                    try {
+                        await api.mcpManage("add-preset", { preset: preset.id });
+                        await refreshMcp();
+                    } catch (error) {
+                        button.disabled = false;
+                        extMessage(list, `MCP : ${error.message}`);
+                    }
+                };
+                actions.appendChild(button);
+                card.appendChild(actions);
+                box.appendChild(card);
+            }
+            list.appendChild(box);
         }
     } catch (error) {
         extMessage(list, `MCP : ${error.message}`);

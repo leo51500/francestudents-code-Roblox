@@ -12,6 +12,7 @@
 | [Cockpit et éditeur](studio.md) | Fichiers, terminal, tâches et Git local |
 | [Pièces jointes](attachments.md) | Formats, conversions et limites |
 | [Skills et serveurs MCP](extensions.md) | Ajouter des instructions et des outils |
+| [Roblox + Blender](roblox-blender.md) | Modèles 3D, LOD, plugin Roblox et import dans Studio |
 | [Usage et quota](usage.md) | Budget, compteurs et réinitialisation |
 | [Mode Éco](eco-mode.md) | Réduction du contexte et limites |
 | [Dépannage](depannage.md) | Connexion, erreurs et fichiers |

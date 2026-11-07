@@ -20,10 +20,20 @@
 - Agent IA avec historique visible, reprise de conversations, plans et sauvegardes avant modification.
 - Git local pour consulter l’état, les changements et l’historique, puis créer des commits.
 - Skills installables et serveurs MCP configurables pour ajouter des outils.
+- Notifications Windows avec son système à la fin d’une tâche, quand l’application est en arrière-plan.
+- Spécialisation **Roblox + Blender** : modèles 3D créés dans Blender, génération
+  des LOD, upload avec le plugin Roblox et insertion automatique dans Studio via
+  les serveurs MCP. Blender et Studio sont détectés (Steam, installation ou
+  fichier choisi) et peuvent être ouverts depuis l’application ; le même panneau
+  lance n’importe quelle application installée (menu Démarrer, Store, Steam) et
+  l’agent peut l’ouvrir avec `open_app`. Voir
+  [Roblox + Blender](docs/roblox-blender.md).
 - Connexion au compte FranceStudent, sélection du modèle et profils de fournisseurs personnalisés.
 - Pièces jointes, recherche documentaire, aperçus Markdown et suivi du quota.
 
-Le projet est en cours d’adaptation pour les usages Roblox. Les intégrations Roblox Studio spécifiques ne sont pas incluses à ce stade ; MCP et les skills restent disponibles pour de futures extensions.
+Les skills intégrés `roblox-blender` et `roblox-lod` sont livrés avec
+l’application et actifs par défaut. Les connexions MCP Blender et Roblox Studio
+peuvent être ajoutées en un clic depuis **Extensions**.
 
 ## Démarrer depuis les sources
 

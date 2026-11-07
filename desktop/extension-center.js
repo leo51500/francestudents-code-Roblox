@@ -6,6 +6,7 @@ const skills = require("../src/skills");
 const settings = require("../src/settings");
 const { library } = require("../src/skills/library");
 const mcp = require("../src/mcp/manager");
+const mcpPresets = require("../src/mcp/presets");
 
 const keyOf = skill => `${skill.scope}:${path.basename(skill.dir)}`;
 const safeName = value => {
@@ -107,6 +108,9 @@ function createExtensionCenter({ workspace = () => null, busy = () => false } = 
                 }
             } else {
                 const skill = await resolveSkill(payload.key);
+                if (skill.scope === skills.BUILTIN_SCOPE && (type === "save" || type === "remove")) {
+                    throw new Error("Skill intégré : il est en lecture seule. Désactive-le ou crée une copie personnelle avec le même nom.");
+                }
                 if (type === "toggle") await skills.setSkillDisabled(skill.name, payload.disabled === true, workspace());
                 else if (type === "save") await atomicWrite(skill.file, validateContent(payload.content));
                 else if (type === "remove") {
@@ -129,11 +133,15 @@ function createExtensionCenter({ workspace = () => null, busy = () => false } = 
             try { raw = await fs.readFile(file, "utf8"); } catch (error) { if (error.code !== "ENOENT") throw error; }
             const data = raw ? JSON.parse(raw.replace(/^\uFEFF/, "")) : { mcpServers: {} };
             mcp.parseConfig(data);
-            const name = String(payload.name || "");
+            const preset = type === "add-preset" ? mcpPresets.getPreset(payload.preset) : null;
+            if (type === "add-preset" && !preset) throw new Error("Connexion rapide inconnue.");
+            const name = String(preset ? preset.name : payload.name || "");
             if (!/^[A-Za-z0-9_.-]{1,64}$/.test(name) || ["__proto__", "constructor", "prototype"].includes(name)) throw new Error("Nom de serveur invalide.");
-            if (type === "add") {
+            if (type === "add" || type === "add-preset") {
                 if (Object.hasOwn(data.mcpServers, name)) throw new Error("Ce serveur existe déjà.");
-                data.mcpServers[name] = { command: payload.command, args: payload.args || [], env: payload.env || {}, ...(payload.cwd ? { cwd: payload.cwd } : {}) };
+                data.mcpServers[name] = preset
+                    ? { command: preset.command, args: preset.args, env: {}, timeoutMs: preset.timeoutMs }
+                    : { command: payload.command, args: payload.args || [], env: payload.env || {}, ...(payload.cwd ? { cwd: payload.cwd } : {}) };
             } else {
                 if (!Object.hasOwn(data.mcpServers, name)) throw new Error("Serveur introuvable.");
                 if (type === "remove") delete data.mcpServers[name];

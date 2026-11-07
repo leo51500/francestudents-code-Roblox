@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the welcome summary for the current project version.
 const releases={
+    "0.1.13":{headline:"Un espace Roblox + Blender, un lanceur et des notifications.",items:[
+        {icon:"tools",title:"Pipeline Roblox + Blender",text:"Des skills et connexions MCP intégrés accompagnent la création dans Blender, les LOD, l’upload et l’insertion dans Studio."},
+        {icon:"spark",title:"Applications et fichiers",text:"Détecte et ouvre les applications Windows, puis ouvre un fichier ou dossier dans VS Code, l’Explorateur ou une autre application."},
+        {icon:"chat",title:"Notification sonore",text:"Quand l’application n’est pas au premier plan, une notification Windows signale la fin d’une tâche."}
+    ]},
     "0.1.10":{headline:"Les mises à jour gardent leur confirmation Windows.",items:[
         {icon:"tools",title:"Téléchargement automatique conservé",text:"Les mises à jour continuent de se télécharger en arrière-plan."},
         {icon:"shield",title:"Confirmation de l’installateur",text:"À l’installation, la fenêtre Windows reste visible pour confirmer le lancement de l’installateur."},

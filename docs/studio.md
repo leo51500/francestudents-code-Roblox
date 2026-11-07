@@ -10,6 +10,8 @@ La vue **Exécutions** détecte les scripts de `package.json` et les commandes c
 
 Quatre commandes peuvent tourner simultanément. **Arrêter** termine le groupe de processus ; **Relancer** réexécute la commande. Les commandes personnelles sont conservées dans `.frst/ide-tasks.json`, avec une copie avant retrait.
 
+Quand une demande à l’agent se termine alors que l’application n’est pas au premier plan, Windows affiche une notification et joue son son de notification par défaut. Le son dépend des réglages de notifications et du mode Ne pas déranger de Windows.
+
 **Qualité** vérifie la disponibilité de Node.js, npm et Git et regroupe les diagnostics JavaScript/TypeScript des fichiers ouverts. Cela ne remplace pas le lint et les tests du projet.
 
 ## Édition et navigation

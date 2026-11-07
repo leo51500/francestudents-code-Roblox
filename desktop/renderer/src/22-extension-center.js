@@ -99,12 +99,15 @@ function renderInstalledSkills() {
     const filtered = centerData.skills.filter(skill => `${skill.name} ${skill.description}`.toLocaleLowerCase("fr").includes(query) && (filter === "all" || filter === "active" && !skill.disabled || filter === "disabled" && skill.disabled || filter === "favorites" && skill.favorite || filter === skill.scope));
     for (const skill of filtered.slice(0, installedVisibleCount)) {
         const card = centerNode("article", "center-card"); card.dataset.skillKey = skill.key;
-        card.append(centerNode("span", "ext-tag", skill.scope === "projet" ? "Ce projet" : "Tous mes projets"), centerNode("h3", "", skill.name), centerNode("p", "", skill.description));
+        const scopeLabel = skill.scope === "projet" ? "Ce projet" : skill.scope === "intégré" ? "Intégré" : "Tous mes projets";
+        card.append(centerNode("span", "ext-tag", scopeLabel), centerNode("h3", "", skill.name), centerNode("p", "", skill.description));
         const actions = centerNode("div", "center-card-actions");
         const favorite = centerButton(skill.favorite ? "★" : "☆", () => changeExtension("favorite", {key:skill.key}));
         favorite.setAttribute("aria-label", `${skill.favorite ? "Retirer des" : "Ajouter aux"} favoris : ${skill.name}`);
         favorite.setAttribute("aria-pressed", String(skill.favorite));
-        actions.append(favorite, centerButton("Ouvrir", async () => openSkillEditor({kind:"edit", item:await api.extensionAction("read", {key:skill.key}), key:skill.key})), uninstallSkillButton(skill));
+        const open = centerButton(skill.scope === "intégré" ? "Lire" : "Ouvrir", async () => openSkillEditor({kind:"edit", item:await api.extensionAction("read", {key:skill.key}), key:skill.key}));
+        actions.append(favorite, open);
+        if (skill.scope !== "intégré") actions.append(uninstallSkillButton(skill));
         const label = centerNode("label", "skill-enabled");
         const toggle = document.createElement("input"); toggle.type = "checkbox"; toggle.checked = !skill.disabled; toggle.setAttribute("role", "switch"); toggle.setAttribute("aria-label", `Activer ${skill.name}`);
         toggle.onchange = async () => {
@@ -140,20 +143,24 @@ function openSkillEditor(state) {
     const item = state.item || {};
     const remote = state.kind === "remote";
     const library = state.kind === "library";
-    $("skill-editor-title").textContent = library ? item.title : remote ? item.name : state.kind === "edit" ? `Modifier ${item.name}` : "Créer ou importer un skill";
+    const builtin = item.scope === "intégré";
+    $("skill-editor-title").textContent = builtin ? `Lire ${item.name}` : library ? item.title : remote ? item.name : state.kind === "edit" ? `Modifier ${item.name}` : "Créer ou importer un skill";
     $("skill-editor-description").textContent = remote ? item.resourceCount ? `${item.resourceCount} ressource(s) annexe(s) incluse(s). Après installation, active le skill dans Mes skills pour l’utiliser.` : "Skill communautaire : vérifie les instructions et la licence du dépôt. Après installation, active-le dans Mes skills pour l’utiliser. Seul le SKILL.md est copié." : library ? `${item.description} · ${item.category}` : "Écris ou colle les instructions que l’agent doit suivre quand il utilise ce skill.";
     $("skill-editor-name").value = item.id || item.name || "mon-skill";
     $("skill-editor-name").disabled = !["new", "remote", "local"].includes(state.kind);
     if (remote) $("skill-editor-name").value = item.name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "community-skill";
     $("skill-editor-identity").classList.toggle("hidden", state.kind === "edit");
-    $("skill-editor-scope").value = library ? $("library-scope").value : item.scope || "utilisateur";
+    $("skill-editor-scope").value = builtin ? "utilisateur" : library ? $("library-scope").value : item.scope || "utilisateur";
+    $("skill-editor-scope").disabled = builtin;
     $("skill-editor-content").value = item.content || "---\nname: mon-skill\ndescription: Quand utiliser ce skill.\n---\n\n# Ma méthode\n\nDécris les étapes et les vérifications à suivre.\n";
-    $("skill-editor-content").readOnly = library || remote || state.kind === "local";
-    $("skill-editor-content").closest("label").nextElementSibling.textContent = state.kind === "local" || item.resourceCount
-        ? "Les instructions et les ressources annoncées seront copiées. Aucun script n’est exécuté pendant l’import."
-        : "Tu peux coller un SKILL.md personnel ici. Seules ces instructions sont importées ; les scripts et fichiers annexes ne sont pas copiés.";
-    $("skill-editor-save").textContent = remote ? "Installer" : library ? "Installer ce skill" : "Enregistrer";
-    $("skill-editor-save").disabled = false;
+    $("skill-editor-content").readOnly = library || remote || state.kind === "local" || builtin;
+    $("skill-editor-content").closest("label").nextElementSibling.textContent = builtin
+        ? "Skill intégré en lecture seule. Désactive-le dans Mes skills ou crée une copie personnelle avec le même nom pour le modifier."
+        : state.kind === "local" || item.resourceCount
+            ? "Les instructions et les ressources annoncées seront copiées. Aucun script n’est exécuté pendant l’import."
+            : "Tu peux coller un SKILL.md personnel ici. Seules ces instructions sont importées ; les scripts et fichiers annexes ne sont pas copiés.";
+    $("skill-editor-save").textContent = builtin ? "Lecture seule" : remote ? "Installer" : library ? "Installer ce skill" : "Enregistrer";
+    $("skill-editor-save").disabled = builtin;
     $("skill-editor-message").textContent = "";
     if (state.kind === "local") {
         $("skill-editor-title").textContent = "Importer un skill téléchargé";

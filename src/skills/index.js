@@ -4,9 +4,13 @@
  * Skills : dossiers contenant un SKILL.md (frontmatter name / description),
  * au format des « Agent Skills ».
  *
- * Emplacements (le projet remplace l'utilisateur à nom égal) :
+ * Emplacements (priorité croissante ; un nom identique remplace le précédent) :
+ *   - intégré     : src/skills/builtin/<nom>/SKILL.md (livré avec l'application)
  *   - utilisateur : <dataDir>/skills/<nom>/SKILL.md  (ou FS_SKILLS_DIR)
  *   - projet      : <workspace>/.frst/skills/<nom>/SKILL.md
+ *
+ * Les skills intégrés sont en lecture seule. On les désactive via settings.json
+ * (disabledBuiltinSkills) au lieu de modifier leur fichier.
  *
  * Le catalogue (nom + description) est injecté dans le prompt de l'agent ;
  * l'outil use_skill renvoie les instructions complètes à la demande.
@@ -20,6 +24,12 @@ const SKILL_FILE = "SKILL.md";
 const MAX_SKILL_CHARS = 60_000;
 const MAX_SKILLS = 2000;
 const MAX_EXTRA_FILES = 50;
+const BUILTIN_SCOPE = "intégré";
+
+/** Skills livrés avec l'application (lecture seule). */
+function builtinSkillsDir() {
+    return path.join(__dirname, "builtin");
+}
 
 function userSkillsDir() {
     return process.env.FS_SKILLS_DIR || path.join(CONFIG.dataDir, "skills");
@@ -30,10 +40,33 @@ function projectSkillsDir(workspace) {
 }
 
 function skillDirs(workspace) {
-    const dirs = [{ dir: userSkillsDir(), scope: "utilisateur" }];
+    const dirs = [{ dir: builtinSkillsDir(), scope: BUILTIN_SCOPE }];
+    dirs.push({ dir: userSkillsDir(), scope: "utilisateur" });
     const projectDir = projectSkillsDir(workspace);
     if (projectDir) dirs.push({ dir: projectDir, scope: "projet" });
     return dirs;
+}
+
+function disabledBuiltinSkills() {
+    try {
+        const list = require("../settings").load().disabledBuiltinSkills;
+        return Array.isArray(list) ? list.map(normalizeName) : [];
+    } catch {
+        return [];
+    }
+}
+
+function setBuiltinDisabled(name, disabled) {
+    const settings = require("../settings");
+    const current = disabledBuiltinSkills();
+    const wanted = normalizeName(name);
+    const next = disabled
+        ? [...new Set([...current, wanted])]
+        : current.filter(item => item !== wanted);
+    if (next.length !== current.length || next.some((item, index) => item !== current[index])) {
+        settings.save({ disabledBuiltinSkills: next.sort() });
+    }
+    return next;
 }
 
 function unquote(value) {
@@ -129,7 +162,11 @@ async function loadSkills(workspace) {
 
         for (const folder of folders) {
             const skill = await readSkillDir(dir, folder, scope);
-            if (skill) byName.set(normalizeName(skill.name), skill);
+            if (!skill) continue;
+            if (scope === BUILTIN_SCOPE && disabledBuiltinSkills().includes(normalizeName(skill.name))) {
+                skill.disabled = true;
+            }
+            byName.set(normalizeName(skill.name), skill);
             if (byName.size >= MAX_SKILLS) break;
         }
     }
@@ -304,7 +341,9 @@ async function setSkillDisabled(name, disabled, workspace) {
     const wantDisabled = disabled === true;
     const changed = skill.disabled !== wantDisabled;
 
-    if (changed) {
+    if (changed && skill.scope === BUILTIN_SCOPE) {
+        setBuiltinDisabled(skill.name, wantDisabled);
+    } else if (changed) {
         const text = await fs.readFile(skill.file, "utf8");
         await fs.writeFile(skill.file, setFrontmatterValue(text, "disabled", wantDisabled ? "true" : "false"), "utf8");
     }
@@ -314,8 +353,10 @@ async function setSkillDisabled(name, disabled, workspace) {
 
 module.exports = {
     SKILL_FILE,
+    BUILTIN_SCOPE,
     parseFrontmatter,
     setFrontmatterValue,
+    builtinSkillsDir,
     userSkillsDir,
     projectSkillsDir,
     loadSkills,

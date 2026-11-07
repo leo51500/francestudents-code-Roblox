@@ -220,7 +220,7 @@ const TOOL_LABELS = {
     list_directory: "Lister", read_file: "Lire", search_files: "Chercher",web_search_result:"Résultat web",view_image:"Examiner l’image",
     create_directory: "Créer le dossier", write_file: "Écrire", edit_file: "Éditer",
     move_path: "Déplacer", copy_path: "Copier", delete_path: "Supprimer",
-    remember: "Mémoriser", run_command: "Commande", web_search: "Rechercher sur le web", web_fetch: "Lire une source", update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics", job_output: "Lire la commande", job_stop: "Arrêter la commande"
+    remember: "Mémoriser", run_command: "Commande", open_program: "Ouvrir", open_app: "Ouvrir une application", open_in: "Ouvrir avec", web_search: "Rechercher sur le web", web_fetch: "Lire une source", update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics", job_output: "Lire la commande", job_stop: "Arrêter la commande"
 };
 
 function toolLabel(name) {
@@ -3615,21 +3615,233 @@ function extMessage(list, text) {
     list.appendChild(empty);
 }
 
+function foldProgramText(value) {
+    return String(value || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("fr");
+}
+
+function filterApplications(applications, query) {
+    const terms = foldProgramText(query).trim().split(/\s+/).filter(Boolean);
+    if (!terms.length) return applications;
+    return applications.filter(app => {
+        const haystack = foldProgramText(`${app.name} ${app.source}`);
+        return terms.every(term => haystack.includes(term));
+    });
+}
+
+function renderPrograms(programs, applications = []) {
+    const box = document.createElement("div");
+    box.className = "ext-programs";
+    const title = document.createElement("div");
+    title.className = "ext-item-sub";
+    title.textContent = "Applications";
+    box.appendChild(title);
+    for (const program of programs) {
+        const tag = program.running ? "Ouvert" : program.found ? "Détecté" : "Introuvable";
+        const sub = program.found
+            ? `${program.path}${program.source ? ` · ${program.source}` : ""}${program.configuredMissing ? " · chemin choisi introuvable" : ""}`
+            : "Installe l’application ou choisis son fichier .exe.";
+        const item = extItem(program.label, {
+            dot: program.running ? "running" : program.found ? "starting" : "failed",
+            tag,
+            sub,
+            error: !program.found
+        });
+        const actions = document.createElement("div");
+        actions.className = "center-card-actions";
+
+        const open = document.createElement("button");
+        open.type = "button";
+        open.textContent = program.running ? "Déjà ouvert" : "Ouvrir";
+        open.disabled = !program.found || program.running;
+        open.onclick = async () => {
+            open.disabled = true;
+            try {
+                await api.programs("launch", { id: program.id });
+                await refreshMcp();
+            } catch (error) {
+                open.disabled = false;
+                extMessage($("mcp-list"), `Application : ${error.message}`);
+            }
+        };
+        actions.appendChild(open);
+
+        const choose = document.createElement("button");
+        choose.type = "button";
+        choose.textContent = "Choisir l’exécutable…";
+        choose.onclick = async () => {
+            choose.disabled = true;
+            try {
+                await api.programs("choose", { id: program.id });
+                await refreshMcp();
+            } catch (error) {
+                choose.disabled = false;
+                extMessage($("mcp-list"), `Application : ${error.message}`);
+            }
+        };
+        actions.appendChild(choose);
+
+        if (program.configured) {
+            const reset = document.createElement("button");
+            reset.type = "button";
+            reset.textContent = "Chemin auto";
+            reset.onclick = async () => {
+                reset.disabled = true;
+                try {
+                    await api.programs("clear", { id: program.id });
+                    await refreshMcp();
+                } catch (error) {
+                    reset.disabled = false;
+                    extMessage($("mcp-list"), `Application : ${error.message}`);
+                }
+            };
+            actions.appendChild(reset);
+        }
+
+        item.appendChild(actions);
+        box.appendChild(item);
+    }
+
+    const section = document.createElement("div");
+    section.className = "ext-item-sub";
+    section.textContent = "Toutes les applications";
+    box.appendChild(section);
+
+    const search = document.createElement("input");
+    search.type = "search";
+    search.className = "ext-app-search";
+    search.placeholder = "Rechercher : Calculatrice, Steam, Paint…";
+    search.setAttribute("aria-label", "Rechercher une application");
+    box.appendChild(search);
+
+    const results = document.createElement("div");
+    results.className = "ext-app-results";
+    box.appendChild(results);
+
+    const status = document.createElement("div");
+    status.className = "ext-app-status";
+    box.appendChild(status);
+
+    const renderResults = () => {
+        results.innerHTML = "";
+        status.textContent = "";
+        const matches = filterApplications(applications, search.value).slice(0, 40);
+        if (!applications.length) {
+            const empty = document.createElement("div");
+            empty.className = "ext-empty";
+            empty.textContent = "Liste des applications indisponible sur ce système.";
+            results.appendChild(empty);
+            return;
+        }
+        if (!matches.length) {
+            const empty = document.createElement("div");
+            empty.className = "ext-empty";
+            empty.textContent = "Aucune application ne correspond.";
+            results.appendChild(empty);
+            return;
+        }
+        for (const app of matches) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "ext-app-result";
+            button.title = app.target;
+            const name = document.createElement("span");
+            name.textContent = app.name;
+            const source = document.createElement("span");
+            source.className = "ext-app-source";
+            source.textContent = app.source;
+            button.append(name, source);
+            button.onclick = async () => {
+                button.disabled = true;
+                try {
+                    const result = await api.programs("launch-app", { appId: app.id });
+                    status.textContent = result?.message || `${app.name} : ouverture demandée.`;
+                } catch (error) {
+                    status.textContent = `Application : ${error.message}`;
+                } finally {
+                    button.disabled = false;
+                }
+            };
+            results.appendChild(button);
+        }
+    };
+    search.oninput = renderResults;
+    renderResults();
+
+    const file = document.createElement("button");
+    file.type = "button";
+    file.className = "ext-app-file";
+    file.textContent = "Ouvrir un fichier…";
+    file.onclick = async () => {
+        file.disabled = true;
+        try {
+            const result = await api.programs("open-file");
+            if (result) status.textContent = result.message;
+        } catch (error) {
+            status.textContent = `Fichier : ${error.message}`;
+        } finally {
+            file.disabled = false;
+        }
+    };
+    box.appendChild(file);
+
+    return box;
+}
+
 async function refreshMcp(action = "") {
     const list = $("mcp-list");
     extMessage(list, action === "restart" ? "Redémarrage des serveurs…" : "Démarrage des serveurs…");
     try {
-        const data = await api.mcpList(action);
+        const [data, programData, appData] = await Promise.all([
+            api.mcpList(action),
+            api.programs("detect").catch(() => ({ programs: [] })),
+            api.programs("apps", { refresh: action === "restart" }).catch(() => ({ applications: [] }))
+        ]);
         list.innerHTML = "";
+        if (programData.programs?.length || appData.applications?.length) {
+            list.appendChild(renderPrograms(programData.programs || [], appData.applications || []));
+        }
         if (!data.servers.length) {
-            extMessage(list, `Aucun serveur configuré. Ajoute-les dans ${data.configFile} (format mcpServers).`);
-            return;
+            const empty = document.createElement("div");
+            empty.className = "ext-empty";
+            empty.textContent = `Aucun serveur configuré. Ajoute-les dans ${data.configFile} (format mcpServers).`;
+            list.appendChild(empty);
         }
         for (const server of data.servers) {
             const sub = server.status === "running"
                 ? `${server.tools.length} outil(s) : ${server.tools.join(", ")}`
                 : server.error || server.status;
             list.appendChild(renderMcpCard(server, sub));
+        }
+        const missing = (data.presets || []).filter(preset => !data.servers.some(server => server.name === preset.name));
+        if (missing.length) {
+            const box = document.createElement("div");
+            box.className = "ext-presets";
+            const title = document.createElement("div");
+            title.className = "ext-item-sub";
+            title.textContent = "Connexions rapides Roblox + Blender";
+            box.appendChild(title);
+            for (const preset of missing) {
+                const card = extItem(preset.label, { tag: "Non configuré", sub: preset.description });
+                const actions = document.createElement("div");
+                actions.className = "center-card-actions";
+                const button = document.createElement("button");
+                button.type = "button";
+                button.textContent = `Ajouter ${preset.label}`;
+                button.onclick = async () => {
+                    button.disabled = true;
+                    try {
+                        await api.mcpManage("add-preset", { preset: preset.id });
+                        await refreshMcp();
+                    } catch (error) {
+                        button.disabled = false;
+                        extMessage(list, `MCP : ${error.message}`);
+                    }
+                };
+                actions.appendChild(button);
+                card.appendChild(actions);
+                box.appendChild(card);
+            }
+            list.appendChild(box);
         }
     } catch (error) {
         extMessage(list, `MCP : ${error.message}`);
@@ -6771,12 +6983,15 @@ function renderInstalledSkills() {
     const filtered = centerData.skills.filter(skill => `${skill.name} ${skill.description}`.toLocaleLowerCase("fr").includes(query) && (filter === "all" || filter === "active" && !skill.disabled || filter === "disabled" && skill.disabled || filter === "favorites" && skill.favorite || filter === skill.scope));
     for (const skill of filtered.slice(0, installedVisibleCount)) {
         const card = centerNode("article", "center-card"); card.dataset.skillKey = skill.key;
-        card.append(centerNode("span", "ext-tag", skill.scope === "projet" ? "Ce projet" : "Tous mes projets"), centerNode("h3", "", skill.name), centerNode("p", "", skill.description));
+        const scopeLabel = skill.scope === "projet" ? "Ce projet" : skill.scope === "intégré" ? "Intégré" : "Tous mes projets";
+        card.append(centerNode("span", "ext-tag", scopeLabel), centerNode("h3", "", skill.name), centerNode("p", "", skill.description));
         const actions = centerNode("div", "center-card-actions");
         const favorite = centerButton(skill.favorite ? "★" : "☆", () => changeExtension("favorite", {key:skill.key}));
         favorite.setAttribute("aria-label", `${skill.favorite ? "Retirer des" : "Ajouter aux"} favoris : ${skill.name}`);
         favorite.setAttribute("aria-pressed", String(skill.favorite));
-        actions.append(favorite, centerButton("Ouvrir", async () => openSkillEditor({kind:"edit", item:await api.extensionAction("read", {key:skill.key}), key:skill.key})), uninstallSkillButton(skill));
+        const open = centerButton(skill.scope === "intégré" ? "Lire" : "Ouvrir", async () => openSkillEditor({kind:"edit", item:await api.extensionAction("read", {key:skill.key}), key:skill.key}));
+        actions.append(favorite, open);
+        if (skill.scope !== "intégré") actions.append(uninstallSkillButton(skill));
         const label = centerNode("label", "skill-enabled");
         const toggle = document.createElement("input"); toggle.type = "checkbox"; toggle.checked = !skill.disabled; toggle.setAttribute("role", "switch"); toggle.setAttribute("aria-label", `Activer ${skill.name}`);
         toggle.onchange = async () => {
@@ -6812,20 +7027,24 @@ function openSkillEditor(state) {
     const item = state.item || {};
     const remote = state.kind === "remote";
     const library = state.kind === "library";
-    $("skill-editor-title").textContent = library ? item.title : remote ? item.name : state.kind === "edit" ? `Modifier ${item.name}` : "Créer ou importer un skill";
+    const builtin = item.scope === "intégré";
+    $("skill-editor-title").textContent = builtin ? `Lire ${item.name}` : library ? item.title : remote ? item.name : state.kind === "edit" ? `Modifier ${item.name}` : "Créer ou importer un skill";
     $("skill-editor-description").textContent = remote ? item.resourceCount ? `${item.resourceCount} ressource(s) annexe(s) incluse(s). Après installation, active le skill dans Mes skills pour l’utiliser.` : "Skill communautaire : vérifie les instructions et la licence du dépôt. Après installation, active-le dans Mes skills pour l’utiliser. Seul le SKILL.md est copié." : library ? `${item.description} · ${item.category}` : "Écris ou colle les instructions que l’agent doit suivre quand il utilise ce skill.";
     $("skill-editor-name").value = item.id || item.name || "mon-skill";
     $("skill-editor-name").disabled = !["new", "remote", "local"].includes(state.kind);
     if (remote) $("skill-editor-name").value = item.name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "community-skill";
     $("skill-editor-identity").classList.toggle("hidden", state.kind === "edit");
-    $("skill-editor-scope").value = library ? $("library-scope").value : item.scope || "utilisateur";
+    $("skill-editor-scope").value = builtin ? "utilisateur" : library ? $("library-scope").value : item.scope || "utilisateur";
+    $("skill-editor-scope").disabled = builtin;
     $("skill-editor-content").value = item.content || "---\nname: mon-skill\ndescription: Quand utiliser ce skill.\n---\n\n# Ma méthode\n\nDécris les étapes et les vérifications à suivre.\n";
-    $("skill-editor-content").readOnly = library || remote || state.kind === "local";
-    $("skill-editor-content").closest("label").nextElementSibling.textContent = state.kind === "local" || item.resourceCount
-        ? "Les instructions et les ressources annoncées seront copiées. Aucun script n’est exécuté pendant l’import."
-        : "Tu peux coller un SKILL.md personnel ici. Seules ces instructions sont importées ; les scripts et fichiers annexes ne sont pas copiés.";
-    $("skill-editor-save").textContent = remote ? "Installer" : library ? "Installer ce skill" : "Enregistrer";
-    $("skill-editor-save").disabled = false;
+    $("skill-editor-content").readOnly = library || remote || state.kind === "local" || builtin;
+    $("skill-editor-content").closest("label").nextElementSibling.textContent = builtin
+        ? "Skill intégré en lecture seule. Désactive-le dans Mes skills ou crée une copie personnelle avec le même nom pour le modifier."
+        : state.kind === "local" || item.resourceCount
+            ? "Les instructions et les ressources annoncées seront copiées. Aucun script n’est exécuté pendant l’import."
+            : "Tu peux coller un SKILL.md personnel ici. Seules ces instructions sont importées ; les scripts et fichiers annexes ne sont pas copiés.";
+    $("skill-editor-save").textContent = builtin ? "Lecture seule" : remote ? "Installer" : library ? "Installer ce skill" : "Enregistrer";
+    $("skill-editor-save").disabled = builtin;
     $("skill-editor-message").textContent = "";
     if (state.kind === "local") {
         $("skill-editor-title").textContent = "Importer un skill téléchargé";

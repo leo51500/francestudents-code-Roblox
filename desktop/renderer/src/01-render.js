@@ -5,7 +5,7 @@ const TOOL_LABELS = {
     list_directory: "Lister", read_file: "Lire", search_files: "Chercher",web_search_result:"Résultat web",view_image:"Examiner l’image",
     create_directory: "Créer le dossier", write_file: "Écrire", edit_file: "Éditer",
     move_path: "Déplacer", copy_path: "Copier", delete_path: "Supprimer",
-    remember: "Mémoriser", run_command: "Commande", web_search: "Rechercher sur le web", web_fetch: "Lire une source", update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics", job_output: "Lire la commande", job_stop: "Arrêter la commande"
+    remember: "Mémoriser", run_command: "Commande", open_program: "Ouvrir", open_app: "Ouvrir une application", open_in: "Ouvrir avec", web_search: "Rechercher sur le web", web_fetch: "Lire une source", update_plan: "Actualiser le plan", semantic_search: "Explorer le code", diagnostics: "Diagnostics", job_output: "Lire la commande", job_stop: "Arrêter la commande"
 };
 
 function toolLabel(name) {

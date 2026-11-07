@@ -11,7 +11,7 @@
 
 const path = require("node:path");
 const fs = require("node:fs/promises");
-const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, safeStorage } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, clipboard, safeStorage, Notification } = require("electron");
 const packageMetadata = require("../package.json");
 const PRODUCT_NAME = packageMetadata?.build?.productName ?? packageMetadata?.productName ?? "France-Students-code-Roblox";
 
@@ -115,6 +115,20 @@ function send(channel, data) {
 
 function pushStatus() {
     if (backend) send("status", { ...backend.status(), busy, booted, canSteer: busy && supportsSteering });
+}
+
+function notifyTaskFinished(outcome) {
+    if (appClosing) return;
+    try {
+        require("./task-notification").showTaskNotification({
+            Notification,
+            window: win,
+            title: PRODUCT_NAME,
+            outcome
+        });
+    } catch (error) {
+        console.warn("La notification de fin de tâche n’a pas pu être affichée :", error.message || error);
+    }
 }
 
 /** Chemin absolu dans le projet ouvert ; refuse toute sortie du projet. */
@@ -266,6 +280,7 @@ async function submit(raw, attachments, { queued = false } = {}) {
         display = `${display}${display ? "\n" : ""}Pièces jointes : ${files.names.join(", ")}`;
     }
 
+    const notifyOnCompletion = !text.trim().startsWith("/") || /^\/plan\s/i.test(text.trim());
     busy = true;
     submissionInterrupted = false;
     supportsSteering = !text.trim().startsWith("/") && state.mode !== "chat";
@@ -312,6 +327,16 @@ async function submit(raw, attachments, { queued = false } = {}) {
         if (failure || submissionInterrupted || result?.completed === false) taskQueue.pause();
         backend.endRun({ ok: !failure && result?.completed !== false, interrupted: submissionInterrupted });
         pushStatus();
+        const queue = taskQueue.action("list");
+        const hasQueuedTasks = queue.enabled && queue.tasks.some(task => task.status === "pending");
+        if (notifyOnCompletion && !hasQueuedTasks) {
+            const outcome = submissionInterrupted
+                ? "interrupted"
+                : failure || result?.completed === false
+                    ? "failed"
+                    : "success";
+            notifyTaskFinished(outcome);
+        }
         taskQueue.kick();
     }
 
@@ -708,6 +733,7 @@ function setAutoApprove(mode) {
 
 async function mcpList(action) {
     const { manager, defaultConfigFile } = require("../src/mcp/manager");
+    const { listPresets } = require("../src/mcp/presets");
     let servers;
     if (action === "stop") {
         manager.stopAll();
@@ -715,7 +741,42 @@ async function mcpList(action) {
     } else {
         servers = action === "restart" ? await manager.restart() : await manager.ensureStarted();
     }
-    return { configFile: defaultConfigFile(), servers };
+    return { configFile: defaultConfigFile(), servers, presets: listPresets() };
+}
+
+/* ---------- Applications Blender et Roblox Studio ---------- */
+
+async function programsAction(action, payload = {}) {
+    const programs = require("../src/programs");
+    if (action === "detect") return programs.detectPrograms();
+    if (action === "apps") return { applications: await programs.listApplications({ refresh: payload.refresh === true }) };
+    if (action === "launch-app") return programs.launchApplication({ appId: payload.appId, name: payload.name, path: payload.path });
+    if (action === "open-file") {
+        const picked = await dialog.showOpenDialog(win, {
+            title: "Ouvrir une application",
+            properties: ["openFile"],
+            filters: [{ name: "Applications", extensions: ["exe", "lnk", "url"] }]
+        });
+        if (picked.canceled || !picked.filePaths.length) return null;
+        return programs.launchApplication({ path: picked.filePaths[0] });
+    }
+    if (action === "launch") return programs.launchProgram(payload.id);
+    if (action === "clear") {
+        programs.clearProgramPath(payload.id);
+        return programs.detectPrograms();
+    }
+    if (action === "choose") {
+        const definition = programs.getDefinition(payload.id);
+        const picked = await dialog.showOpenDialog(win, {
+            title: `Choisir l’exécutable de ${definition.label}`,
+            properties: ["openFile"],
+            filters: [{ name: definition.label, extensions: ["exe"] }]
+        });
+        if (picked.canceled || !picked.filePaths.length) return programs.detectPrograms();
+        programs.setProgramPath(definition.id, picked.filePaths[0]);
+        return programs.detectPrograms();
+    }
+    throw new Error("Action de programme inconnue.");
 }
 
 async function mcpOpenConfig() {
@@ -904,6 +965,7 @@ function registerIpc() {
         return result.canceled || !result.filePaths[0] ? null : localSkillImporter.preview(result.filePaths[0]);
     });
     handle("mcpManage", (action, payload) => extensionCenter.mcpAction(action, payload));
+    handle("programs", (action, payload) => programsAction(String(action || "detect"), payload || {}));
     handle("preferences", (action, payload) => {
         if (action !== "save") return preferences.get();
         if (busy && Object.keys(payload || {}).some(key => key !== "defaultModel")) throw new Error("Attends la fin de la tâche pour modifier le contexte.");
