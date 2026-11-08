@@ -13,11 +13,14 @@ leurs **LOD**, les publier avec le **plugin Roblox** puis les insérer dans
   le mot « Blender »** : dès qu’il y a de la 3D réelle, la géométrie se crée dans
   Blender. Studio ne sert jamais à modéliser ni à remplacer un asset par des
   Parts.
-- Trois skills intégrés sont disponibles sans installation :
-  - `roblox-blender` : pipeline complet modèle → LOD → upload → insertion ;
+- Quatre skills intégrés sont disponibles sans installation :
+  - `roblox-blender` : pipeline complet modèle → textures → LOD → upload →
+    insertion ;
   - `roblox-lod` : budgets de triangles, génération et bascule des LOD ;
   - `roblox-ui` : interfaces de jeu natives au style cartoon Roblox (cadres
-    épais, dégradés, badges), jamais des pages web.
+    épais, dégradés, badges), jamais des pages web ;
+  - `roblox-audio` : recherche de sons libres de droits, licences, préparation,
+    upload Roblox et câblage des `Sound` dans Studio.
 - Deux connexions MCP prêtes à l’emploi apparaissent dans **Extensions →
   Serveurs MCP** : **Blender** et **Roblox Studio**.
 - Le pipeline lit l’identifiant de package renvoyé par le plugin et l’utilise
@@ -151,6 +154,43 @@ page web. Le skill `roblox-ui` impose :
 - aucun HTML/CSS, aucun tableau de bord blanc, aucun petit texte de site web ;
 - une capture `screen_capture` examinée après chaque étape et sur plusieurs
   tailles d’écran, dont le téléphone en portrait et en paysage.
+
+## Textures dans Blender
+
+Les textures font partie de la modélisation, pas d’une étape séparée dans
+Studio :
+
+- UV dépliés avant tout bake (une UV map, pas de chevauchement non voulu) ;
+- matériaux **procéduraux** (bruit, Voronoi, vagues, rampes de couleur) pour la
+  roche, le métal, le bois ou l’herbe ;
+- **bake Cycles** en PNG 1024 × 1024 quand Roblox doit recevoir l’image :
+  couleur, normale, rugosité, métal ;
+- cartes conservées sur chaque LOD, puis `SurfaceAppearance` (`ColorMap`,
+  `NormalMap`, `RoughnessMap`, `MetalnessMap`) ou `TextureID` dans Studio.
+
+L’agent vérifie le résultat avec `look` après le bake et après l’application
+dans Studio : texture étirée, couture visible, normale inversée ou carte
+manquante doivent être corrigées. Pas d’image trouvée au hasard : une texture
+externe doit avoir une licence claire.
+
+## Sons et ambiance
+
+Le skill `roblox-audio` couvre les bruits d’arme, impacts, pas, portes et
+ambiances :
+
+- l’agent **cherche lui-même** des sons libres de droits (Freesound, Pixabay,
+  Kenney, Mixkit, OpenGameArt) et note la licence dans
+  `assets/audio/LICENCES.md` ; il peut aussi fabriquer un son simple par
+  synthèse (whoosh, impact, vent) ;
+- les fichiers sont préparés dans `assets/audio/` (mono 44,1 kHz, boucle propre
+  pour une ambiance, nommage explicite) ;
+- **un son ne joue en jeu qu’après un upload Roblox** : Creator Dashboard →
+  Assets → Audio, puis l’ID est câblé dans un `Sound` (avec `SoundGroup`,
+  volume, boucle, `RollOffMaxDistance`). L’application ne peut pas téléverser
+  l’audio à ta place : l’agent te donne les fichiers prêts et la liste à
+  envoyer, puis reprend avec les IDs ;
+- l’agent ne peut pas **entendre** le résultat : il vérifie les propriétés et
+  le déclenchement, la validation finale se fait à l’oreille.
 
 ## Dépannage
 

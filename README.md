@@ -4,9 +4,9 @@
 
 # France-Students-code-Roblox
 
-**Version 1.25.0 — un environnement de programmation en français, adapté et maintenu par GAB DESING.**
+**Un environnement de programmation en français, adapté et maintenu par GAB DESING.**
 
-[Guides](docs/README.md)
+[Guides](docs/README.md) · [Journal des modifications](CHANGELOG.md)
 
 </div>
 
@@ -31,12 +31,14 @@ Chaque push sur `main` publie une release Windows. Si la version de `package.jso
 - Connexion au compte FranceStudent, sélection du modèle et profils de fournisseurs personnalisés.
 - Pièces jointes, recherche documentaire, aperçus Markdown et suivi du quota.
 
-Les skills intégrés `roblox-blender`, `roblox-lod` et `roblox-ui` sont livrés
-avec l’application et actifs par défaut. La géométrie 3D part toujours dans
-Blender, même sans le mot « Blender », et l’agent vérifie chaque étape par une
-capture (`look` ou `screen_capture`). Les interfaces de jeu utilisent des GUI
-natives au style cartoon Roblox, jamais une page web. Les connexions MCP Blender
-et Roblox Studio peuvent être ajoutées en un clic depuis **Extensions**.
+Les skills intégrés `roblox-blender`, `roblox-lod`, `roblox-ui` et
+`roblox-audio` sont livrés avec l’application et actifs par défaut. La géométrie
+et les textures 3D se créent dans Blender, même sans le mot « Blender » ; les
+sons sont préparés avec leurs licences avant leur upload manuel sur Roblox.
+L’agent vérifie les étapes visuelles par capture (`look` ou `screen_capture`).
+Les interfaces de jeu utilisent des GUI natives au style cartoon Roblox,
+jamais une page web. Les connexions MCP Blender et Roblox Studio peuvent être
+ajoutées en un clic depuis **Extensions**.
 
 ## Démarrer depuis les sources
 

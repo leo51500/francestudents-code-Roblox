@@ -152,6 +152,66 @@ Corrige immédiatement tout défaut visible, puis reprends une capture. Si l'out
 `look` échoue, indique l'erreur exacte et ne prétends pas avoir contrôlé le
 rendu.
 
+### Textures : procédural, bake et export Roblox
+
+Les textures se créent **dans Blender**, jamais en important une image trouvée
+au hasard. Trois méthodes, dans cet ordre selon la demande :
+
+1. **Couleurs et matériaux simples** : Principled BSDF, `Base Color`, rugosité,
+   sans image. C'est le plus léger pour un prop stylisé.
+2. **Textures procédurales** : nœuds `Noise`, `Voronoi`, `Wave`, `Musgrave`,
+   `ColorRamp` et `Bump` pour la roche, le métal, le bois, l'herbe. Aucun
+   fichier externe, rendu cohérent à toutes les échelles.
+3. **Bake en image** quand Roblox doit recevoir une texture : cuis les
+   procéduraux en PNG pour obtenir un rendu identique dans Studio.
+
+Avant tout bake :
+
+- déplie les UV (`U` > Smart UV Project ou seams manuels), une seule UV map,
+  pas de chevauchement sauf symétrie voulue ;
+- vérifie la densité de texels (assez de pixels pour le détail visible, pas de
+  zones étirées) ;
+- garde les UV sur **chaque LOD** : un LOD sans UV perd sa texture.
+
+Bake Cycles (exemple pour un matériau `Sword`) :
+
+```python
+import bpy
+
+img = bpy.data.images.new("Sword_BaseColor", 1024, 1024, alpha=False)
+mat = bpy.data.materials["Sword"]
+node = mat.node_tree.nodes.new("ShaderNodeTexImage")
+node.image = img
+mat.node_tree.nodes.active = node
+
+scene = bpy.context.scene
+scene.render.engine = "CYCLES"
+scene.cycles.samples = 32
+bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=8, use_clear=True)
+img.filepath_raw = "//textures/Sword_BaseColor.png"
+img.file_format = "PNG"
+img.save()
+```
+
+Répète pour les cartes utiles : `NORMAL` (espace tangent), `ROUGHNESS`,
+`METALNESS` si nécessaire. Pour les cartes de données, crée l'image en
+**non-color** (`img.colorspace_settings.name = "Non-Color"`), sinon les
+valeurs sont faussées.
+
+Contraintes Roblox :
+
+- **1024 × 1024 maximum** par texture (Roblox réduit au-delà), PNG ;
+- pas d'alpha sauf pour un décalque (decal) ; évite l'émission inutile ;
+- une à deux jeux de textures par prop suffisent ; les noms doivent être
+  explicites (`Sword_BaseColor.png`, `Sword_Normal.png`) ;
+- dans Studio, applique un `SurfaceAppearance` sur le `MeshPart` :
+  `ColorMap`, `NormalMap`, `RoughnessMap`, `MetalnessMap` ; sinon
+  `TextureID` pour une texture simple.
+
+Vérifie le résultat avec `look` après le bake et après l'application dans
+Studio : texture étirée, couture visible, normal inversé ou carte manquante
+doivent être corrigés avant de déclarer le modèle terminé.
+
 ## 5. LOD (obligatoire)
 
 Charge aussi le skill `roblox-lod`. Résumé du pipeline :

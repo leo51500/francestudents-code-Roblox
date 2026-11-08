@@ -4,7 +4,7 @@
 
 ## Version actuelle
 
-La version 1.25.0 est disponible pour Windows x64 sur la [page des releases GitHub](https://github.com/leo51500/francestudents-code-Roblox/releases/latest).
+Télécharge la dernière version pour Windows x64 sur la [page des releases GitHub](https://github.com/leo51500/francestudents-code-Roblox/releases/latest).
 
 ## Lancer depuis les sources
 

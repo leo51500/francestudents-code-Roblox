@@ -89,6 +89,7 @@ test("skills intégrés : pipeline Roblox + Blender, lecture seule, désactivati
     assert.ok(builtins.some(s => s.name === "roblox-blender"));
     assert.ok(builtins.some(s => s.name === "roblox-lod"));
     assert.ok(builtins.some(s => s.name === "roblox-ui"));
+    assert.ok(builtins.some(s => s.name === "roblox-audio"));
 
     const model = await skills.getSkill("roblox-blender", null);
     assert.match(model.description, /Blender/);
@@ -105,6 +106,11 @@ test("skills intégrés : pipeline Roblox + Blender, lecture seule, désactivati
     assert.match(ui.instructions, /ScreenGui/);
     assert.match(ui.instructions, /screen_capture/);
     assert.match(ui.instructions, /HTML/);
+
+    const audio = await skills.getSkill("roblox-audio", null);
+    assert.match(audio.instructions, /licence/i);
+    assert.match(audio.instructions, /Creator Dashboard/);
+    assert.match(audio.instructions, /SoundId/);
 
     const off = await skills.setSkillDisabled("roblox-blender", true, null);
     assert.equal(off.scope, skills.BUILTIN_SCOPE);

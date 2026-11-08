@@ -100,5 +100,14 @@ jobs:
           if ($assets.Count -ne 4) {
             throw "La release doit contenir l'installateur, son blockmap, latest.yml et SHA256SUMS.txt."
           }
+          $version = [regex]::Escape($env:RELEASE_TAG.Substring(1))
+          $changelog = Get-Content -LiteralPath "CHANGELOG.md" -Raw -Encoding utf8
+          $section = [regex]::Match($changelog, "(?ms)^##[ \t]+$version(?:[ \t]+[^\r\n]*)?\r?\n(.*?)(?=^##[ \t]+|\z)")
+          if (-not $section.Success) {
+            throw "Aucune section CHANGELOG.md ne correspond à $env:RELEASE_TAG."
+          }
+          $notesPath = Join-Path $env:RUNNER_TEMP "release-notes.md"
+          $notes = "## $env:RELEASE_TAG`r`n`r`n$($section.Groups[1].Value.Trim())"
+          Set-Content -LiteralPath $notesPath -Value $notes -Encoding utf8
           $assetPaths = @($assets | ForEach-Object { $_.FullName })
-          gh release create $env:RELEASE_TAG $assetPaths --title $env:RELEASE_TAG --notes "Version $env:RELEASE_TAG." --verify-tag
+          gh release create $env:RELEASE_TAG $assetPaths --title $env:RELEASE_TAG --notes-file $notesPath --verify-tag

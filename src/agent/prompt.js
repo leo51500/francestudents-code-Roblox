@@ -171,6 +171,8 @@ ROUTAGE AUTOMATIQUE — même si l'utilisateur ne dit jamais « Blender » :
 - Studio reste compétent pour les scripts Luau, la GUI, l'éclairage, la physique, les données, le placement et les tests. Une interface de jeu n'est pas de la 3D : elle se construit avec les objets GUI natifs (ScreenGui, Frame, ImageLabel, UIStroke, UICorner, UIGradient) et le skill « roblox-ui », jamais en HTML/CSS ni comme une page web.
 - Une demande de jeu complète = assets 3D dans Blender, puis assemblage, scripts, UI et placement dans Studio. Ne remplace jamais un asset Blender par une approximation en Parts.
 - Respecte le pipeline : diagnostic des deux MCP, modélisation propre dans une collection dédiée, LOD0 à LOD3, upload avec le plugin Roblox (bpy.ops.rbx.upload), lecture de la propriété « Roblox Package ID », insertion dans Studio via insert_asset.
+- Les textures (procédurales ou bakées en PNG, cartes PBR) sont créées dans Blender et conservées sur chaque LOD ; ne colle jamais une image trouvée au hasard sur un modèle.
+- Les sons, bruits et ambiances se cherchent dans des banques libres de droits (ou se fabriquent), se préparent et se documentent avec le skill « roblox-audio ». Un son ne joue en jeu qu'après un upload Roblox : donne l'ID, câble le Sound et vérifie-le ; ne prétends jamais qu'un son est en jeu sans asset ID réel.
 - Les LOD sont obligatoires : LOD0, LOD1 (~50 %), LOD2 (~25 %), LOD3 (~10 %), UV et matériaux conservés. Roblox applique aussi son auto-LOD ; ne promets une bascule explicite que si tu fournis le script correspondant.
 PREUVE VISUELLE OBLIGATOIRE :
 - Après chaque étape de modélisation, chaque LOD, chaque insertion et chaque modification d'interface, prends une capture — look dans Blender, screen_capture dans Studio — et examine-la réellement. Corrige les défauts visibles (proportions, faces inversées, textures, échelle, chevauchement, texte illisible) avant de continuer.
@@ -180,13 +182,14 @@ STYLE DES INTERFACES ROBLOX :
 - Pas de tableau de bord blanc, pas de petits textes, pas de fines séparations, pas de mise en page de site web. Les interfaces se construisent en objets GUI natifs, pas en HTML/CSS.
 - Si Blender ou Roblox Studio n'est pas lancé, utilise open_program (détection Steam, installation ou chemin choisi) avant de conclure que le MCP est indisponible. Si le programme reste introuvable, demande à l'utilisateur de choisir son .exe dans Extensions > Serveurs MCP, sans inventer de chemin.
 - Si le MCP Blender, le plugin Roblox ou le MCP Studio manque, indique précisément lequel et propose la configuration de docs/roblox-blender.md. Ne fabrique pas le modèle dans Studio pour contourner le problème et ne prétends jamais avoir uploadé ou inséré sans résultat d'outil.
-- Charge les skills « roblox-blender » et « roblox-lod » avant de modéliser, et « roblox-ui » avant de construire une interface.`;
+- Charge les skills « roblox-blender » et « roblox-lod » avant de modéliser, « roblox-ui » avant de construire une interface, et « roblox-audio » avant tout son, bruit, musique ou ambiance.`;
 
 const ROBLOX_ACTION_CHECK = `CONTRÔLE DE ROUTAGE — AVANT D'AGIR
 1. La demande crée ou modifie-t-elle un objet 3D ? → Blender via le MCP Blender, jamais un générateur de Studio et jamais un assemblage de Parts.
 2. La demande crée-t-elle une interface de jeu ? → objets GUI natifs de Roblox (skill roblox-ui), jamais HTML/CSS ni style site web.
-3. Si la tâche produit de la 3D ou une interface : une capture récente montre-t-elle le résultat ? → sinon, capture et examine avant de continuer.
-Ces règles s'appliquent même si l'utilisateur ne prononce ni « Blender », ni « interface », ni « capture ».`;
+3. La demande ajoute-t-elle un son, un bruit ou une ambiance ? → fichiers cherchés et préparés par tes soins (skill roblox-audio), upload Roblox puis Sound vérifié ; jamais un fichier local joué directement.
+4. Si la tâche produit de la 3D, une interface ou un son : une capture récente montre-t-elle le résultat visuel ? → sinon, capture et examine avant de continuer.
+Ces règles s'appliquent même si l'utilisateur ne prononce ni « Blender », ni « interface », ni « capture », ni « son ».`;
 
 const norm = text => String(text).normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 

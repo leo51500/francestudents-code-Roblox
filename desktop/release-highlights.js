@@ -1,11 +1,11 @@
 "use strict";
-// Keep only the welcome summary for the current project version.
+// Keep only the notes for the current project version.
 const releases={
-    "1.25.0":{headline:"Bienvenue dans France-Students-code-Roblox.",items:[
-        {icon:"spark",title:"Un espace pour coder",text:"Retrouve l’éditeur, les fichiers et le terminal dans une seule application."},
-        {icon:"tools",title:"Un assistant à tes côtés",text:"Explore, modifie et vérifie ton code avec un agent intégré."},
-        {icon:"chat",title:"Roblox + Blender",text:"Crée tes modèles dans Blender, puis intègre-les dans Roblox Studio."}
-    ]}
+    "1.25.1":{headline:"Les sons et les textures rejoignent le pipeline Roblox.",items:[
+        {icon:"chat",title:"Sons préparés pour Roblox",text:"Un skill dédié recherche des sons libres de droits, vérifie les licences et prépare les fichiers avant leur upload manuel."},
+        {icon:"tools",title:"Textures Blender jusqu’aux LOD",text:"Crée des textures procédurales ou bake des cartes PNG, puis conserve-les sur chaque niveau de détail."},
+        {icon:"tools",title:"Intégration vérifiée",text:"L’agent attend l’ID audio Roblox, câble le Sound dans Studio et contrôle les propriétés avant de conclure."}
+    ]},
 };
 function createReleaseHighlights({version,enabled=true,load,save}){
     return {
