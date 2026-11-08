@@ -21,3 +21,26 @@ test("provider-flagged locked conversations override generic HTTP errors",()=>{
     }
     assert.equal(parseApiErrorNotice('HTTP 403: {"chat_flagged":false}').kind,"auth");
 });
+test("oversized response notice explains the interruption and offers to resume",()=>{
+    const makeNode=(tag,className="",text="")=>({tag,className,textContent:text,children:[],attributes:{},append(...nodes){this.children.push(...nodes);},setAttribute(name,value){this.attributes[name]=value;}});
+    const sent=[];
+    const render=new Function("setInterval","addEntry","centerNode","scrollDown","send",`${code}\nreturn renderOversizedResponseEntry;`)(
+        ()=>{},
+        (className,text)=>makeNode("div",className,text),
+        makeNode,
+        ()=>{},
+        message=>sent.push(message),
+    );
+    const entry=render("flux « response.output_text.delta », événement en cours 8388608 caractères");
+    const flatten=node=>[node,...node.children.flatMap(flatten)];
+    const nodes=flatten(entry);
+    assert.equal(entry.attributes.role,"alert");
+    assert.ok(nodes.some(node=>node.textContent==="Réponse du fournisseur trop volumineuse"));
+    assert.ok(nodes.some(node=>node.textContent.includes("modifications déjà produits")));
+    const resume=nodes.find(node=>node.tag==="button");
+    assert.equal(resume.textContent,"Reprendre la tâche");
+    resume.onclick();
+    assert.equal(resume.disabled,true);
+    assert.match(sent[0],/Reprends la tâche interrompue/);
+    assert.ok(nodes.some(node=>node.tag==="pre"&&node.textContent.includes("response.output_text.delta")));
+});

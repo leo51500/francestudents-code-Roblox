@@ -589,7 +589,19 @@ async function requestModelOnce(message, options) {
         let requestUsage = null;
         const MAX_RESPONSE_CHARS=8*1024*1024;
         let eventChars=0;
-        function responseLimit(){return Object.assign(new Error("Réponse du fournisseur trop volumineuse. La tâche est suspendue ; les modifications déjà effectuées sont conservées."),{status:400});}
+        let lastEventName="";
+        // Le diagnostic distingue un seul événement démesuré d'une accumulation
+        // de petits deltas : il reste dans les détails techniques de l'erreur.
+        function responseLimit(){
+            let bufferedEventName="",bufferedEventChars=0;
+            for(const line of buffer.split(/[\r\n]+/)){
+                if(line.startsWith("event:"))bufferedEventName=line.slice(6).trimStart();
+                else if(line.startsWith("data:"))bufferedEventChars+=line.slice(5).replace(/^ /,"").length;
+            }
+            const currentEventName=eventName || bufferedEventName || lastEventName || "message";
+            const currentEventChars=eventChars+bufferedEventChars;
+            return Object.assign(new Error(`Réponse du fournisseur trop volumineuse. La tâche est suspendue ; les modifications déjà effectuées sont conservées. Envoie « reprends » pour poursuivre la tâche. (flux « ${currentEventName} », texte accumulé ${output.length} caractères, événement en cours ${currentEventChars} caractères)`),{status:400});
+        }
         const localToolCalls = options.conversationMode === "agent" && !options.receivingAttachments
             ? createLocalToolCalls() : null;
 
@@ -604,6 +616,7 @@ async function requestModelOnce(message, options) {
             const name = eventName;
             const payload = eventData.join("\n");
 
+            lastEventName = name;
             eventName = "";
             eventData = [];
             eventChars=0;

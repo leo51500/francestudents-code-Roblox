@@ -269,6 +269,7 @@ function renderEntry(e) {
                 $("agent-starter").classList.add("hidden");
                 const context=parseContextLimitNotice(e.text);
                 if(context)return renderContextLimitEntry(context,e.text);
+                if(/^Réponse du fournisseur trop volumineuse/.test(String(e.text)))return renderOversizedResponseEntry(e.text);
                 const apiError=parseApiErrorNotice(e.text);
                 if(apiError)return renderApiErrorEntry(apiError,e.text);
             }

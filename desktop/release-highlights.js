@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.25.3":{headline:"Reprends une tâche interrompue par une réponse trop volumineuse.",items:[
+        {icon:"chat",title:"Reprise en un clic",text:"Après une réponse fournisseur anormalement volumineuse, reprends la tâche sans perdre les modifications déjà effectuées."},
+        {icon:"tools",title:"Diagnostic de flux plus précis",text:"Les détails techniques identifient le type et la taille de l’événement SSE qui a dépassé la limite."},
+        {icon:"tools",title:"Travail local conservé",text:"La tâche est suspendue sans annuler les fichiers ou modifications déjà produits."}
+    ]},
     "1.25.2":{headline:"Les sauvegardes et les conversations sont plus fiables.",items:[
         {icon:"tools",title:"Sauvegardes plus lisibles",text:"Retrouve uniquement les versions du projet actif et vois combien de fichiers elles contiennent."},
         {icon:"tools",title:"Restauration mieux expliquée",text:"Les retours de lecture, restauration et suppression apparaissent directement dans l’onglet Sauvegardes."},

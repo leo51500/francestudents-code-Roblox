@@ -1,5 +1,12 @@
 # Journal des modifications
 
+## 1.25.3 — Reprise après une réponse trop volumineuse
+
+- Une réponse fournisseur qui dépasse la limite de sécurité affiche maintenant
+  une action directe pour reprendre la tâche interrompue.
+- Les détails techniques indiquent le type d’événement SSE et sa taille,
+  même lorsqu’un événement trop volumineux arrive d’un seul bloc.
+
 ## 1.25.2 — Sauvegardes et conversations plus fiables
 
 - L’onglet Sauvegardes distingue les versions du projet actif, indique le

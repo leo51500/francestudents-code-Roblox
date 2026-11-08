@@ -42,6 +42,27 @@ function renderApiErrorEntry(info,raw){
     const details=centerNode("details","api-notice-tech");details.append(centerNode("summary","",info.status?`Détails techniques · HTTP ${info.status}`:"Détails techniques"),centerNode("pre","",String(raw || "")));body.append(details);entry.append(icon,body);scrollDown();return entry;
 }
 
+/* Le plafond de sécurité a coupé un flux anormal (réponse de plus de 8 Mo).
+   La tâche reste reprenable : le plan et les fichiers déjà produits sont
+   conservés, on propose donc directement de la poursuivre. */
+function renderOversizedResponseEntry(raw){
+    const entry=addEntry("api-error-notice","");entry.setAttribute("role","alert");
+    const icon=centerNode("span","api-notice-icon");icon.innerHTML=apiNoticeIcon("wait");
+    const body=centerNode("div","api-notice-body");
+    body.append(centerNode("strong","","Réponse du fournisseur trop volumineuse"),
+        centerNode("p","","Le modèle a dépassé la limite de sécurité de 8 Mo : l’application a coupé le flux pour éviter un blocage. La tâche est suspendue ; les fichiers et les modifications déjà produits sont conservés. La reprise vérifie l’état actuel avant de continuer."));
+    const actions=centerNode("div","api-notice-actions");
+    const resume=centerNode("button","","Reprendre la tâche");resume.type="button";
+    resume.onclick=()=>{
+        resume.disabled=true;resume.textContent="Reprise lancée…";
+        void send("Reprends la tâche interrompue à partir de l’état actuel. Vérifie les fichiers et la scène Blender avant d’écrire, ne répète pas les étapes déjà terminées, reconstruis le plan de travail si nécessaire et garde chaque réponse courte (objet d’outil uniquement).");
+    };
+    actions.append(resume);body.append(actions);
+    const details=centerNode("details","api-notice-tech");
+    details.append(centerNode("summary","","Détails techniques"),centerNode("pre","",String(raw || "")));
+    body.append(details);entry.append(icon,body);scrollDown();return entry;
+}
+
 const quotaRecoveryState=new WeakMap();
 const quotaCheckedDeadlines=new Set();
 function quotaCountdown(resetAt,now=Date.now()){

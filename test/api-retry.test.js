@@ -51,6 +51,17 @@ test("malformed SSE values and oversized events stop without automatic retries",
     }finally{global.fetch=previous;}
 });
 
+test("oversized SSE diagnostics identify the event even when it arrives in one chunk",async()=>{
+    prepareAuth();
+    global.fetch=async()=>new Response(`event: response.output_text.delta\ndata: ${JSON.stringify({delta:"x".repeat(8*1024*1024+1)})}\n\n`);
+    await assert.rejects(requestModel("Test oversized stream",{conversationMode:"agent"}),error=>{
+        assert.equal(error.status,400);
+        assert.match(error.message,/flux « response\.output_text\.delta »/);
+        assert.match(error.message,/événement en cours 8388\d{3} caractères/);
+        return true;
+    });
+});
+
 test("visual receipt repairs formatting once in the same chat without sending the image twice",async()=>{
     prepareAuth();const image="11111111-2222-3333-4444-123456789012",bodies=[];
     state.chatIds.agent=null;state.pendingImages=[image];state.pendingFiles=[];
