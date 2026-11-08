@@ -1,0 +1,151 @@
+/* Fichiers non textuels : aperçu sans écriture et application associée. */
+const studioAssetView=centerNode("section","studio-asset-view hidden");studioAssetView.id="studio-asset-view";$("editor-area").append(studioAssetView);
+function showStudioAsset(tab) {
+    const asset=tab?.kind==="asset"?tab.asset:null;
+    studioAssetView.classList.toggle("hidden",!asset);studioAssetView.replaceChildren();
+    if(!asset)return;
+    $("editor").classList.add("hidden");$("editor-welcome").classList.add("hidden");
+    const header=centerNode("div","studio-asset-header");header.append(centerNode("span","studio-pill","Aperçu · lecture seule"),centerNode("h2","",asset.name),centerNode("p","studio-muted",`${formatBytes(asset.size)} · ${asset.mime} · ${new Date(asset.modifiedAt).toLocaleString("fr-FR")}`));
+    header.append(studioAction("Ouvrir dans l’application associée","ExternalLink",async()=>{const error=await api.openFileInApp(tab.path);if(error)lspStatus(error);}));studioAssetView.append(header);
+    if(asset.dataUrl&&["image","audio","video"].includes(asset.kind)) {
+        const media=document.createElement(asset.kind==="image"?"img":asset.kind);media.src=asset.dataUrl;if(asset.kind==="image")media.alt=asset.name;else media.controls=true;
+        media.className="studio-asset-media";studioAssetView.append(media);
+    }else {
+        studioAssetView.append(centerNode("p","studio-muted",asset.kind==="text-preview"?"Extrait du fichier volumineux, non modifiable ici. Ouvre-le dans l’application associée pour accéder à son contenu complet.":"Ce format n’est pas édité comme du texte pour préserver ses données. Voici un aperçu des octets ; utilise son application associée pour le modifier."));
+        studioAssetView.append(centerNode("pre","studio-asset-bytes",asset.preview));
+        if(asset.truncated)studioAssetView.append(centerNode("p","studio-muted","Aperçu limité aux 16 premiers Ko."));
+    }
+}
+
+/* Recherches restent en arrière-plan, indépendamment de la saisie. */
+const researchTab=centerNode("button","","Internet");researchTab.type="button";researchTab.dataset.studioTab="research";researchTab.setAttribute("role","tab");researchTab.setAttribute("aria-selected","false");researchTab.tabIndex=-1;$("project-studio").querySelector(".studio-tabs").append(researchTab);researchTab.onclick=()=>{setStudioTab("research");refreshStudioResearch();};
+researchTab.onkeydown=event=>{if(!["ArrowLeft","ArrowRight"].includes(event.key))return;event.preventDefault();const buttons=[...document.querySelectorAll("[data-studio-tab]")];buttons[(buttons.indexOf(researchTab)+(event.key==="ArrowRight"?1:buttons.length-1))%buttons.length].click();};
+const researchPage=centerNode("section","hidden");researchPage.dataset.studioPage="research";
+researchPage.innerHTML=`<div class="studio-section-heading"><div><h2>Rechercher sans interrompre le travail.</h2><p class="studio-muted">Les résultats restent disponibles pendant que tu écris à l’agent ou modifies tes fichiers. Les extraits ne remplacent pas la consultation des sources.</p></div></div><form id="studio-research-form" class="center-filters"><input type="search" id="studio-research-query" required maxlength="1000" placeholder="Chercher une documentation ou une réponse sur le web…" aria-label="Recherche Internet"><button type="submit" class="primary">Rechercher en arrière-plan</button></form><div id="studio-research-jobs" class="studio-research-jobs"></div>`;
+$("project-studio").append(researchPage);
+async function refreshStudioResearch(){renderStudioResearch(await api.webResearch("list"));}
+function renderStudioResearch(jobs) {
+    const list=$("studio-research-jobs");list.replaceChildren();
+    for(const job of jobs.slice().reverse()) {
+        const card=centerNode("article","studio-card");card.append(centerNode("span","studio-pill",({running:"En cours",done:"Terminée",failed:"Échec",stopped:"Arrêtée",denied:"Désactivée"})[job.status]||job.status),centerNode("h3","",job.query));
+        if(job.status==="running")card.append(centerButton("Arrêter la recherche",async()=>{await api.webResearch("cancel",{id:job.id});await refreshStudioResearch();}));
+        if(job.error)card.append(centerNode("p","studio-muted",job.error));
+        for(const source of job.result?.results||[]) {
+            const row=centerNode("div","studio-research-source");row.append(centerButton(source.title||source.url,()=>api.openExternal(source.url)),centerNode("p","studio-muted",source.snippet));card.append(row);
+        }
+        if(job.status==="done"&&!job.result?.results?.length)card.append(centerNode("p","studio-muted",job.result?.message||"Aucun résultat exploitable."));
+        list.append(card);
+    }
+    if(!jobs.length)list.append(centerNode("p","studio-empty","Aucune recherche pour l’instant."));
+}
+$("studio-research-form").onsubmit=async event=>{event.preventDefault();try{const result=await api.webResearch("start",{query:$("studio-research-query").value});if(result.denied)$("studio-message").textContent=result.message;await refreshStudioResearch();}catch(error){$("studio-message").textContent=error.message;}};
+api.onEvent(channel=>{if(channel==="webResearch")refreshStudioResearch().catch(()=>{});});
+
+/* Paramètres des mises à jour de la version installée. */
+const updateSettings=document.createElement("section");updateSettings.className="settings-card";
+updateSettings.innerHTML=`<h3>Application et mises à jour</h3><p id="studio-app-version" class="settings-help"></p><label class="setting-toggle"><span><b>Vérification et téléchargement automatiques</b><small>Vérifier et télécharger les versions publiées en arrière-plan. Au démarrage, tu peux choisir de passer ou d’installer la mise à jour. Elle ne s’installe pas sans ton accord. Les projets et réglages restent dans leurs dossiers.</small></span><input type="checkbox" role="switch" id="studio-automatic-updates"></label><p id="studio-update-message" class="settings-help" role="status"></p><progress id="studio-update-progress" max="100" value="0" class="hidden"></progress><div class="studio-actions"><button type="button" id="studio-update-check">Vérifier maintenant</button><button type="button" id="studio-update-download" class="hidden">Télécharger la mise à jour</button><button type="button" id="studio-update-install" class="primary hidden">Enregistrer et redémarrer</button></div><p class="settings-help">Le fournisseur est défini dans la configuration de distribution. Aucun build ni aucune version n’est publié automatiquement par cette interface.</p>`;
+$("settings-view").insertBefore(updateSettings,$("settings-message"));
+function renderStudioUpdates(data){$("studio-app-version").textContent=`Version de l’application : ${data.version}`;$("studio-automatic-updates").checked=data.automatic;$("studio-automatic-updates").disabled=["unavailable","unsupported"].includes(data.status);$("studio-update-message").textContent=data.message;$("studio-update-progress").value=data.progress;$("studio-update-progress").classList.toggle("hidden",data.status!=="downloading");$("studio-update-check").disabled=["unavailable","unsupported","checking","downloading"].includes(data.status);$("studio-update-download").classList.toggle("hidden",(data.status!=="available"||(data.canInstall===false&&!data.downloadUrl)));$("studio-update-install").classList.toggle("hidden",data.status!=="downloaded");}
+api.updates().then(renderStudioUpdates).catch(()=>{});
+$("studio-automatic-updates").onchange=()=>api.updates("automatic",{enabled:$("studio-automatic-updates").checked}).then(renderStudioUpdates).catch(error=>{$("studio-update-message").textContent=error.message;});
+for(const action of ["check","download","install"])$("studio-update-"+action).onclick=async()=>{try{if(action==="install"){await saveAllStudioFiles();if(ui.tabs.some(tab=>tab.dirty))throw new Error("Certains fichiers n’ont pas pu être enregistrés. Enregistre-les avant de redémarrer.");}renderStudioUpdates(await api.updates(action));}catch(error){$("studio-update-message").textContent=error.message;}};
+api.onEvent((channel,data)=>{if(channel==="appUpdate")renderStudioUpdates(data);});
+
+/* Notifications Windows quand l’agent attend une réponse. */
+const notificationSettings=document.createElement("section");notificationSettings.className="settings-card";
+notificationSettings.innerHTML=`<h3>Notifications de l’agent</h3><p class="settings-help">Une notification Windows avec son signale chaque demande de l’agent, même si la fenêtre est active. La fin d’une tâche est aussi signalée quand la fenêtre n’est pas active. Le son dépend des réglages de notifications de Windows.</p><label class="setting-toggle"><span><b>Me prévenir quand l’agent a besoin de moi</b><small>Active ou désactive les notifications des demandes et de la fin des tâches.</small></span><input type="checkbox" role="switch" id="studio-agent-notifications"></label><p id="studio-agent-notifications-message" class="settings-help" role="status"></p>`;
+$("settings-view").insertBefore(notificationSettings,$("settings-message"));
+function renderAgentNotifications(data){$("studio-agent-notifications").checked=data.enabled!==false;}
+api.agentNotifications().then(renderAgentNotifications).catch(error=>{$("studio-agent-notifications-message").textContent=error.message;});
+$("studio-agent-notifications").onchange=()=>api.agentNotifications("save",{enabled:$("studio-agent-notifications").checked}).then(renderAgentNotifications).catch(error=>{$("studio-agent-notifications-message").textContent=error.message;});
+
+/* Actions explicites pour gérer le contexte de l’agent. */
+const contextActions=centerNode("section","starter-context");
+contextActions.setAttribute("aria-label","Gérer la conversation");
+contextActions.append(centerNode("h3","","Conversation"));
+const contextButtons=centerNode("div","starter-context-actions");
+for(const [label,description,icon,command] of [
+    ["Voir le contexte","Consulter le résumé du projet","BookOpen","/resume"],
+    ["Compacter","Alléger la conversation","Command","/compact"]
+]){
+    const button=studioAction("",icon,()=>{input.value=command;autosizeInput();input.focus();});
+    button.setAttribute("aria-label",label);
+    button.title=description;
+    const text=centerNode("span","starter-context-text");
+    text.append(centerNode("b","",label),centerNode("small","",description));
+    button.append(text);contextButtons.append(button);
+}
+contextActions.append(contextButtons);
+$("agent-starter")?.append(contextActions);
+for(const [index,button] of [...document.querySelectorAll(".starter-prompts button")].entries()){
+    const slot=button.querySelector("span"),icon=studioIcon(["Search","GitCompareArrows","Check"][index]);
+    if(slot&&icon)slot.replaceChildren(icon);
+}
+
+/* A bounded startup check; downloads continue without blocking the editor. */
+async function runStartupUpdateCheck() {
+    const overlay=$("startup-loading"),message=$("startup-message"),appRoot=$("app");
+    const primary=$("startup-update-now"),progress=$("startup-update-progress"),later=$("startup-continue"),openButton=$("startup-update-open");
+    let finished=false,deadline=null,finishTimer=null,current=null,off=null;
+    appRoot.inert=true;
+    const close=()=>{if(finished)return;finished=true;clearTimeout(deadline);clearTimeout(finishTimer);overlay.hidden=true;appRoot.inert=false;if(overlay.contains(document.activeElement))input.focus();};
+    const offer=data=>{
+        current=data;
+        const available=["available","downloading","downloaded"].includes(data.status);
+        openButton.classList.toggle("hidden",!available);
+        if(finished)return;
+        overlay.querySelector(".startup-track").classList.toggle("hidden",data.status!=="checking");
+        if(available){
+            clearTimeout(deadline);clearTimeout(finishTimer);
+            $("startup-heading").textContent=data.status==="downloaded"?"La mise à jour est prête.":`Nouvelle version ${data.availableVersion||"disponible"}`;
+            later.textContent="Passer";
+            primary.classList.remove("hidden");
+            primary.textContent=data.canInstall===false?"Télécharger l’installateur":data.status==="downloaded"?"Redémarrer et installer":data.status==="downloading"?"Téléchargement en cours…":"Mettre à jour maintenant";
+            primary.disabled=data.status==="downloading";
+            progress.classList.toggle("hidden",data.status!=="downloading");progress.value=data.progress||0;
+            message.textContent=data.status==="downloading"?`Téléchargement : ${Math.round(data.progress||0)} %`:
+                data.status==="downloaded"?"Enregistre ton travail pour redémarrer et installer la nouvelle version.":data.canInstall===false?"Cette version portable ne s’installe pas automatiquement. Télécharge l’installateur Windows pour passer à la nouvelle version.":"La nouvelle version est disponible. Tu peux l’installer maintenant ou continuer dans l’IDE.";
+        }else if(data.status==="error"){
+            message.textContent=data.message;progress.classList.add("hidden");primary.classList.remove("hidden");primary.disabled=false;primary.textContent="Réessayer";later.textContent="Ouvrir l’IDE";
+        }else if(["current","unavailable"].includes(data.status)){
+            message.textContent=data.message;primary.classList.add("hidden");progress.classList.add("hidden");
+            clearTimeout(finishTimer);finishTimer=setTimeout(close,650);
+        }
+    };
+    later.onclick=close;later.focus();
+    openButton.onclick=()=>{finished=false;overlay.hidden=false;appRoot.inert=true;offer(current);primary.focus();};
+    off=api.onEvent((channel,data)=>{if(channel==="appUpdate")offer(data);});
+    window.addEventListener("unload",()=>off?.(),{once:true});
+    primary.onclick=async()=>{
+        primary.disabled=true;
+        try{
+            if(current?.canInstall===false){if(current.downloadUrl)await api.updates("download");close();return;}
+            if(current?.status==="downloaded"){
+                await saveAllStudioFiles();
+                if(ui.tabs.some(tab=>tab.dirty))throw new Error("Enregistre tes fichiers avant de redémarrer.");
+                await api.updates("install");return;
+            }
+            if(current?.status==="error"){offer(await api.updates("check"));return;}
+            offer(await api.updates("download"));
+        }catch(error){message.textContent=error.message;}
+        finally{primary.disabled=current?.status==="downloading";}
+    };
+    const start=Date.now();
+    try {
+        const result=await Promise.race([
+            api.updates("check"),
+            new Promise(resolve=>{deadline=setTimeout(()=>resolve({status:"timeout",message:"La vérification continue en arrière-plan. Ouverture de l’IDE…"}),8000);})
+        ]);
+        if(finished)return;
+        if(["available","downloading","downloaded"].includes(current?.status))return;
+        if(["available","downloading","downloaded"].includes(result.status)){offer(result);return;}
+        current=result;
+        message.textContent=result.message || "Ouverture de l’IDE…";
+    } catch {
+        if(!finished)message.textContent="Vérification indisponible. Ouverture de l’IDE…";
+    } finally {
+        clearTimeout(deadline);
+        if(!finished&&!["available","downloading","downloaded"].includes(current?.status))finishTimer=setTimeout(close,Math.max(650,1100-(Date.now()-start)));
+    }
+}
+runStartupUpdateCheck().catch(()=>{$("startup-loading").hidden=true;$("app").inert=false;});

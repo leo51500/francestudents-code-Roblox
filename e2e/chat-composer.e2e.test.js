@@ -1,0 +1,63 @@
+"use strict";
+/* global applyStatus */
+const test = require("node:test"), assert = require("node:assert/strict"), fs = require("node:fs"), path = require("node:path"), os = require("node:os"), { _electron } = require("playwright-core");
+test("composer controls change actual access/reasoning preferences and preserve imported skills", { timeout: 60000 }, async () => {
+    const root = path.resolve(__dirname, ".."), dir = fs.mkdtempSync(path.join(os.tmpdir(), "frst-composer-")), project = path.join(dir, "project"); fs.mkdirSync(project);
+    const modulePath = name => JSON.stringify(path.join(root, name)), harness = path.join(dir, "launch.cjs");
+    fs.writeFileSync(harness, `
+require(${modulePath("src/core/session")}).bootstrap=async()=>({ok:true});
+require(${modulePath("src/api/agents")}).listAgents=async()=>({agents:[{id:-1003,name:'GPT-6.1 Sol',model:'gpt-6.1-sol'}],source:'api'});
+require(${modulePath("src/state")}).state.model=-1003;
+globalThis.setComposerTestChat=()=>{require(${modulePath("src/state")}).state.chatIds.agent='12345678-1234-1234-1234-123456789abc';};
+require(${modulePath("src/api/account")}).fetchUserUsage=async()=>({});
+require(${modulePath("src/api/account")}).fetchChatUsage=async()=>({contextUsagePercent:62,tokenUsage:{totalTokenCount:15000}});
+let preference='medium';require(${modulePath("src/api/reasoning")}).readPreference=async()=>preference;
+require(${modulePath("src/api/reasoning")}).savePreference=async value=>{preference=value;return value;};
+require(${modulePath("src/settings")}).save({releaseHighlightsSeen:${JSON.stringify(require("../package.json").version)},automaticUpdates:false});
+require(${modulePath("desktop/main.js")});`);
+    const env = { ...process.env, FS_DATA_DIR: dir, FS_STATE_DIR: dir, FS_SKILLS_DIR: path.join(dir, "skills") }; delete env.ELECTRON_RUN_AS_NODE;
+    const app = await _electron.launch({ executablePath: require("electron"), args: [harness, "--user-data-dir=" + path.join(dir, "electron")], env, cwd: root });
+    try {
+        const page = await app.firstWindow();
+        await page.locator("#startup-loading").waitFor({ state: "hidden" });
+        if (await page.locator("#guide-close").isVisible()) await page.locator("#guide-close").click();
+        await page.evaluate(project => window.frst.openProject(project), project);
+        assert.equal(await page.locator("#composer #btn-model").count(), 1);
+        await page.locator("#chat-reasoning").waitFor({ state: "visible" });
+        await page.locator("#chat-reasoning").click();
+        assert.equal(await page.locator('#chat-reasoning-menu [data-level="none"]').count(), 0);
+        await page.locator('#chat-reasoning-menu [data-level="high"]').click();
+        await page.waitForFunction(() => document.querySelector("#chat-reasoning").textContent.includes("élevée"));
+        assert.equal((await page.evaluate(() => window.frst.reasoning())).level, "high");
+        await page.locator("#chat-access-button").click();
+        await page.locator('[data-chat-access="auto"]').click();
+        await page.waitForFunction(() => document.querySelector("#chat-access-button").textContent.includes("Automatique"));
+        assert.equal((await page.evaluate(() => window.frst.status())).autoApproveCommands, true);
+        await app.evaluate(() => globalThis.setComposerTestChat());
+        await page.evaluate(async () => applyStatus(await window.frst.status()));
+        assert.equal(await page.locator("#chat-context-gauge").count(), 0);
+        assert.equal((await page.evaluate(() => window.frst.status())).busy, false);
+        await page.setViewportSize({ width: 900, height: 600 });
+        const controls = await page.locator(".chat-composer-tools").boundingBox(); assert.ok(controls.x >= 0 && controls.x + controls.width <= 901);
+        assert.equal(await page.locator("#eco-mode-toggle").evaluate(node => node.parentElement.classList.contains("chat-settings-row")), true);
+        const controlBounds = await page.locator(".chat-settings-row > button:visible").evaluateAll(nodes => nodes.map(node => {
+            const { x, y, width, height } = node.getBoundingClientRect();
+            return { x, y, right: x + width, bottom: y + height };
+        }));
+        for (let i = 0; i < controlBounds.length; i++) for (let j = i + 1; j < controlBounds.length; j++) {
+            const a = controlBounds[i], b = controlBounds[j];
+            assert.ok(a.right <= b.x + 1 || b.right <= a.x + 1 || a.bottom <= b.y + 1 || b.bottom <= a.y + 1, "Composer controls do not overlap");
+        }
+        const send = await page.locator("#btn-send").boundingBox(); assert.ok(send.y >= 0 && send.y + send.height <= 580, "Send stays visible in a small window");
+        const skillFile = path.join(dir, "SKILL.md");
+        fs.writeFileSync(skillFile, "---\nname: downloaded-local\ndescription: My downloaded skill\n---\n\nUseful local instructions");
+        await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, skillFile);
+        await page.locator('[data-view="extensions"]').click(); await page.locator('[data-center-tab="installed"]').click();
+        await page.locator("#btn-skill-import-file").click();
+        await page.locator("#skill-editor[open]").waitFor();
+        assert.match(await page.locator("#skill-editor-content").inputValue(), /Useful local instructions/);
+        await page.locator("#skill-editor-save").click();
+        await page.locator("#skill-editor").waitFor({ state: "hidden" });
+        assert.match(fs.readFileSync(path.join(dir, "skills/downloaded-local/SKILL.md"), "utf8"), /disabled: true/);
+    } finally { await app.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});

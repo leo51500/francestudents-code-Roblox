@@ -1,0 +1,44 @@
+"use strict";
+const {EventEmitter}=require("node:events");
+function createUpdateController({updater,enabled=false,version="",getPreference=()=>true,savePreference=()=>{},onChange=()=>{},checkRelease=null,openDownload=null}={}) {
+    const state={version,status:enabled||checkRelease?"idle":"unavailable",availableVersion:null,progress:0,automatic:getPreference(),message:enabled?"Les mises à jour sont disponibles via le fournisseur configuré.":checkRelease?"Vérification des versions publiées disponible. Les mises à jour de cette version restent manuelles.":"Aucune source de mise à jour n’est configurée."};
+    const publish=patch=>{Object.assign(state,patch);onChange({...state});};
+    state.canInstall=enabled;
+    let checking=null,downloading=null;
+    if(enabled&&updater){
+        updater.autoDownload=state.automatic;updater.autoInstallOnAppQuit=false;
+        updater.on("checking-for-update",()=>publish({status:"checking",message:"Recherche d’une nouvelle version…"}));
+        updater.on("update-available",info=>publish({status:"available",availableVersion:info.version,message:`La version ${info.version} est disponible.`}));
+        updater.on("update-not-available",()=>publish({status:"current",message:"Cette application est à jour par rapport à la version publiée."}));
+        updater.on("download-progress",info=>publish({status:"downloading",progress:Math.max(0,Math.min(100,info.percent||0)),message:"Téléchargement de la mise à jour en arrière-plan…"}));
+        updater.on("update-downloaded",info=>publish({status:"downloaded",availableVersion:info.version,progress:100,message:"Mise à jour prête. Enregistre ton travail puis choisis quand redémarrer pour l’installer."}));
+        updater.on("error",()=>publish({status:"error",message:"La source de mises à jour est indisponible ou aucune version compatible n’est publiée. Tu peux réessayer plus tard."}));
+    }
+    async function action(type,payload={}) {
+        if(type==="status")return {...state};
+        if(type==="automatic"){state.automatic=payload.enabled===true;savePreference(state.automatic);if(updater){updater.autoDownload=state.automatic;updater.autoInstallOnAppQuit=false;}publish({automatic:state.automatic});return {...state};}
+        if((!enabled||!updater)&&type==="check"&&checkRelease){
+            if(!checking){publish({status:"checking",message:"Recherche de mises à jour…"});checking=Promise.resolve().then(()=>checkRelease(version)).then(publish).catch(()=>publish({status:"error",message:"Vérification impossible. Tu peux continuer et réessayer plus tard."})).finally(()=>{checking=null;});}
+            await checking;return {...state};
+        }
+        if(!enabled&&type==="download"&&openDownload&&state.status==="available"&&state.downloadUrl){await openDownload(state.downloadUrl);return {...state};}
+        if(!enabled||!updater)return {...state};
+        if(type==="check"){
+            if(["downloading","downloaded"].includes(state.status))return {...state};
+            if(!checking)checking=Promise.resolve().then(()=>updater.checkForUpdates()).catch(()=>publish({status:"error",message:"Impossible de vérifier la version publiée. Vérifie la connexion ou réessaie plus tard."})).finally(()=>{checking=null;});
+            await checking;
+        }else if(type==="download"){
+            if(downloading||state.status==="downloading"||state.status==="downloaded")return {...state};
+            if(state.status!=="available")throw new Error("Aucune mise à jour disponible à télécharger.");
+            publish({status:"downloading",progress:0,message:"Téléchargement de la mise à jour…"});
+            downloading=Promise.resolve().then(()=>updater.downloadUpdate()).catch(()=>publish({status:"error",message:"Le téléchargement a échoué. Réessaie ou continue sans mettre à jour."})).finally(()=>{downloading=null;});
+            await downloading;
+        }else if(type==="install"){
+            if(state.status!=="downloaded")throw new Error("Télécharge d’abord la mise à jour.");
+            updater.quitAndInstall(true,true);
+        }else throw new Error("Action de mise à jour inconnue.");
+        return {...state};
+    }
+    return {action,events:updater instanceof EventEmitter?updater:null};
+}
+module.exports={createUpdateController};
