@@ -67,3 +67,20 @@ test("AI titles are stored once and never overwrite a manual title",async()=>{
     await conversations.rename("ai-title","Titre automatique","ai");
     assert.equal(readSaved().find(entry=>entry.id==="ai-title").title,"Mon titre personnel");
 });
+
+test("clearConversation oublie le fil supprimé sans toucher à l’autre mode", async () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "frst-project-"));
+    try {
+        await projects.open(workspace);
+        await projects.setConversation(workspace, "agent", "agent-9");
+        await projects.setConversation(workspace, "chat", "chat-9");
+
+        assert.equal(await projects.clearConversation(workspace, "agent"), true);
+        const project = await projects.get(workspace);
+        assert.equal(project.conversations.agent, null);
+        assert.equal(project.conversations.chat.id, "chat-9");
+        assert.equal(await projects.clearConversation(workspace, "agent"), false);
+    } finally {
+        fs.rmSync(workspace, { recursive: true, force: true });
+    }
+});

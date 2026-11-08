@@ -338,6 +338,33 @@ test("requestModel ouvre une nouvelle conversation agent après un 409", { concu
     assert.ok(chatIds[1] == null);
 });
 
+test("une conversation supprimée côté serveur est rouverte avec le message complet", { concurrency: false }, async () => {
+    prepareAuth();
+    state.chatId = "agent-1";
+    state.chatIds.agent = "agent-1";
+    const sent = [], chatIds = [];
+    let calls = 0;
+    global.fetch = async (url, init) => {
+        calls++;
+        const body = JSON.parse(init.body);
+        chatIds.push(body.chatId);
+        sent.push(body.initialContent);
+        if (calls === 1) {
+            return new Response(
+                'event: error\ndata: {"message":"Chat not found with id: agent-1","code":"CHAT_DELETED","chat_id":"agent-1"}\n\n',
+                { headers: { "content-type": "text/event-stream" } },
+            );
+        }
+        return successfulResponse();
+    };
+
+    assert.equal(await requestModel("bonjour", { conversationMode: "agent", freshMessage: () => "message complet" }), "ok");
+    assert.equal(calls, 2);
+    assert.equal(chatIds[0], "agent-1");
+    assert.equal(chatIds[1], null);
+    assert.deepEqual(sent, ["bonjour", "message complet"]);
+});
+
 test("après un 409 agent, le message complet remplace le message « suite »", { concurrency: false }, async () => {
     prepareAuth();
     state.chatId = "agent-1";

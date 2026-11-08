@@ -1071,7 +1071,9 @@ function registerIpc() {
         const { state } = require("../src/state");
         if (!state.workspace) return action === "list" ? [] : Promise.reject(new Error("Aucun projet sélectionné."));
         const versions = require("../src/project/file-versions");
-        if (action === "list") return (await versions.list()).map(({ id, at, task, kind, excluded }) => ({ id, at, task, kind, excluded }));
+        if (action === "list") return (await versions.list())
+            .filter(point => point.workspace === state.workspace)
+            .map(({ id, at, task, kind, excluded, files }) => ({ id, at, task, kind, excluded, files: Object.keys(files || {}).length }));
         if (busy) throw new Error("Arrête la tâche en cours avant de gérer les versions.");
         if (action === "remove") {
             busy = true; pushStatus();

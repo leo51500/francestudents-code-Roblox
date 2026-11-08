@@ -1,5 +1,12 @@
 # Journal des modifications
 
+## 1.25.2 — Sauvegardes et conversations plus fiables
+
+- L’onglet Sauvegardes distingue les versions du projet actif, indique le
+  nombre de fichiers suivis et affiche les retours des actions au bon endroit.
+- Si une conversation a été supprimée côté serveur, la demande en cours
+  reprend automatiquement dans un nouveau fil, sans toucher à l’autre mode.
+
 ## 1.25.1 — Sons et textures pour Roblox
 
 - Nouveau skill intégré `roblox-audio` : recherche de sons libres de droits,

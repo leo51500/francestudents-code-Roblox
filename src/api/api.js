@@ -336,6 +336,7 @@ async function requestModel(message, options = {}) {
     let failures = 0;
     let switched = false;
     let recoveredImageHistory = false;
+    let recoveredDeletedChat = false;
 
     while (true) {
         try {
@@ -415,6 +416,25 @@ async function requestModel(message, options = {}) {
         } catch (error) {
             // Annulation volontaire (Ctrl+C) : jamais de relance.
             if (error.cancelled) throw error;
+            // Conversation supprimée côté serveur (CHAT_DELETED / « Chat not found ») :
+            // l’identifiant local ne sera plus jamais accepté. On oublie ce fil et on
+            // renvoie la demande dans une nouvelle conversation au lieu d’échouer à
+            // chaque essai.
+            if (!options.fresh && !recoveredDeletedChat && /CHAT_DELETED|Chat not found with id/i.test(String(error.message))) {
+                recoveredDeletedChat = true;
+                ui.warn("La conversation n’existe plus côté serveur. Je reprends cette demande dans une nouvelle conversation.");
+                state.chatIds[mode] = null;
+                state.chatId = null;
+                try {
+                    if (state.workspace) await require("../project/projects").clearConversation(state.workspace, mode);
+                } catch (clearError) {
+                    ui.debug(`Conversation périmée non oubliée : ${clearError.message}`);
+                }
+                if (options.freshMessage) {
+                    message = typeof options.freshMessage === "function" ? options.freshMessage() : options.freshMessage;
+                }
+                continue;
+            }
             if(!options.fresh&&!recoveredImageHistory&&/image dimensions exceed|image.{0,100}(?:8000 pixels|maximum.{0,20}dimension)/i.test(String(error.message))){
                 recoveredImageHistory=true;
                 ui.info("Une ancienne image dépasse la limite du fournisseur. Reprise dans une conversation allégée…");

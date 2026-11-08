@@ -21,6 +21,9 @@ function writeStudioStorage(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch { studioFeedback("Le stockage local est indisponible."); }
 }
 function studioFeedback(message) { $("composer-feedback").textContent = message || ""; }
+/* Les actions de l’onglet Sauvegardes se lisent sur place : le compositeur
+   n’est pas visible depuis ce panneau. */
+function backupsFeedback(message) { const host = $("backups-feedback"); if (host) host.textContent = message || ""; }
 function studioDraftKey(workspace) {return `frst.draft:${workspace || "global"}`;}
 function saveStudioDraft() {
     if (studioWorkspace !== undefined) writeStudioStorage(studioDraftKey(studioWorkspace), input.value);
@@ -50,6 +53,7 @@ function updateStudioStatus(status) {
         studioWorkspace = workspace;
         studioActivitySeq++;
         $("activity-checkpoints").replaceChildren();
+        backupsFeedback("");
         if (studioTab === "activity" || studioTab === "backups") refreshStudioActivity();
         input.value = readStudioStorage(studioDraftKey(workspace), "");
         autosizeInput();
@@ -363,20 +367,31 @@ async function refreshStudioActivity() {
         for (const point of checkpoints) {
             const row = document.createElement("div"); row.className = "workspace-item";
             const label = document.createElement("div"); label.textContent = point.task || "Version sans titre";
-            const time = document.createElement("small"); time.textContent = `${new Date(point.at).toLocaleString("fr-FR")} · ${point.kind === "safety" ? "Sécurité avant restauration" : "Avant la demande"}`;
+            const tracked = Number(point.files) || 0;
+            const kind = point.kind === "safety" ? "Sécurité avant restauration" : "Avant la demande";
+            const time = document.createElement("small");
+            time.textContent = `${new Date(point.at).toLocaleString("fr-FR")} · ${kind} · ${tracked} fichier${tracked > 1 ? "s" : ""} suivi${tracked > 1 ? "s" : ""}`;
             const restore = document.createElement("button"); restore.type = "button"; restore.textContent = "Voir et restaurer"; restore.disabled = Boolean(ui.status.busy);
+            if (!tracked) restore.title = "Cette version ne contient aucun fichier : la restauration ne rétablira aucun contenu.";
             restore.onclick = async () => {
-                if (ui.tabs.some(tab => tab.dirty)) { studioFeedback("Enregistre tous les fichiers ouverts avant de restaurer une version."); return; }
+                if (ui.tabs.some(tab => tab.dirty)) { backupsFeedback("Enregistre tous les fichiers ouverts avant de restaurer une version."); return; }
                 restore.disabled = true;
+                backupsFeedback("Lecture de la version…");
                 try {
                     const preview = await api.checkpoints("preview", point.id);
-                    if (!preview.changes.length) { studioFeedback("Les fichiers suivis correspondent déjà à cette version."); return; }
-                    if (preview.changes.length > 100) { studioFeedback("Plus de 100 fichiers diffèrent : restauration désactivée pour éviter un aperçu incomplet."); return; }
+                    if (!preview.changes.length) {
+                        backupsFeedback(tracked
+                            ? "Les fichiers suivis correspondent déjà à cette version : il n’y a rien à restaurer."
+                            : "Cette version ne contient aucun fichier suivi, et le projet local n’en contient aucun : il n’y a rien à restaurer.");
+                        return;
+                    }
+                    if (preview.changes.length > 100) { backupsFeedback("Plus de 100 fichiers diffèrent : restauration désactivée pour éviter un aperçu incomplet."); return; }
                     const details = preview.changes.map(change => `${change.action} : ${change.path}`).join("\n");
                     const excluded = preview.excludedPaths || [];
                     const excludedDetails = excluded.length ? `\n\nChemins exclus (${excluded.length}) :\n${excluded.slice(0, 20).join("\n")}${excluded.length > 20 ? `\n… et ${excluded.length - 20} autre(s).` : ""}` : "";
                     const message = `Revenir à l’état précédant « ${point.task} » ?\n\n${details}\n\nTous les changements listés depuis cette version seront annulés, y compris tes modifications manuelles et celles des demandes suivantes. Les fichiers marqués « retirer » seront supprimés. Une version de sécurité sera créée avant la restauration.${excludedDetails}\n\nLes chemins exclus et les actions externes ne sont pas restaurés.`;
-                    if (!await confirmStudioAction(message, { title: "Restaurer une version", confirmLabel: "Restaurer", danger: true })) return;
+                    if (!await confirmStudioAction(message, { title: "Restaurer une version", confirmLabel: "Restaurer", danger: true })) { backupsFeedback(""); return; }
+                    backupsFeedback("Restauration en cours…");
                     if (ui.tabs.some(tab => tab.dirty)) throw new Error("Enregistre tous les fichiers ouverts avant de restaurer une version.");
                     const workspace = ui.workspace;
                     const result = await api.checkpoints("restore", point.id, preview.expected);
@@ -390,21 +405,28 @@ async function refreshStudioActivity() {
                         }
                     }
                     studioFeedback(`${result.restored} fichier(s) restauré(s).${dirtyRemoved ? " Un onglet modifié reste ouvert alors que son fichier a été retiré : vérifie son contenu avant de l’enregistrer." : ""}`);
+                    backupsFeedback(`${result.restored} fichier(s) restauré(s).${dirtyRemoved ? " Un onglet modifié reste ouvert alors que son fichier a été retiré." : ""}`);
                     scheduleRefresh(); refreshStudioActivity();
-                } catch (error) { studioFeedback(error.message); scheduleRefresh(); refreshStudioActivity(); }
+                } catch (error) { backupsFeedback(error.message); scheduleRefresh(); refreshStudioActivity(); }
                 finally { restore.disabled = Boolean(ui.status.busy); }
             };
             const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Supprimer la version"; remove.disabled = Boolean(ui.status.busy);
             remove.onclick = async () => {
                 if (!await confirmStudioAction(`Supprimer définitivement la version « ${point.task || "sans titre"} » ? Les fichiers actuels ne seront pas modifiés.`, { title: "Supprimer une version", confirmLabel: "Supprimer", danger: true })) return;
                 remove.disabled = true;
-                try { await api.checkpoints("remove", point.id); studioFeedback("Version supprimée."); await refreshStudioActivity(); }
-                catch (error) { studioFeedback(error.message); }
+                backupsFeedback("Suppression de la version…");
+                try {
+                    await api.checkpoints("remove", point.id);
+                    studioFeedback("Version supprimée.");
+                    backupsFeedback("Version supprimée. Les fichiers actuels n’ont pas été modifiés.");
+                    await refreshStudioActivity();
+                }
+                catch (error) { backupsFeedback(error.message); }
                 finally { remove.disabled = Boolean(ui.status.busy); }
             };
             row.append(label, time, restore, remove); pointsHost.appendChild(row);
         }
-    } catch (error) { studioFeedback(error.message); }
+    } catch (error) { backupsFeedback(error.message); studioFeedback(error.message); }
 }
 function renderFavoritePrompts() {
     const list = $("favorite-list"); list.replaceChildren();

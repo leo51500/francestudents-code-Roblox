@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.25.2":{headline:"Les sauvegardes et les conversations sont plus fiables.",items:[
+        {icon:"tools",title:"Sauvegardes plus lisibles",text:"Retrouve uniquement les versions du projet actif et vois combien de fichiers elles contiennent."},
+        {icon:"tools",title:"Restauration mieux expliquée",text:"Les retours de lecture, restauration et suppression apparaissent directement dans l’onglet Sauvegardes."},
+        {icon:"chat",title:"Reprise après suppression",text:"Si le serveur a supprimé une conversation, ta demande reprend dans un nouveau fil."}
+    ]},
     "1.25.1":{headline:"Les sons et les textures rejoignent le pipeline Roblox.",items:[
         {icon:"chat",title:"Sons préparés pour Roblox",text:"Un skill dédié recherche des sons libres de droits, vérifie les licences et prépare les fichiers avant leur upload manuel."},
         {icon:"tools",title:"Textures Blender jusqu’aux LOD",text:"Crée des textures procédurales ou bake des cartes PNG, puis conserve-les sur chaque niveau de détail."},

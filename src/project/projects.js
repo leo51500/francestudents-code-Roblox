@@ -140,6 +140,21 @@ await load();
     await save();
 }
 
+/** Oublie la conversation (chat ou agent) d'un projet, par exemple si elle a été supprimée côté serveur. */
+async function clearConversation(workspace, mode) {
+    if (!workspace) return false;
+    await load();
+
+    const project = projects[keyOf(workspace)];
+    const slot = mode === "agent" ? "agent" : "chat";
+
+    if (!project || !project.conversations || !project.conversations[slot]) return false;
+
+    project.conversations[slot] = null;
+    await save();
+    return true;
+}
+
 /** Oublie les projets dont le dossier n'existe plus. Renvoie le nombre de projets retirés. */
 async function prune() {
     await load();
@@ -165,4 +180,4 @@ async function prune() {
     return removed;
 }
 
-module.exports = { open, get, last, list, setConversation, prune, FILE, REPO_ROOT, STATE_DIR };
+module.exports = { open, get, last, list, setConversation, clearConversation, prune, FILE, REPO_ROOT, STATE_DIR };
