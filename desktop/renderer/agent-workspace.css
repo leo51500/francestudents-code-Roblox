@@ -183,6 +183,8 @@
 .workspace-item { border: 1px solid var(--border); border-radius: 4px; margin: 6px 0; padding: 9px; }
 .workspace-item > div { font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .workspace-item > small { display: block; color: var(--fg-dim); font-size: 10px; margin: 6px 0; }
+.workspace-item > .version-note { margin: 8px 0 0; color: var(--fg-dim); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+.workspace-item > .version-note[hidden] { display: none; }
 .workspace-item button { font-size: 10px; padding: 3px 6px; margin-right: 4px; border-radius: 3px; }
 .composer { position: relative; }
 .pending-prompts { margin: 0 0 4px; border: 1px solid var(--border); border-bottom: 0; border-radius: 7px 7px 0 0; background: var(--bg-panel); padding: 2px 8px; max-height: 180px; overflow: auto; }

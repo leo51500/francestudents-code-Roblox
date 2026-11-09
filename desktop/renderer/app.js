@@ -6939,6 +6939,8 @@ async function refreshStudioActivity() {
             time.textContent = `${new Date(point.at).toLocaleString("fr-FR")} · ${kind} · ${tracked} fichier${tracked > 1 ? "s" : ""} suivi${tracked > 1 ? "s" : ""}`;
             const restore = document.createElement("button"); restore.type = "button"; restore.textContent = "Voir et restaurer"; restore.disabled = Boolean(ui.status.busy);
             if (!tracked) restore.title = "Cette version ne contient aucun fichier : la restauration ne rétablira aucun contenu.";
+            const note = document.createElement("p"); note.className = "version-note"; note.hidden = true;
+            let nothingToRestore = false;
             restore.onclick = async () => {
                 if (ui.tabs.some(tab => tab.dirty)) { backupsFeedback("Enregistre tous les fichiers ouverts avant de restaurer une version."); return; }
                 restore.disabled = true;
@@ -6946,9 +6948,14 @@ async function refreshStudioActivity() {
                 try {
                     const preview = await api.checkpoints("preview", point.id);
                     if (!preview.changes.length) {
-                        backupsFeedback(tracked
-                            ? "Les fichiers suivis correspondent déjà à cette version : il n’y a rien à restaurer."
-                            : "Cette version ne contient aucun fichier suivi, et le projet local n’en contient aucun : il n’y a rien à restaurer.");
+                        nothingToRestore = true;
+                        restore.textContent = "Rien à restaurer";
+                        note.hidden = false;
+                        note.textContent = tracked
+                            ? "Les fichiers suivis sont identiques à cette version : la restauration ne changerait rien. Les modifications faites dans Blender ou Roblox Studio ne sont pas enregistrées dans les versions."
+                            : "Cette version ne contient aucun fichier suivi, et le projet local n’en contient aucun : il n’y a rien à restaurer.";
+                        backupsFeedback(note.textContent);
+                        note.scrollIntoView({ block: "nearest" });
                         return;
                     }
                     if (preview.changes.length > 100) { backupsFeedback("Plus de 100 fichiers diffèrent : restauration désactivée pour éviter un aperçu incomplet."); return; }
@@ -6974,7 +6981,7 @@ async function refreshStudioActivity() {
                     backupsFeedback(`${result.restored} fichier(s) restauré(s).${dirtyRemoved ? " Un onglet modifié reste ouvert alors que son fichier a été retiré." : ""}`);
                     scheduleRefresh(); refreshStudioActivity();
                 } catch (error) { backupsFeedback(error.message); scheduleRefresh(); refreshStudioActivity(); }
-                finally { restore.disabled = Boolean(ui.status.busy); }
+                finally { restore.disabled = nothingToRestore || Boolean(ui.status.busy); }
             };
             const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Supprimer la version"; remove.disabled = Boolean(ui.status.busy);
             remove.onclick = async () => {
@@ -6990,7 +6997,7 @@ async function refreshStudioActivity() {
                 catch (error) { backupsFeedback(error.message); }
                 finally { remove.disabled = Boolean(ui.status.busy); }
             };
-            row.append(label, time, restore, remove); pointsHost.appendChild(row);
+            row.append(label, time, restore, remove, note); pointsHost.appendChild(row);
         }
     } catch (error) { backupsFeedback(error.message); studioFeedback(error.message); }
 }

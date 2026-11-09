@@ -1,5 +1,12 @@
 # Journal des modifications
 
+## 1.25.4 — Sauvegardes plus claires pour Roblox Studio
+
+- L’onglet Sauvegardes précise que les modifications faites dans Blender et
+  Roblox Studio ne sont pas incluses dans les versions locales du projet.
+- Quand une version ne contient aucun changement à restaurer, le bouton
+  l’indique clairement et une explication reste affichée dans la liste.
+
 ## 1.25.3 — Reprise après une réponse trop volumineuse
 
 - Une réponse fournisseur qui dépasse la limite de sécurité affiche maintenant

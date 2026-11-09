@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.25.4":{headline:"Les limites des sauvegardes sont plus claires.",items:[
+        {icon:"tools",title:"Versions du projet mieux expliquées",text:"Les sauvegardes locales indiquent clairement qu’elles ne couvrent pas les modifications faites dans Blender ou Roblox Studio."},
+        {icon:"tools",title:"Restauration sans ambiguïté",text:"Quand une version ne changerait aucun fichier, le bouton et l’explication le signalent directement."},
+        {icon:"chat",title:"Travail externe préservé",text:"Retrouve cette précision dans la liste des versions et au moment de vérifier une restauration."}
+    ]},
     "1.25.3":{headline:"Reprends une tâche interrompue par une réponse trop volumineuse.",items:[
         {icon:"chat",title:"Reprise en un clic",text:"Après une réponse fournisseur anormalement volumineuse, reprends la tâche sans perdre les modifications déjà effectuées."},
         {icon:"tools",title:"Diagnostic de flux plus précis",text:"Les détails techniques identifient le type et la taille de l’événement SSE qui a dépassé la limite."},
