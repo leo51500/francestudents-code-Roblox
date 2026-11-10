@@ -70,6 +70,36 @@ for(const uncertain of [false,true])test(`MCP ${uncertain?"uncertain calls are n
 });
 
 const CAPABILITY_DENIAL="Je n'ai pas de moyen d'exécuter les outils locaux mentionnés depuis cette conversation, et écrire un objet JSON d'appel ne me permettrait pas d'en garantir l'exécution.";
+const EFFECTIVE_TOOLS_DENIAL="Je peux développer le code Luau et les interfaces de ce jeu dans la conversation, mais les outils locaux roblox_game, roblox_asset et MCP décrits dans ton message ne sont pas disponibles parmi mes outils effectifs. Je n'ai donc ni modifié le projet, ni exécuté Blender, ni construit ou testé une place Roblox.";
+
+test("un refus en texte libre est relancé avec le prompt complet", async () => {
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-capability-prose-"));
+    const previous={request:api.requestModel,start:manager.ensureStarted,catalog:manager.catalog,workspace:state.workspace,eco:state.ecoMode};
+    resetConversation();state.workspace=dir;state.ecoMode=false;await memory.open(dir);
+    let modelCalls=0;
+    setUiBackend({...quietUi(),spinner:()=>({stop(){}})});
+    manager.ensureStarted=async()=>[];manager.catalog=()=>"";
+    api.requestModel=async(prompt,options)=>{
+        modelCalls++;state.chatIds.agent="capability-prose";state.chatId="capability-prose";
+        if(modelCalls<=3){assert.equal(options.fresh,false);return EFFECTIVE_TOOLS_DENIAL;}
+        if(modelCalls===4){
+            assert.equal(options.fresh,true);
+            assert.match(prompt,/FORMAT DE SORTIE/);
+            assert.match(prompt,/ne sont pas disponibles parmi tes outils effectifs/);
+            return JSON.stringify({type:"tool",name:"list_directory",args:{path:"."},reason:"Vérifier le projet"});
+        }
+        return JSON.stringify({type:"final",message:"Le dossier du projet est accessible.",completed:true});
+    };
+    try{
+        const result=await runAgent("Crée le jeu Ville Vivante");
+        assert.equal(modelCalls,5);
+        assert.equal(result.completed,true);
+    }finally{
+        Object.assign(manager,{ensureStarted:previous.start,catalog:previous.catalog});
+        api.requestModel=previous.request;state.workspace=previous.workspace;state.ecoMode=previous.eco;setUiBackend(null);memory.close();resetConversation();fs.rmSync(dir,{recursive:true,force:true});
+    }
+});
+
 
 for(const repeats of [false,true])test(`un final qui refuse les outils locaux est relancé une fois${repeats?" puis accepté s'il persiste":""}`,async()=>{
     const dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-capability-"));
@@ -78,10 +108,11 @@ for(const repeats of [false,true])test(`un final qui refuse les outils locaux es
     let modelCalls=0;
     setUiBackend({...quietUi(),spinner:()=>({stop(){}})});
     manager.ensureStarted=async()=>[];manager.catalog=()=>"";
-    api.requestModel=async prompt=>{
+    api.requestModel=async(prompt,options)=>{
         modelCalls++;state.chatIds.agent="capability";state.chatId="capability";
-        if(modelCalls===1)return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});
+        if(modelCalls===1){assert.equal(options.fresh,false);return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});}
         if(modelCalls===2){
+            assert.equal(options.fresh,true);
             assert.match(prompt,/FORMAT DE SORTIE/);
             assert.match(prompt,/LOCALEMENT/);
             if(repeats)return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});

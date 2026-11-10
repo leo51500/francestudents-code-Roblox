@@ -338,6 +338,7 @@ const ROBLOX_BRIEF = [
 
 const FORMAT = `FORMAT DE SORTIE — OBLIGATOIRE
 Les outils de ce catalogue sont exécutés LOCALEMENT par francestudents-code-Roblox, pas par le backend FranceStudent. Ne les appelle jamais via les outils natifs du fournisseur (function_call) : écris l’objet JSON demandé dans le texte de ta réponse. Un avertissement serveur « Unsupported tool ignored by the backend » ne constitue pas un résultat d’exécution locale. Seuls les RÉSULTATS DES OUTILS ci-dessous confirment une écriture, une commande ou un refus.
+roblox_game, roblox_asset, mcp_call et les autres outils du catalogue ne figurent pas dans la liste des outils natifs du fournisseur : c’est normal et attendu, ils n’ont jamais à y figurer. Ne réponds jamais qu’ils « ne sont pas disponibles parmi tes outils effectifs » : ils s’exécutent localement dès que tu écris l’objet JSON.
 Ta réponse est UN SEUL objet JSON valide, et rien d'autre : pas de Markdown, pas de bloc de code (triple backtick), pas de texte avant ou après.
 Forme outil : {"type":"tool","name":"<nom>","args":{...},"reason":"<une phrase : action, cible, but>"}
 Forme finale : {"type":"final","message":"<réponse en français>","completed":true}

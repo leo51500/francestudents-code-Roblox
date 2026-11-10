@@ -748,10 +748,15 @@ async function runAgent(task, options = {}) {
                         ? buildResumePrompt({task:currentTask,observations,activeFile:state.activeFile,
                             editorFiles:state.openFiles,plan:state.agentPlan,requestNumber,correction,mcpCatalog})
                         : fullPrompt(!hasConversation);
+                // Une relance de refus doit ouvrir un nouveau fil serveur : le
+                // modèle renforce souvent son refus dans la conversation où il
+                // l'a déjà écrit. Le prompt complet part donc sans chatId.
+                const freshThread = forceFullPrompt;
                 forceFullPrompt = false;
 
                 try{lastResponse = await api.requestModel(prompt, {
                     conversationMode: "agent",
+                    fresh: freshThread,
                     // Si un 409 impose un nouveau fil, le serveur n'a plus son historique.
                     // On renvoie donc la tâche, les observations et l'historique récent, mais
                     // pas tout l'index projet : l'agent peut relire les fichiers utiles.
@@ -808,6 +813,18 @@ async function runAgent(task, options = {}) {
             // aucune accolade est rendu comme compte rendu non vérifié plutôt que
             // comme une erreur de protocole. Aucun outil n'est exécuté.
             const prose = proseFinalAction(lastResponse);
+            // Un refus écrit en texte libre n'est pas un compte rendu : on
+            // relance une fois en repartant du prompt complet, comme pour un
+            // refus reçu dans un objet final.
+            if (!recoveredCapabilityRefusal && !state.ecoMode && !options.readOnly &&
+                !hasExplicitWorkspaceBlock(observations) && looksLikeCapabilityRefusal(lastResponse)) {
+                recoveredCapabilityRefusal = true;
+                forceFullPrompt = true;
+                observations.push({ tool: "local_tool_protocol", ok: false,
+                    error: `${CAPABILITY_REFUSAL_REMINDER} Cette relance n’est tentée qu’une fois : si un outil échoue réellement, explique l’échec à partir de son résultat ; sinon termine avec final.` });
+                ui.info("Le modèle a refusé les outils locaux en texte libre ; je relance avec le prompt complet.");
+                continue;
+            }
             if (prose && looksLikeCapabilityRefusal(lastResponse)) {
                 // Un refus de capacité n'est pas accepté comme compte rendu final.
                 ui.debug("Refus de capacité en texte libre malgré les relances : signalé comme erreur de protocole, sans exécution.");

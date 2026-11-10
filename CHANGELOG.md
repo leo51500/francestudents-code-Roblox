@@ -1,5 +1,18 @@
 # Journal des modifications
 
+## 1.26.5 — Les refus d'outils sont relancés dans un nouveau fil
+
+- Les formulations « ne sont pas disponibles parmi mes outils effectifs »,
+  « parmi mes outils natifs », « ni modifié… ni exécuté… ni construit » sont
+  reconnues comme des refus d'exécuter les outils locaux.
+- Un refus écrit en texte libre déclenche la relance : avant, il terminait sur
+  « aucune action locale n'a été exécutée ».
+- La relance ouvre une nouvelle conversation serveur au lieu de renvoyer le
+  prompt complet dans le fil où le modèle avait déjà refusé.
+- Le format de sortie précise que roblox_game, roblox_asset et mcp_call ne
+  figurent jamais dans les outils natifs du fournisseur, et le rappel de
+  relance contient un exemple JSON complet à recopier.
+
 ## 1.26.4 — L'application clignote à chaque notification
 
 - Quand une notification arrive alors que la fenêtre n'est pas au premier plan,

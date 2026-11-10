@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.5":{headline:"Les refus d’outils sont relancés dans une nouvelle conversation.",items:[
+        {icon:"chat",title:"Refus mieux reconnus",text:"Les réponses qui disent que roblox_game, roblox_asset ou les outils MCP « ne sont pas disponibles parmi mes outils effectifs » déclenchent la relance."},
+        {icon:"tools",title:"Nouveau fil serveur",text:"La relance repart du prompt complet dans une nouvelle conversation, au lieu de continuer dans le fil où le modèle a déjà refusé."},
+        {icon:"tools",title:"Refus en texte libre",text:"Un refus écrit hors protocole JSON est relancé au lieu de terminer sur « aucune action locale n’a été exécutée »."}
+    ]},
     "1.26.4":{headline:"L’application clignote quand une notification arrive.",items:[
         {icon:"chat",title:"Clignotement à chaque notification",text:"Si la fenêtre n’est pas au premier plan, l’icône de la barre des tâches clignote jusqu’à ton retour."},
         {icon:"tools",title:"Arrêt automatique",text:"Le clignotement s’arrête dès que tu reviens sur la fenêtre ou que tu cliques la notification."},

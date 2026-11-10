@@ -215,7 +215,10 @@ const GAME_REFUSAL_PATTERNS = [
     /en tant qu[’'](?:ia|assistant|mod[èe]le)[^.]{0,140}(?:pas |impossible)[^.]{0,80}(?:jeu|roblox|3d|blender)/i,
     /(?:cannot|can[’']t|unable to|not able to) (?:create|build|make|generate)[^.]{0,80}(?:game|roblox|3d|model)/i,
     /(?:mais )?pas (?:piloter|ex[ée]cuter|utiliser)[^.]{0,60}(?:agent local|catalogue d[’']outils|outils locaux)/i,
-    /catalogue d[’']outils[^.]{0,40}(?:d[ée]crit|non ex[ée]cut|pas ex[ée]cut)/i
+    /catalogue d[’']outils[^.]{0,40}(?:d[ée]crit|non ex[ée]cut|pas ex[ée]cut)/i,
+    /(?:outils? (?:locaux|mcp)|roblox_game|roblox_asset)[^.]{0,140}(?:ne sont pas|ne sont|ne seront pas|pas) (?:disponibles|accessibles|ex[ée]cutables|reconnus|activ[ée]s)/i,
+    /parmi (?:mes|tes) outils (?:effectifs|natifs|disponibles)/i,
+    /ni modifi[ée][^.]{0,80}ni ex[ée]cut[ée][^.]{0,80}ni (?:construit|test[ée]|build)/i
 ];
 
 /**
@@ -238,8 +241,10 @@ function looksLikeCapabilityRefusal(text) {
 const CAPABILITY_REFUSAL_REMINDER =
     "Tu as répondu en texte libre que le projet, les outils locaux ou la création d'un jeu étaient inaccessibles. " +
     "C'est inexact : les outils du catalogue (read_file, run_command, roblox_game, roblox_asset, mcp_call, …) sont exécutés LOCALEMENT par francestudents-code-Roblox à partir de l'objet JSON que tu écris, " +
-    "même si ton fournisseur ne propose pas d'outil natif. roblox_game crée réellement le projet Rojo, les systèmes Luau et le build .rbxlx ; roblox_asset fait construire les modèles par Blender. " +
+    "même si ton fournisseur ne propose pas d'outil natif. Leur absence de la liste des outils natifs est normale : ce ne sont pas des function_calls. " +
+    "roblox_game crée réellement le projet Rojo, les systèmes Luau et le build .rbxlx ; roblox_asset fait construire les modèles par Blender. " +
     "Ne conclus jamais à une absence d'accès ou d'outil sans résultat d'outil qui confirme un échec. " +
-    'Réponds uniquement par un objet JSON {"type":"tool",...} demandant l\'outil adapté (par exemple roblox_game action:init avec le nom et les systèmes du jeu).';
+    'Réponds uniquement par un objet JSON {"type":"tool",...} demandant l\'outil adapté (par exemple roblox_game action:init avec le nom et les systèmes du jeu). ' +
+    'Forme exacte attendue, sans texte autour : {"type":"tool","name":"roblox_game","args":{"action":"init","name":"La Ville Vivante","genre":"adventure","systems":["inventory","combat"]},"reason":"Créer le projet du jeu"}.';
 
 module.exports = { normalizeActionShape, repairJsonText, expandJsonCandidates, describeJsonFailure, proseFinalAction, looksLikeCapabilityRefusal, CAPABILITY_REFUSAL_REMINDER };

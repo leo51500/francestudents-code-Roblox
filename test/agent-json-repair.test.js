@@ -113,6 +113,7 @@ Je peux rédiger dans le chat les fichiers Luau. En revanche, aucune création d
     assert.equal(looksLikeCapabilityRefusal(refusal), true);
     assert.equal(looksLikeCapabilityRefusal("Je ne peux pas créer ce jeu Roblox dans cette conversation."), true);
     assert.equal(looksLikeCapabilityRefusal("Je peux écrire les scripts Luau et les scripts Python pour Blender dans cette conversation, mais pas piloter un agent local ni exécuter le catalogue d'outils décrit dans tes messages."), true);
+    assert.equal(looksLikeCapabilityRefusal("Je peux développer le code Luau et les interfaces de ce jeu dans la conversation, mais les outils locaux roblox_game, roblox_asset et MCP décrits dans ton message ne sont pas disponibles parmi mes outils effectifs. Je n'ai donc ni modifié le projet, ni exécuté Blender, ni construit ou testé une place Roblox."), true);
 });
 
 test("un compte rendu normal ou une limite externe n'est pas pris pour un refus", () => {
