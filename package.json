@@ -1,6 +1,6 @@
 {
   "name": "francestudents-code-roblox",
-  "version": "1.25.4",
+  "version": "1.26.0",
   "description": "France-Students-code-Roblox : agent de programmation en ligne de commande",
   "maintainer": "GAB DESING",
   "repository": {
@@ -119,6 +119,9 @@
     "appId": "com.gabdesing.francestudentscoderoblox",
     "productName": "France-Students-code-Roblox",
     "asar": true,
+    "asarUnpack": [
+      "src/roblox/templates/**"
+    ],
     "extraMetadata": {
       "main": "desktop/main.js"
     },

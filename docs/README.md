@@ -12,7 +12,7 @@
 | [Cockpit et éditeur](studio.md) | Fichiers, terminal, tâches et Git local |
 | [Pièces jointes](attachments.md) | Formats, conversions et limites |
 | [Skills et serveurs MCP](extensions.md) | Ajouter des instructions et des outils |
-| [Roblox + Blender](roblox-blender.md) | Modèles 3D, LOD, interfaces de jeu, plugin Roblox et import dans Studio |
+| [Roblox + Blender](roblox-blender.md) | Modèles 3D, import GLB/FBX, LOD, interfaces de jeu, upload des modèles et des sons avec le plugin Roblox et import dans Studio |
 | [Usage et quota](usage.md) | Budget, compteurs et réinitialisation |
 | [Mode Éco](eco-mode.md) | Réduction du contexte et limites |
 | [Dépannage](depannage.md) | Connexion, erreurs et fichiers |
@@ -20,6 +20,6 @@
 
 ## Développer
 
-[Guide avancé](avance.md) · [Architecture](architecture.md) · [API](api.md) · [SDK](sdkapi.md) · [Outils de l’agent](tools.md) · [CLI/TUI](tui.md) · [Contexte du modèle](model-context.md) · [Contexte IA](AI_CONTEXT.md).
+[Guide avancé](avance.md) · [Architecture](architecture.md) · [API](api.md) · [SDK](sdkapi.md) · [Outils de l’agent](tools.md) · [Agent Roblox v2](roblox-agent-v2.md) · [CLI/TUI](tui.md) · [Contexte du modèle](model-context.md) · [Contexte IA](AI_CONTEXT.md).
 
 Les captures et exemples utilisent des données fictives. Ne partage jamais de mot de passe, de token ou de contenu privé dans un rapport public.

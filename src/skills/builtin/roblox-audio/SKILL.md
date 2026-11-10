@@ -65,24 +65,46 @@ Nommage : `<objet>_<action>_<variante>.<ext>` —
 - Conserve les originaux et une version normalisée : `assets/audio/source/`
   et `assets/audio/` (version prête).
 
-## 4. Upload Roblox : étape obligatoire
+## 4. Upload Roblox : action:upload avec le plugin
 
-Roblox n'accepte que des assets audio déposés sur la plateforme. L'agent ne
-peut pas le faire seul sans accès au compte :
+Roblox n'accepte que des assets audio déposés sur la plateforme. Le compte
+connecté dans le plugin Blender suffit : aucune clé Open Cloud n'est nécessaire.
 
-1. Creator Dashboard → **Assets** → **Audio** → téléverser le fichier préparé.
-2. Attendre la modération, copier l'**ID** de l'asset.
-3. Respecter les règles Roblox : audio **privé par défaut**, permissions à
-   accorder, vérification du compte, limites de durée et de taille.
-4. Une fois l'ID obtenu, l'agent câble le `Sound` dans Studio.
+1. Importe le fichier préparé :
 
-Tiens le tableau à jour dans `assets/audio/README.md` :
+```text
+roblox_asset {"action":"audio","path":".../sword_swing_01.ogg","id":"sword-swing-01","name":"Coup d'épée","usage":"épée, Activated","license":"CC0"}
+```
+
+2. Envoie-le sur Roblox :
+
+```text
+roblox_asset {"action":"upload","id":"sword-swing-01"}
+```
+
+L'outil utilise le refresh token OAuth du plugin, renvoie l'`assetId`, la
+modération et met à jour `src/shared/AssetIds.luau`. Si `needs_login: true`,
+lance `roblox_asset {"action":"login"}` : la page Roblox s'ouvre, clique
+**Autoriser**, puis relance l'upload. Les règles Roblox (vérification du compte,
+quota mensuel, modération) peuvent refuser un son : rapporte alors l'erreur
+exacte.
+
+3. Si Roblox refuse l'upload (vérification du compte, quota mensuel, modération,
+   format), rapporte l'erreur exacte. Repli : Creator Dashboard → **Assets** →
+   **Audio** → téléverser, attendre la modération, copier l'**ID**.
+4. Une fois l'ID obtenu, câble le `Sound` dans Studio.
+
+Le tableau est mis à jour automatiquement dans `assets/audio/README.md`
+(`action:audio` puis `action:upload`) :
 
 ```markdown
-| Fichier | Asset ID | Usage | SoundGroup |
+| Fichier | Asset ID | Usage | Licence / auteur |
 | --- | --- | --- | --- |
-| sword_swing_01.ogg | rbxassetid://123… | épée, Activated | SFX_Jeu |
+| assets/audio/sword_swing_01.ogg | rbxassetid://123… | épée, Activated | CC0 · auteur |
 ```
+
+Pour une `SoundGroup`, le câblage se fait dans Studio (le tableau ne la connaît
+pas encore).
 
 Ne prétends jamais qu'un son est en jeu sans **ID réel** et **instance Sound
 vérifiée**. Si l'ID manque, livre les fichiers prêts et la liste à téléverser.

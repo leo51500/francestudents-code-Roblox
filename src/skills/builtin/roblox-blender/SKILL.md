@@ -1,6 +1,6 @@
 ---
 name: roblox-blender
-description: Créer, modifier et livrer un modèle 3D Roblox : Blender est la seule source de géométrie, génération des LOD, upload avec le plugin Roblox et insertion automatique dans Studio.
+description: Créer, importer, modifier et livrer un modèle 3D Roblox : Blender est la seule source de géométrie, génération des LOD, import GLB/glTF/FBX/OBJ/STL/BLEND, upload avec le compte connecté dans le plugin Roblox, puis insertion dans Studio.
 ---
 
 # Roblox + Blender — pipeline 3D
@@ -8,6 +8,43 @@ description: Créer, modifier et livrer un modèle 3D Roblox : Blender est la se
 Ce skill décrit le seul pipeline autorisé pour un modèle 3D Roblox.
 Blender produit la géométrie, les UV, les matériaux et les LOD. Roblox Studio
 ne sert qu'à insérer, placer, scripter et vérifier le résultat.
+
+## 0. Mode local d'abord
+
+Le pipeline ne dépend pas d'un MCP pour produire le modèle : `roblox_asset`
+enregistre `assets/specs/<id>.json` ou importe un fichier existant avec
+`action:import` (GLB, glTF, FBX, OBJ, STL, BLEND) dans `assets/sources/`, lance
+Blender en arrière-plan (`--background --factory-startup`) et écrit
+`assets/models/<id>/lod0..3.glb`, les textures PNG, `preview.png` et
+`report.json`. `roblox_game` gère le projet Rojo, la validation et le build
+`build/<slug>.rbxlx`. `roblox_asset` `action:upload` envoie le LOD0 avec le
+compte déjà connecté dans le plugin Roblox Blender, sans clé Open Cloud. Les
+sections MCP ci-dessous servent à intervenir sur une scène ouverte et à insérer
+les modèles ; elles ne sont pas nécessaires pour créer les fichiers ni pour
+uploader.
+
+## 0 bis. Importer un modèle existant
+
+Utilise `action:import` quand l'utilisateur fournit déjà un fichier 3D :
+
+```text
+roblox_asset {"action":"import","path":"C:/Users/moi/Downloads/chest.glb","id":"chest","height":1.2}
+```
+
+- Le fichier source est copié dans `assets/sources/` et n'est jamais modifié.
+  Pour un `.gltf`, ses buffers et textures externes suivent dans le même
+  dossier afin que l'import reste complet.
+- Blender fusionne les maillages, applique la rotation puis l'échelle (`height`
+  en mètres, mesurée sur l'axe Z après rotation, ou `scale`), recalcule les
+  normales, ajoute un UV si nécessaire, puis génère LOD0–LOD3 et un aperçu.
+- Si les textures d'origine existent, l'aperçu utilise le rendu `TEXTURE` ;
+  sinon un matériau neutre est appliqué.
+- Après l'import, examine `preview.png` avec `view_image`. Si l'échelle est
+  fausse, relance `action:import` avec `height` ou `scale` ; ne redimensionne
+  jamais le modèle à la main dans Studio.
+- Les armatures et animations ne sont pas conservées : le modèle devient un
+  maillage statique. Pour un personnage animé, garde le rig dans Blender et
+  exporte-le séparément.
 
 ## 1. Règles absolues
 
@@ -42,7 +79,9 @@ ne sert qu'à insérer, placer, scripter et vérifier le résultat.
   clairement « importe / publie / upload ».
 - **Ne demande jamais d'identifiants Roblox.** Le plugin utilise une connexion
   OAuth dans le navigateur. Si la session n'est pas ouverte, demande à
-  l'utilisateur de cliquer sur « Log in » dans Blender.
+  l'utilisateur de cliquer sur « Log in » dans Blender. La clé Open Cloud reste
+  une option (`provider:"opencloud"`) : ne l'écris jamais dans le projet et ne
+  la répète jamais dans une réponse.
 
 ## 2. Diagnostic avant d'agir
 
@@ -279,10 +318,60 @@ par LOD est obligatoire ; joins les captures au compte rendu.
 
 ## 6. Upload avec le plugin Roblox
 
-Le plugin expose l'opérateur `bpy.ops.rbx.upload()` et enregistre l'identifiant
-du package dans la propriété personnalisée **`Roblox Package ID`** de l'objet.
-L'upload est asynchrone : ne bloque jamais la boucle principale de Blender avec
-`time.sleep`, sinon l'upload ne progresse pas.
+La méthode par défaut ne demande **aucune clé Open Cloud** : `roblox_asset`
+`action:upload` recharge le refresh token OAuth du plugin **Upload to Roblox**
+installé dans Blender, puis appelle l'API Assets avec ton compte.
+
+1. Vérifie la connexion, sans rien envoyer :
+
+```text
+roblox_asset {"action":"plugin"}
+```
+
+La réponse donne l'utilisateur, les créateurs disponibles et le créateur
+sélectionné. Si elle contient `needs_login: true`, rétablis la session sans
+ouvrir Blender :
+
+```text
+roblox_asset {"action":"login"}
+```
+
+La page Roblox s'ouvre dans le navigateur ; il faut cliquer **Autoriser**. Le
+script attend le retour sur `localhost:8181`, réenregistre le refresh token dans
+les préférences du plugin et sauvegarde celles-ci (le jeton tourne à chaque
+utilisation). Si le navigateur ne s'ouvre pas, le bouton **Log in** du panneau
+Roblox dans Blender reste l'alternative.
+
+2. Envoie le modèle :
+
+```text
+roblox_asset {"action":"upload","id":"chest"}
+```
+
+L'outil renvoie un `assetId`, la révision, la modération, met à jour
+`assets/library.json` et écrit `src/shared/AssetIds.luau`. C'est cet `assetId`
+réel qu'il faut citer ; ne l'invente jamais. Les LOD1–LOD3 restent locaux ;
+Roblox applique son propre LOD.
+
+3. Pour un son préparé :
+
+```text
+roblox_asset {"action":"audio","path":".../sword_swing_01.ogg","id":"sword-swing-01"}
+roblox_asset {"action":"upload","id":"sword-swing-01"}
+```
+
+Le même compte OAuth envoie le fichier comme `Audio`. Les règles Roblox
+(vérification du compte, quotas, modération) peuvent le refuser : rapporte
+l'erreur exacte et propose alors l'envoi manuel depuis le Creator Dashboard.
+
+Variante graphique MCP : le plugin expose aussi `bpy.ops.rbx.upload()` dans
+Blender ouvert et enregistre l'identifiant dans **`Roblox Package ID`**. Elle
+reste utile pour sélectionner plusieurs objets à la main. L'upload est
+asynchrone : ne bloque jamais la boucle principale avec `time.sleep`.
+
+Option `provider: "opencloud"` : utilise une clé API Open Cloud à la place du
+plugin. À ne proposer que si le plugin n'est pas installé ; ce n'est pas le
+chemin par défaut.
 
 Sélectionne les objets (LOD0 et LOD1..3), puis lance l'upload :
 
@@ -387,9 +476,9 @@ caméra, avec les chemins réels des modèles insérés, et vérifie-le avec
 
 Termine avec un compte rendu factuel :
 
-- nom du modèle et collection Blender ;
+- nom du modèle, collection Blender et source importée le cas échéant ;
 - nombre de triangles par LOD ;
-- identifiants de package uploadés, ou erreur exacte ;
+- identifiants de package ou `assetId` uploadés, ou erreur exacte ;
 - chemin des objets insérés dans Studio ;
 - captures prises (étape et LOD) et défauts corrigés ;
 - ce qui a été vérifié visuellement et ce qui reste à vérifier.

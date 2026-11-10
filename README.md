@@ -21,8 +21,9 @@ Chaque push sur `main` publie une release Windows. Si la version de `package.jso
 - Git local pour consulter l’état, les changements et l’historique, puis créer des commits.
 - Skills installables et serveurs MCP configurables pour ajouter des outils.
 - Notifications Windows avec son système à chaque demande de l’agent, même au premier plan, et à la fin d’une tâche en arrière-plan ; elles sont désactivables dans les réglages.
-- Spécialisation **Roblox + Blender** : modèles 3D créés dans Blender, génération
-  des LOD, upload avec le plugin Roblox et insertion automatique dans Studio via
+- Spécialisation **Roblox + Blender** : modèles 3D créés dans Blender ou importés
+  depuis un GLB/glTF/FBX/OBJ/STL/BLEND, génération des LOD, upload avec le compte
+  connecté dans le plugin Roblox (modèles et sons), et insertion dans Studio via
   les serveurs MCP. Blender et Studio sont détectés (Steam, installation ou
   fichier choisi) et peuvent être ouverts depuis l’application ; le même panneau
   lance n’importe quelle application installée (menu Démarrer, Store, Steam) et
@@ -34,7 +35,8 @@ Chaque push sur `main` publie une release Windows. Si la version de `package.jso
 Les skills intégrés `roblox-blender`, `roblox-lod`, `roblox-ui` et
 `roblox-audio` sont livrés avec l’application et actifs par défaut. La géométrie
 et les textures 3D se créent dans Blender, même sans le mot « Blender » ; les
-sons sont préparés avec leurs licences avant leur upload manuel sur Roblox.
+sons sont préparés avec leurs licences, importés par `action:audio` puis envoyés
+avec le compte du plugin Roblox avant le câblage des `Sound`.
 L’agent vérifie les étapes visuelles par capture (`look` ou `screen_capture`).
 Les interfaces de jeu utilisent des GUI natives au style cartoon Roblox,
 jamais une page web. Les connexions MCP Blender et Roblox Studio peuvent être

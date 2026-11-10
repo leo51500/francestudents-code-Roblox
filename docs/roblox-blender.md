@@ -2,11 +2,48 @@
 
 [← Les guides](README.md) · [Skills et MCP](extensions.md)
 
-L’application est spécialisée pour créer les modèles 3D dans **Blender**, générer
-leurs **LOD**, les publier avec le **plugin Roblox** puis les insérer dans
-**Roblox Studio**. La géométrie ne doit jamais être fabriquée dans Studio.
+L’application est spécialisée pour créer les modèles 3D dans **Blender** ou en
+**importer** d’existants, générer leurs **LOD**, puis les envoyer sur Roblox avec
+le **plugin Roblox Blender** déjà connecté. La géométrie ne doit jamais être
+fabriquée dans Studio.
 
-## Ce qui est automatique
+## Mode local : le projet se construit sans MCP
+
+Le pipeline 3D et le projet de jeu sont produits localement, dans le dossier
+ouvert, par deux outils que l’agent appelle lui-même :
+
+- **`roblox_game`** crée la structure Rojo (`default.project.json`,
+  `src/shared`, `src/server`, `src/client`), tient `game.blueprint.json`,
+  ajoute les systèmes Luau, valide puis construit `build/<slug>.rbxlx` avec
+  Rojo ;
+- **`roblox_asset`** enregistre une spécification JSON
+  (`assets/specs/<id>.json`), ou **importe un fichier existant** (GLB, glTF,
+  FBX, OBJ, STL, BLEND) dans `assets/sources/`, puis lance **Blender en
+  arrière-plan** (`--background --factory-startup`) pour produire
+  `assets/models/<id>/lod0..3.glb`, les textures PNG, `preview.png` et
+  `report.json`, et met à jour `assets/library.json`. L’action `upload` envoie
+  le LOD0 sur Roblox avec le compte connecté dans le plugin Blender. L’action
+  `audio` copie un son dans `assets/audio/` et `upload` l’envoie avec le même
+  compte.
+
+| Outil | Usage | Si absent |
+| --- | --- | --- |
+| Blender 3.x ou plus | géométrie, textures, UV, LOD, aperçu | installer Blender ou choisir l’exécutable dans les réglages |
+| Rojo | build de la place `.rbxlx` | `winget install Rojo.Rojo` ou ajouter `rojo.exe` au PATH |
+| `luau-compile` | contrôle de syntaxe Luau | la validation continue avec un avertissement explicite |
+
+Les connexions MCP **Blender** et **Roblox Studio** restent utiles pour agir sur
+une scène ouverte et insérer les modèles dans une place. Elles ne sont plus
+nécessaires pour écrire les fichiers, compiler le Luau ni construire la place.
+
+L’**upload Roblox** d’un modèle ou d’un son est automatisé avec le **plugin
+Roblox Blender** : `roblox_asset` `action:upload` réutilise le refresh token
+OAuth stocké par le plugin et appelle l’API Assets avec ce compte. Aucune clé
+Open Cloud n’est demandée. L’insertion dans une place en ligne reste une étape
+Studio (MCP ou manuelle), et la publication de la place ne fait pas partie du
+plugin.
+
+## Ce qui est automatique en mode MCP
 
 - L’agent reçoit une consigne de spécialisation Roblox + Blender dans son prompt.
   Le routage vers Blender est **automatique, même si la demande ne prononce pas
@@ -33,6 +70,10 @@ L’agent reste soumis aux confirmations et aux réglages de permissions. Il ne
 publie pas un asset sans que la demande le justifie.
 
 ## Prérequis
+
+Le mode local ne demande que **Blender** (et Rojo pour la place `.rbxlx`). Le
+plugin Roblox et les deux serveurs MCP ci-dessous ne sont nécessaires que pour
+publier avec le plugin ou piloter une scène/place ouverte.
 
 1. **Blender 3.2 ou plus récent**, avec le plugin officiel
    [Roblox Blender Plugin](https://github.com/Roblox/roblox-blender-plugin/releases).
@@ -100,9 +141,152 @@ Le plugin utilise OAuth dans le navigateur. Dans Blender :
 L’application ne demande jamais et ne stocke jamais tes identifiants Roblox.
 Si la session n’est pas ouverte, l’agent s’arrête et te demande de te connecter.
 
+## Importer un modèle 3D existant
+
+Un fichier **GLB, glTF, FBX, OBJ, STL ou BLEND** peut remplacer la modélisation
+par primitives. L’outil copie la source dans le projet pour que le build reste
+reproductible, puis Blender prépare et exporte les quatre LOD :
+
+```text
+roblox_asset {"action":"import","path":"C:/Users/moi/Downloads/chest.glb","id":"chest","height":1.2}
+```
+
+Options utiles :
+
+| Option | Effet |
+| --- | --- |
+| `height` | hauteur finale en mètres, mesurée sur l’axe Z après `rotation` (mise à l’échelle uniforme) |
+| `scale` | facteur appliqué en plus de `height`, ou seul si `height` est absent |
+| `rotation` | rotation en degrés `[x, y, z]`, appliquée avant la mise à l’échelle |
+| `bevel` | ajoute un léger biseau ; désactivé par défaut pour préserver le modèle |
+| `lod_ratios` | proportions des LOD1–LOD3 (par défaut `[1, 0.5, 0.25, 0.1]`) |
+
+Le fichier d’origine n’est jamais modifié. Un `.gltf` entraîne la copie de ses
+buffers et textures externes dans `assets/sources/<id>/` pour que l’import
+reste complet. Les fichiers produits sont
+`assets/models/<id>/lod0.glb` à `lod3.glb`, `textures/`, `preview.png` et
+`report.json` ; `assets/library.json` référence la source dans `assets/sources/`.
+Après l’import, l’agent examine `preview.png` et relance `action:import` avec
+`height` ou `scale` si l’échelle est fausse.
+
+Si le modèle importé a déjà des textures, l’aperçu utilise le rendu
+`TEXTURE` ; sinon, un matériau neutre est appliqué pour que le GLB reste
+visible dans Roblox.
+
+Limites de l’import : les animations et les armatures ne sont pas conservées —
+le modèle est fusionné en un maillage statique, adapté aux props, armes et
+décors. Pour un personnage animé, garde le rig dans Blender et exporte-le
+séparément avant de l’importer dans Studio. Pour un OBJ, le `.mtl` et les
+textures doivent être présents à côté du fichier, sinon le modèle est importé
+sans texture.
+
+## Envoyer un modèle ou un son avec le plugin Blender
+
+Le plugin officiel **Upload to Roblox** stocke un refresh token OAuth dans les
+préférences de l’add-on. `roblox_asset` `action:upload` lance Blender en mode
+headless **sans** `--factory-startup`, recharge ce jeton, puis appelle l’API
+Assets avec le compte connecté. Aucune clé Open Cloud, aucun mot de passe et
+aucun jeton ne sont écrits dans le projet.
+
+1. Dans Blender : `Edit > Preferences > Add-ons`, active **Upload to Roblox**,
+   clique **Install Dependencies** et redémarre Blender. La connexion peut se
+   faire depuis l’application, sans ouvrir Blender : `action:login` utilise le
+   même flux OAuth et le même serveur local que le bouton **Log in**.
+2. Vérifie la connexion sans rien envoyer :
+
+```text
+roblox_asset {"action":"plugin"}
+```
+
+La réponse donne l’utilisateur, les créateurs disponibles et celui qui sera
+utilisé. Si le plugin n’est pas connecté (jeton expiré ou révoqué), l’outil
+répond `needs_login: true`.
+
+3. Rétablis la session si nécessaire :
+
+```text
+roblox_asset {"action":"login"}
+```
+
+La page Roblox s’ouvre dans le navigateur : clique **Autoriser**. L’outil
+attend le retour, puis réenregistre le refresh token dans les préférences du
+plugin. Aucun identifiant n’est demandé à l’application. Si le navigateur ne
+s’ouvre pas, le bouton **Log in** du panneau Roblox dans Blender reste
+l’alternative.
+
+4. Envoie le modèle ou le son :
+
+```text
+roblox_asset {"action":"upload","id":"chest"}
+roblox_asset {"action":"upload","id":"sword-swing-01"}
+```
+
+L’outil renvoie l’`assetId`, la révision, l’état de modération et met à jour
+`src/shared/AssetIds.luau`. Le LOD0 est envoyé comme `Model` ; Roblox applique
+ensuite son propre LOD. Un fichier audio (`.mp3`, `.ogg`, `.wav`, `.flac`) est
+envoyé comme `Audio` avec le même compte.
+
+`src/shared/AssetIds.luau` existe dès la création du jeu (stub vide) et
+`assets/audio/README.md` liste chaque son avec son ID et sa licence : les deux
+sont réécrits automatiquement à chaque envoi, jamais à la main.
+
+Vérifié sur un compte réel : `Model` renvoyé `Approved` et `Audio` renvoyé
+`Reviewing` avec un `assetId` immédiat.
+
+Le compte utilisé est celui sélectionné dans le plugin (utilisateur ou groupe).
+Pour cibler un autre créateur, ajoute `creator_id` ; il doit déjà figurer dans
+la liste du plugin. Le refresh token tourne à chaque utilisation : l’outil le
+réécrit dans les préférences du plugin et sauvegarde celles-ci, sinon la session
+suivante serait révoquée.
+
+Limites honnêtes :
+
+- le plugin ne publie pas une place complète et ne remplace pas le bouton
+  **Publish** de Studio ;
+- l’upload audio dépend des règles Roblox (vérification du compte, quotas
+  mensuels, modération) ; un refus est renvoyé tel quel ;
+- après l’upload, l’insertion dans une place ouverte reste une étape Studio
+  (MCP ou manuelle) et doit être vérifiée par capture.
+
+## Alternative : clé Open Cloud (optionnelle)
+
+Si le plugin n’est pas installé, `provider: "opencloud"` utilise une clé API
+[Open Cloud Assets](https://create.roblox.com/docs/cloud/reference/features/assets)
+sur le compte ou le groupe choisi. Cette méthode est optionnelle et n’est pas
+celle utilisée par défaut.
+
+1. Crée une clé API sur `create.roblox.com` → **Open Cloud** → **API Keys**,
+   avec la permission **assets** en lecture et écriture, puis renseigne
+   `ROBLOX_OPEN_CLOUD_KEY`, `ROBLOX_CREATOR_ID` et `ROBLOX_CREATOR_TYPE` (ou
+   `roblox-open-cloud.json` dans le dossier de données de l’application).
+2. Lance `roblox_asset {"action":"upload","id":"chest","provider":"opencloud"}`.
+
+La clé n’est jamais écrite dans le projet, ni renvoyée à l’agent, ni affichée
+dans les messages d’erreur. Sans clé ni plugin, l’import manuel du GLB dans le
+Toolbox de Studio reste possible.
+
 ## Déroulement d’une demande
 
 Exemple : « Crée une lampe de rue stylisée et importe-la dans mon jeu. »
+
+En mode local, l’agent enchaîne sans MCP :
+
+1. `roblox_game` `action:init` (nom, genre, systèmes) puis `action:status`.
+2. `roblox_asset` `action:schema` pour le schéma, puis `action:spec` avec les
+   primitives de la lampe (socle, poteau, bras, lanterne) — ou `action:import`
+   avec un fichier existant.
+3. `roblox_asset` `action:build` (ou `action:import`) : Blender headless écrit
+   les quatre LOD, les textures et `preview.png`.
+4. `view_image` sur `preview.png` : proportions, faces, échelle et textures
+   examinées ; si un défaut est visible, la spécification est corrigée ou
+   l’import relancé, puis le build réexécuté.
+5. `roblox_game` `action:validate` puis `action:build` pour produire la place
+   `.rbxlx`.
+6. `roblox_asset` `action:upload` avec le compte du plugin Blender, puis
+   insertion dans Studio (MCP ou manuelle). Compte rendu avec les chemins réels,
+   l’`assetId`, `AssetIds.luau` et les limites restantes.
+
+Avec Blender et Studio connectés en MCP :
 
 1. Diagnostic : version de Blender, addon MCP, login du plugin, instance Studio.
 2. Modélisation dans Blender : collection dédiée, nom en `PascalCase`, origine au
@@ -184,11 +368,12 @@ ambiances :
   synthèse (whoosh, impact, vent) ;
 - les fichiers sont préparés dans `assets/audio/` (mono 44,1 kHz, boucle propre
   pour une ambiance, nommage explicite) ;
-- **un son ne joue en jeu qu’après un upload Roblox** : Creator Dashboard →
-  Assets → Audio, puis l’ID est câblé dans un `Sound` (avec `SoundGroup`,
-  volume, boucle, `RollOffMaxDistance`). L’application ne peut pas téléverser
-  l’audio à ta place : l’agent te donne les fichiers prêts et la liste à
-  envoyer, puis reprend avec les IDs ;
+- **un son ne joue en jeu qu’après un upload Roblox** : `roblox_asset`
+  `action:audio` copie le fichier, `action:upload` l’envoie avec le compte du
+  plugin Blender, puis l’ID est câblé dans un `Sound` (avec `SoundGroup`,
+  volume, boucle, `RollOffMaxDistance`). Si l’upload est refusé par les règles
+  Roblox (vérification du compte, quota, modération), l’agent te donne les
+  fichiers prêts et la liste à envoyer, puis reprend avec les IDs ;
 - l’agent ne peut pas **entendre** le résultat : il vérifie les propriétés et
   le déclenchement, la validation finale se fait à l’oreille.
 
@@ -207,6 +392,38 @@ ambiances :
   sélectionné, puis essaie `assetType: Model` au lieu de `Package`.
 - **Aucune instance Studio** : ouvre le jeu dans Studio avant de demander
   l’insertion.
+
+Erreurs du mode local :
+
+- **« Blender est introuvable »** : installe Blender ou enregistre son
+  exécutable dans les réglages ; `roblox_asset` refuse de fabriquer la géométrie
+  autrement.
+- **« Rojo est introuvable »** : installe Rojo et vérifie que `rojo` répond dans
+  le terminal, puis relance `roblox_game action:build`.
+- **« luau-compile introuvable »** : avertissement seulement ; la structure et
+  les assets sont quand même vérifiés, mais la syntaxe Luau ne l’est pas.
+- **Build refusé** : la validation a trouvé une erreur ; lis `errors`, corrige
+  le fichier Luau ou la spécification, puis relance.
+- **« Modèle introuvable »** à l’import : vérifie le chemin absolu et
+  l’extension (`.glb`, `.gltf`, `.fbx`, `.obj`, `.stl`, `.blend`).
+- **Modèle importé trop grand ou trop petit** : relance `action:import` avec
+  `height` (hauteur finale en mètres) ou `scale`.
+- **`needs_login: true`** à l’upload : la session OAuth du plugin est expirée ou
+  révoquée. Lance `roblox_asset {"action":"login"}` : la page Roblox s’ouvre,
+  clique **Autoriser**. Le bouton **Log in** du panneau Roblox dans Blender reste
+  l’alternative si le navigateur ne s’ouvre pas. `action:plugin` vérifie la
+  connexion sans rien envoyer.
+- **`needs_plugin: true`** : le plugin **Upload to Roblox** n’est pas installé
+  ou activé dans Blender ; installe-le, clique **Install Dependencies** et
+  redémarre Blender.
+- **Upload refusé par Roblox (401/403)** : le compte connecté n’a pas le droit
+  d’écrire pour ce créateur, ou le refresh token a été révoqué ; reconnecte le
+  plugin.
+- **GLB ou son supérieur à 20 Mo** : réduis les textures, le nombre de triangles
+  ou la durée du son ; Roblox refuse les fichiers plus lourds.
+- **`needs_config: true`** avec `provider:"opencloud"` : la clé Open Cloud ou
+  l’identifiant de créateur manque ; renseigne `ROBLOX_OPEN_CLOUD_KEY`,
+  `ROBLOX_CREATOR_ID` et `ROBLOX_CREATOR_TYPE` (ou `roblox-open-cloud.json`).
 
 Les skills intégrés sont en lecture seule. Pour les personnaliser, crée un skill
 utilisateur ou projet avec le même nom : il remplace le skill intégré. Tu peux

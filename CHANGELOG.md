@@ -1,5 +1,22 @@
 # Journal des modifications
 
+## 1.26.0 — Projets Roblox et assets créés depuis l'agent
+
+- Deux nouveaux outils locaux, `roblox_game` et `roblox_asset`, créent la
+  structure Rojo, le blueprint, les systèmes Luau, valident le projet et
+  construisent `build/<slug>.rbxlx`, même sans serveur MCP.
+- Les modèles 3D sont créés dans Blender ou importés depuis un GLB, glTF, FBX,
+  OBJ, STL ou BLEND. Blender produit les LOD0 à LOD3, les textures et un aperçu,
+  puis le rapport est contrôlé avant de déclarer l'asset terminé.
+- L'upload d'un modèle ou d'un son réutilise le compte déjà connecté dans le
+  plugin Roblox Blender, sans clé Open Cloud. `action:login` rétablit la session
+  dans le navigateur et `src/shared/AssetIds.luau` reçoit les identifiants
+  réels.
+- La validation couvre aussi les sons, le scaffold livre `AssetIds.luau` et
+  `status` récapitule les assets et les uploads.
+- L'agent relance une réponse qui prétend ne pas pouvoir créer un jeu ou un
+  modèle, au lieu de s'arrêter sur un refus.
+
 ## 1.25.4 — Sauvegardes plus claires pour Roblox Studio
 
 - L’onglet Sauvegardes précise que les modifications faites dans Blender et

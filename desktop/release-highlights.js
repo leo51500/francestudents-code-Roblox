@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.0":{headline:"Crée un projet Roblox et publie ses assets depuis l’agent.",items:[
+        {icon:"tools",title:"Projet Roblox local",text:"roblox_game écrit la structure Rojo, les systèmes Luau, valide le projet et construit la place .rbxlx sans serveur MCP."},
+        {icon:"tools",title:"Modèles créés ou importés",text:"roblox_asset pilote Blender, importe un GLB, FBX ou OBJ existant et produit les LOD0 à LOD3 avec un aperçu vérifiable."},
+        {icon:"tools",title:"Upload avec le plugin",text:"Les modèles et les sons partent avec le compte déjà connecté dans le plugin Roblox Blender, et AssetIds.luau reçoit les identifiants réels."}
+    ]},
     "1.25.4":{headline:"Les limites des sauvegardes sont plus claires.",items:[
         {icon:"tools",title:"Versions du projet mieux expliquées",text:"Les sauvegardes locales indiquent clairement qu’elles ne couvrent pas les modifications faites dans Blender ou Roblox Studio."},
         {icon:"tools",title:"Restauration sans ambiguïté",text:"Quand une version ne changerait aucun fichier, le bouton et l’explication le signalent directement."},

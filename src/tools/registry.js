@@ -73,6 +73,8 @@ const MODULES = [
     require("../agent/subagent"),
     require("./diagnostics"),
     require("./semantic-search"),
+    require("./roblox/game"),
+    require("./roblox/asset"),
     
 ];
 

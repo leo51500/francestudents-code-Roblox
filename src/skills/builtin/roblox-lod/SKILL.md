@@ -8,6 +8,12 @@ description: Définir les budgets de triangles, générer les LOD 0 à 3 dans Bl
 À utiliser avec le skill `roblox-blender`. La géométrie est toujours produite
 dans Blender ; Studio ne reçoit que des assets déjà préparés.
 
+En mode local, `roblox_asset` génère les quatre LOD dans
+`assets/models/<id>/` et consigne les comptes de triangles dans `report.json`
+et `assets/library.json`. Vérifie ces valeurs et examine `preview.png` avant de
+déclarer un modèle terminé ; les indications ci-dessous restent la référence
+pour corriger une spécification ou préparer une bascule manuelle.
+
 ## 1. Budgets
 
 | Niveau | Part du LOD0 | Usage | Plafond conseillé |
@@ -84,9 +90,12 @@ Après génération :
 ## 3. Nommage et upload
 
 - `Nom_LOD0`, `Nom_LOD1`, `Nom_LOD2`, `Nom_LOD3`.
-- Un package Roblox par LOD. Le plugin enregistre l'identifiant dans
-  `Roblox Package ID`.
-- Upload dans l'ordre LOD0 → LOD3, puis insertion dans Studio.
+- **Pipeline local (plugin Roblox)** : `roblox_asset action:upload` envoie le
+  LOD0 comme `Model` avec le compte connecté dans le plugin ; Roblox applique
+  son propre LOD et les LOD1–LOD3 restent locaux pour une bascule manuelle.
+- **Variante graphique** : un package par LOD, l'identifiant est enregistré dans
+  `Roblox Package ID` ; upload dans l'ordre LOD0 → LOD3, puis insertion dans
+  Studio.
 - Ne réuploade pas un LOD inchangé : le package crée une nouvelle version.
 
 ## 4. Auto-LOD Roblox ou LOD explicites ?

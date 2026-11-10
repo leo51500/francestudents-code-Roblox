@@ -27,6 +27,26 @@ reprend la tâche, sauf si un véritable refus ou échec local a déjà été re
   - `walk.js` : walkFiles(dir, relDir, {maxFiles}).
 - `command/` : run_command (index.js, parse.js, runner.js, program.js). program.js contient filterEnv, killTree et resolveProgram, sortis de runner.js.
 
+## Outils Roblox
+
+`src/roblox/` contient la logique de production ; `src/tools/roblox/` l’expose :
+
+- `roblox_game` (`game.js`) : `init` (blueprint + structure Rojo), `add_system`,
+  `scaffold`, `status`, `validate`, `build` (Rojo), `phase`, `systems`, `plan`.
+- `roblox_asset` (`asset.js`) : `schema`, `spec` (JSON de primitives), `import`
+  (GLB, glTF, FBX, OBJ, STL, BLEND → `assets/sources/`), `build` (Blender
+  `--background`), `audio` (MP3, OGG, WAV, FLAC → `assets/audio/`), `upload`
+  (LOD0 ou son avec le compte connecté dans le plugin Roblox Blender), `plugin`
+  (vérifie la connexion sans envoyer), `login` (rétablit la session OAuth dans
+  le navigateur), `list`, `show`. L’upload par le plugin ne demande aucune clé ;
+  `provider:"opencloud"` reste une option avec `ROBLOX_OPEN_CLOUD_KEY`,
+  `ROBLOX_CREATOR_ID` et `ROBLOX_CREATOR_TYPE`.
+
+Les fichiers sont écrits avec confirmation groupée et journal d’annulation
+(`src/roblox/project.js`) ; le build et les rapports utilisent `build/` dans le
+projet. Ces outils ne dépendent d’aucun MCP : Blender, Rojo et `luau-compile`
+sont détectés dans les réglages, le PATH et des emplacements connus.
+
 ## Ajouter un outil
 
 1. Créer `src/tools/fs/<nom>.js`, qui exporte `{ name, run, check, describe }`.

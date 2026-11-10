@@ -15,6 +15,8 @@ const TOOL_LABELS = {
     open_program: "Ouvrir",
     open_app: "Ouvrir une application",
     open_in: "Ouvrir avec",
+    roblox_game: "Projet Roblox",
+    roblox_asset: "Modèle 3D / son",
     web_fetch: "Web"
 };
 

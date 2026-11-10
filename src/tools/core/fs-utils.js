@@ -17,7 +17,7 @@ async function statOrNull(target) {
     }
 }
 
-const toRel = abs => path.relative(state.workspace, abs).split(path.sep).join("/");
+const toRel = (abs, root = state.workspace) => path.relative(root, abs).split(path.sep).join("/");
 
 function denied(rel) {
     return { path: rel, changed: false, denied: true, message: "Action refusée par l'utilisateur. Ne la redemande pas." };
@@ -41,13 +41,13 @@ async function firstMissingAncestor(dirPath) {
 }
 
 /** Crée le dossier parent de target. Renvoie le chemin relatif du premier dossier créé. */
-async function ensureParent(target) {
+async function ensureParent(target, root = state.workspace) {
     const parent = path.dirname(target);
     const created = await firstMissingAncestor(parent);
 
     if (created) await fs.mkdir(parent, { recursive: true, mode: 0o700 });
 
-    return created ? toRel(created) : null;
+    return created ? toRel(created, root) : null;
 }
 
 async function treeHasFiles(abs) {

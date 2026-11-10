@@ -192,7 +192,7 @@ function proseFinalAction(text) {
  */
 const CAPABILITY_REFUSAL_PATTERNS = [
     /je n[’']ai (?:pas |aucun |plus |donc pas )?(?:acc[èe]s|d[’']acc[èe]s)/i,
-    /je ne (?:peux|puis) (?:pas |donc pas |malheureusement pas )?(?:effectuer|acc[ée]der|ex[ée]cuter|lancer|lire|modifier|pousser|publier|v[ée]rifier|commit)/i,
+    /je ne (?:peux|puis) (?:pas |donc pas |malheureusement pas )?(?:effectuer|acc[ée]der|ex[ée]cuter|lancer|lire|modifier|pousser|publier|v[ée]rifier|commit|c[ée]er|construire|g[ée]n[ée]rer|fabriquer|mod[ée]liser|produire|d[ée]velopper)/i,
     /depuis cette (?:conversation|session|interface|discussion)|from this (?:chat|conversation|session)/i,
     /(?:session|environnement|session .{0,40}) disposant/i,
     /outils? (?:locaux|local|de l[’']ide|de fichiers)|local tools?/i,
@@ -201,18 +201,32 @@ const CAPABILITY_REFUSAL_PATTERNS = [
     /no access to (?:the |your )?(?:repo|repository|file|local|tool|project)/i
 ];
 
+/**
+ * Refus explicite de créer un jeu ou un modèle. Un seul indice suffit ici :
+ * c'est exactement le comportement que l'agent local doit corriger, et il est
+ * plus grave de laisser passer ce refus que de relancer une réponse ambiguë.
+ */
+const GAME_REFUSAL_PATTERNS = [
+    /je ne (?:peux|puis) (?:pas |donc pas |malheureusement pas )?(?:cr[ée]er|construire|g[ée]n[ée]rer|fabriquer|mod[ée]liser|produire|d[ée]velopper)[^.]{0,100}(?:jeu|game|roblox|map|niveau|asset|mod[èe]le|3d|blender)/i,
+    /(?:cr[ée]er|construire|g[ée]n[ée]rer|fabriquer)[^.]{0,60}(?:jeu|game)[^.]{0,80}(?:pas possible|impossible|hors de (?:ma|mes) (?:port[ée]e|capacit[ée])|ne m[’']est pas)/i,
+    /en tant qu[’'](?:ia|assistant|mod[èe]le)[^.]{0,140}(?:pas |impossible)[^.]{0,80}(?:jeu|roblox|3d|blender)/i,
+    /(?:cannot|can[’']t|unable to|not able to) (?:create|build|make|generate)[^.]{0,80}(?:game|roblox|3d|model)/i
+];
+
 function looksLikeCapabilityRefusal(text) {
     const raw = String(text ?? "").trim();
     if (!raw || raw.length > 6000 || raw.includes("{")) return false;
+    if (GAME_REFUSAL_PATTERNS.some(pattern => pattern.test(raw))) return true;
     const hits = CAPABILITY_REFUSAL_PATTERNS.filter(pattern => pattern.test(raw)).length;
     return hits >= 2;
 }
 
 /** Correction renvoyée au modèle quand il affirme à tort ne pas avoir d'outils. */
 const CAPABILITY_REFUSAL_REMINDER =
-    "Tu as répondu en texte libre que le projet ou les outils locaux étaient inaccessibles depuis cette conversation. " +
-    "C'est inexact : les outils du catalogue (read_file, run_command, mcp_call, …) sont exécutés LOCALEMENT par francestudents-code-Roblox à partir de l'objet JSON que tu écris, " +
-    "même si ton fournisseur ne propose pas d'outil natif. Ne conclus jamais à une absence d'accès sans résultat d'outil qui confirme un échec. " +
-    'Réponds uniquement par un objet JSON {"type":"tool",...} demandant l\'outil adapté (par exemple list_directory ou run_command "git status --short --branch").';
+    "Tu as répondu en texte libre que le projet, les outils locaux ou la création d'un jeu étaient inaccessibles. " +
+    "C'est inexact : les outils du catalogue (read_file, run_command, roblox_game, roblox_asset, mcp_call, …) sont exécutés LOCALEMENT par francestudents-code-Roblox à partir de l'objet JSON que tu écris, " +
+    "même si ton fournisseur ne propose pas d'outil natif. roblox_game crée réellement le projet Rojo, les systèmes Luau et le build .rbxlx ; roblox_asset fait construire les modèles par Blender. " +
+    "Ne conclus jamais à une absence d'accès ou d'outil sans résultat d'outil qui confirme un échec. " +
+    'Réponds uniquement par un objet JSON {"type":"tool",...} demandant l\'outil adapté (par exemple roblox_game action:init avec le nom et les systèmes du jeu).';
 
 module.exports = { normalizeActionShape, repairJsonText, expandJsonCandidates, describeJsonFailure, proseFinalAction, looksLikeCapabilityRefusal, CAPABILITY_REFUSAL_REMINDER };

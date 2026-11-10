@@ -29,12 +29,19 @@ test("le routage Roblox/Blender est automatique et la preuve visuelle est impos�
     assert.equal(isRobloxTask("Ajoute une boutique à mon jeu Roblox"), true);
     assert.equal(isRobloxTask("Explique src/main.js"), false);
     assert.equal(isRobloxTask("Ouvre Visual Studio Code"), false);
+    // Un jeu demandé sans préciser la plateforme reste une tâche Roblox.
+    assert.equal(isRobloxTask("Fais-moi un jeu de combat"), true);
+    assert.equal(isRobloxTask("Crée une map avec des arbres"), true);
+    assert.equal(isRobloxTask("Ajoute un inventaire et une boutique"), true);
+    assert.equal(isRobloxTask("Importe ce modèle GLB dans mon jeu"), true);
 
     const prompt = buildAgentPrompt({ ...baseContext, task: "Crée une lampe pour mon jeu Roblox" });
     assert.match(prompt, /ROUTAGE AUTOMATIQUE/);
     assert.match(prompt, /DANS BLENDER/);
     assert.match(prompt, /PREUVE VISUELLE OBLIGATOIRE/);
     assert.match(prompt, /roblox-ui/);
+    assert.match(prompt, /action:import/);
+    assert.match(prompt, /action:upload/);
     assert.match(prompt, /OBJECTIF : TÂCHE ROBLOX\/BLENDER/);
 });
 
@@ -50,4 +57,16 @@ test("le suivi de tâche rappelle le routage et la capture", () => {
     assert.match(prompt, /géométrie 3D dans Blender/);
     assert.match(prompt, /GUI natives cartoon/);
     assert.match(prompt, /capture examinée/);
+});
+
+test("une demande hors Roblox ne reçoit pas le rappel Blender du suivi", () => {
+    const prompt = buildFollowUpPrompt({ task: "Explique src/main.js", turn: 2, maxTurns: 15 });
+    assert.doesNotMatch(prompt, /géométrie 3D dans Blender/);
+    assert.doesNotMatch(prompt, /GUI natives cartoon/);
+});
+
+test("la spécialisation est bornée aux demandes Roblox/3D", () => {
+    const prompt = buildAgentPrompt({ ...baseContext });
+    assert.match(prompt, /PÉRIMÈTRE — ces règles s'appliquent à toute demande de jeu/);
+    assert.match(prompt, /ne récite pas de limites d’opérateur/);
 });
