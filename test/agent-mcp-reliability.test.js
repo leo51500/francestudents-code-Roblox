@@ -71,6 +71,58 @@ for(const uncertain of [false,true])test(`MCP ${uncertain?"uncertain calls are n
 
 const CAPABILITY_DENIAL="Je n'ai pas de moyen d'exécuter les outils locaux mentionnés depuis cette conversation, et écrire un objet JSON d'appel ne me permettrait pas d'en garantir l'exécution.";
 const EFFECTIVE_TOOLS_DENIAL="Je peux développer le code Luau et les interfaces de ce jeu dans la conversation, mais les outils locaux roblox_game, roblox_asset et MCP décrits dans ton message ne sont pas disponibles parmi mes outils effectifs. Je n'ai donc ni modifié le projet, ni exécuté Blender, ni construit ou testé une place Roblox.";
+const SCHEMA_THEN_REFUSAL="Le résultat transmis décrit les paramètres de upload_image ; il ne confirme ni une connexion à Studio ni un accès aux fichiers. Je peux analyser et corriger le code partagé ici, mais pas exécuter ce catalogue local par des objets JSON présentés comme des appels d'outils.";
+
+test("un refus après describe est relancé avec l’appel réel dans un nouveau fil", async () => {
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-capability-describe-"));
+    const previous={request:api.requestModel,start:manager.ensureStarted,catalog:manager.catalog,find:manager.findTool,describe:manager.describeTool,call:manager.call,workspace:state.workspace,eco:state.ecoMode};
+    resetConversation();state.workspace=dir;state.ecoMode=false;await memory.open(dir);
+    let modelCalls=0,descriptions=0,toolCalls=0,confirmations=0;
+    setUiBackend({...quietUi(),confirm:async()=>{confirmations++;return true;},spinner:()=>({stop(){}})});
+    manager.ensureStarted=async()=>[];
+    manager.catalog=()=>'- server "Roblox_Studio", tool "upload_image" : Upload an image';
+    manager.findTool=()=>({});
+    manager.describeTool=(server,tool)=>{
+        descriptions++;assert.equal(server,"Roblox_Studio");assert.equal(tool,"upload_image");
+        return {description:"Upload image",arguments:["image"],schema:{type:"object",properties:{image:{type:"string"}}}};
+    };
+    manager.call=async(server,tool,args)=>{
+        toolCalls++;assert.equal(server,"Roblox_Studio");assert.equal(tool,"upload_image");assert.deepEqual(args,{image:"preview"});
+        return {text:"Image uploaded",isError:false,images:[]};
+    };
+    api.requestModel=async(prompt,options)=>{
+        modelCalls++;state.chatIds.agent="capability-describe";state.chatId="capability-describe";
+        if(modelCalls===1){
+            assert.equal(options.fresh,false);
+            return JSON.stringify({type:"tool",name:"mcp_call",args:{server:"Roblox_Studio",tool:"upload_image",describe:true},reason:"Voir le schéma de l’outil"});
+        }
+        if(modelCalls===2){
+            assert.equal(options.fresh,false);
+            return JSON.stringify({type:"final",message:SCHEMA_THEN_REFUSAL,completed:false});
+        }
+        if(modelCalls===3){
+            assert.equal(options.fresh,true);
+            assert.match(prompt,/déjà été fourni/);
+            assert.match(prompt,/sans describe/);
+            assert.match(prompt,/read_file/);
+            return JSON.stringify({type:"tool",name:"mcp_call",args:{server:"Roblox_Studio",tool:"upload_image",arguments:{image:"preview"}},reason:"Envoyer l’image de prévisualisation"});
+        }
+        assert.match(prompt,/Image uploaded/);
+        return JSON.stringify({type:"final",message:"Image envoyée et confirmée par l’outil.",completed:true});
+    };
+    try{
+        const result=await runAgent("Corrige la progression des cinq quartiers");
+        assert.equal(modelCalls,4);
+        assert.equal(descriptions,1);
+        assert.equal(toolCalls,1);
+        assert.equal(confirmations,1);
+        assert.equal(result.completed,true);
+    }finally{
+        Object.assign(manager,{ensureStarted:previous.start,catalog:previous.catalog,describeTool:previous.describe,findTool:previous.find,call:previous.call});
+        api.requestModel=previous.request;state.workspace=previous.workspace;state.ecoMode=previous.eco;setUiBackend(null);memory.close();resetConversation();fs.rmSync(dir,{recursive:true,force:true});
+    }
+});
+
 
 test("un refus en texte libre est relancé avec le prompt complet", async () => {
     const dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-capability-prose-"));

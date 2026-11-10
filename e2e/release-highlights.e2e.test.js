@@ -1,20 +1,26 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),{_electron}=require("playwright-core");
 test("the project welcome appears once, can be reopened and fits small windows",{timeout:45000},async()=>{
-    const root=path.resolve(__dirname,".."),dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-release-notes-")),harness=path.join(dir,"launch.cjs");
-    fs.writeFileSync(harness,`require('electron').app.getVersion=()=>"0.1.0";require(${JSON.stringify(path.join(root,"src/core/session"))}).bootstrap=async()=>({ok:true});require(${JSON.stringify(path.join(root,"desktop/main.js"))});`);
+    const root=path.resolve(__dirname,".."),dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-release-notes-")),harness=path.join(dir,"launch.cjs"),pkg=require("../package.json");
+    // Les notes affichées sont celles de la version installée : le test vérifie
+    // donc le contenu réel de package.json, sans dépendre d'un numéro figé.
+    const expectedItems=require("../desktop/release-highlights").createReleaseHighlights({version:pkg.version,enabled:true,load:()=>({}),save(){}}).get().items.length;
+    fs.writeFileSync(harness,`require('electron').app.getVersion=()=>${JSON.stringify(pkg.version)};require(${JSON.stringify(path.join(root,"src/core/session"))}).bootstrap=async()=>({ok:true});require(${JSON.stringify(path.join(root,"desktop/main.js"))});`);
     const env={...process.env,FS_DATA_DIR:dir,FS_STATE_DIR:dir,FRST_QA_RELEASE_NOTES:"1"};delete env.ELECTRON_RUN_AS_NODE;
     const app=await _electron.launch({executablePath:require("electron"),args:[harness,"--user-data-dir="+path.join(dir,"electron")],cwd:root,env});
     try{
         const page=await app.firstWindow();await page.locator("#startup-loading").waitFor({state:"hidden"});
         if(await page.locator("#guide-close").isVisible())await page.locator("#guide-close").click();
         await page.locator("#release-highlights[open]").waitFor();
-        assert.match(await page.title(),/francestudents-code-Roblox/);
-        assert.equal(await page.locator(".release-notes-item").count(),3);
+        assert.match(await page.title(),/France-Students-code-Roblox/);
+        assert.equal(await page.locator(".release-notes-item").count(),expectedItems);
         if(process.env.FRST_QA_SCREENSHOT)await page.screenshot({path:process.env.FRST_QA_SCREENSHOT,animations:"disabled"});
         await page.getByRole("button",{name:"C’est parti !",exact:true}).click();
         await page.getByRole("heading",{name:"Reviens avant une demande à l’agent"}).waitFor();
         await page.getByRole("button",{name:"J’ai compris",exact:true}).click();
+        // La question sur les points de sauvegarde n'apparaît qu'après la fermeture
+        // de la présentation, jamais par-dessus.
+        await page.locator("dialog.center-dialog").getByRole("button",{name:"Garder désactivé",exact:true}).click();
         await page.waitForFunction(async()=>{const data=await window.frst.releaseHighlights();return !data.shouldShow && !data.showFileVersionsIntro;});
         await page.reload();await page.locator("#startup-loading").waitFor({state:"hidden"});
         assert.equal(await page.locator("#release-highlights[open]").count(),0);

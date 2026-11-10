@@ -1,6 +1,12 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.6":{headline:"Refus après un schéma MCP : l’agent relance et lit les fichiers lui-même.",items:[
+        {icon:"chat",title:"Refus après describe reconnu",text:"Quand le modèle dit qu’il ne peut pas exécuter le catalogue local par des objets JSON, l’IDE relance dans un nouveau fil."},
+        {icon:"tools",title:"Lecture au lieu du collage",text:"L’agent lit les fichiers du projet avec read_file et ne te demande plus de coller leur contenu."},
+        {icon:"tools",title:"Schéma déjà fourni",text:"Après un describe, la relance demande l’appel réel sans describe et attend son résultat."},
+        {icon:"tools",title:"Une seule fenêtre à la fois",text:"La question sur les points de sauvegarde attend la fermeture des nouveautés au lieu de s’ouvrir par-dessus."}
+    ]},
     "1.26.5":{headline:"Les refus d’outils sont relancés dans une nouvelle conversation.",items:[
         {icon:"chat",title:"Refus mieux reconnus",text:"Les réponses qui disent que roblox_game, roblox_asset ou les outils MCP « ne sont pas disponibles parmi mes outils effectifs » déclenchent la relance."},
         {icon:"tools",title:"Nouveau fil serveur",text:"La relance repart du prompt complet dans une nouvelle conversation, au lieu de continuer dans le fil où le modèle a déjà refusé."},

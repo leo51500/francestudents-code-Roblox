@@ -218,7 +218,10 @@ const GAME_REFUSAL_PATTERNS = [
     /catalogue d[’']outils[^.]{0,40}(?:d[ée]crit|non ex[ée]cut|pas ex[ée]cut)/i,
     /(?:outils? (?:locaux|mcp)|roblox_game|roblox_asset)[^.]{0,140}(?:ne sont pas|ne sont|ne seront pas|pas) (?:disponibles|accessibles|ex[ée]cutables|reconnus|activ[ée]s)/i,
     /parmi (?:mes|tes) outils (?:effectifs|natifs|disponibles)/i,
-    /ni modifi[ée][^.]{0,80}ni ex[ée]cut[ée][^.]{0,80}ni (?:construit|test[ée]|build)/i
+    /ni modifi[ée][^.]{0,80}ni ex[ée]cut[ée][^.]{0,80}ni (?:construit|test[ée]|build)/i,
+    /(?:pas|ne pas|impossible de) (?:pouvoir )?ex[ée]cuter[^.]{0,80}(?:catalogue|outils?)[^.]{0,50}(?:local|json)/i,
+    /objets? json[^.]{0,100}pr[ée]sent[ée]s? comme (?:des )?appels? d[’']outils/i,
+    /(?:transmets|partage|colle|envoie|fournis)[^.]{0,80}contenu[^.]{0,140}(?:\.luau|\.json|\.js|\.ts|src[\\/]|game\.|fichiers? du projet)/i
 ];
 
 /**
@@ -244,6 +247,7 @@ const CAPABILITY_REFUSAL_REMINDER =
     "même si ton fournisseur ne propose pas d'outil natif. Leur absence de la liste des outils natifs est normale : ce ne sont pas des function_calls. " +
     "roblox_game crée réellement le projet Rojo, les systèmes Luau et le build .rbxlx ; roblox_asset fait construire les modèles par Blender. " +
     "Ne conclus jamais à une absence d'accès ou d'outil sans résultat d'outil qui confirme un échec. " +
+    "Le projet ouvert est lisible avec read_file et list_directory : ne demande pas à l'utilisateur de coller le contenu d'un fichier du projet, lis-le toi-même. " +
     'Réponds uniquement par un objet JSON {"type":"tool",...} demandant l\'outil adapté (par exemple roblox_game action:init avec le nom et les systèmes du jeu). ' +
     'Forme exacte attendue, sans texte autour : {"type":"tool","name":"roblox_game","args":{"action":"init","name":"La Ville Vivante","genre":"adventure","systems":["inventory","combat"]},"reason":"Créer le projet du jeu"}.';
 

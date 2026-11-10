@@ -1,5 +1,19 @@
 # Journal des modifications
 
+## 1.26.6 — Refus après un schéma MCP et lecture des fichiers
+
+- Les refus « pas exécuter ce catalogue local par des objets JSON présentés
+  comme des appels d'outils » et les demandes de coller le contenu de fichiers
+  du projet sont reconnus comme des refus d'utiliser les outils locaux.
+- Ces refus déclenchent la relance dans un nouveau fil, avec le prompt complet
+  et le rappel que le schéma déjà décrit doit être appelé sans `describe`.
+- L'agent doit lire les fichiers du projet avec `read_file` / `list_directory`
+  et ne plus demander à l'utilisateur de coller leur contenu.
+- La question sur les points de sauvegarde attend la fermeture des nouveautés
+  au lieu de s'ouvrir par-dessus.
+- Test e2e des nouveautés remis à jour : nom du produit actuel, notes de la
+  version installée et fermeture de la question de sauvegarde.
+
 ## 1.26.5 — Les refus d'outils sont relancés dans un nouveau fil
 
 - Les formulations « ne sont pas disponibles parmi mes outils effectifs »,
