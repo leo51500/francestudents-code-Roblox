@@ -192,11 +192,13 @@ function proseFinalAction(text) {
  */
 const CAPABILITY_REFUSAL_PATTERNS = [
     /je n[’']ai (?:pas |aucun |plus |donc pas )?(?:acc[èe]s|d[’']acc[èe]s)/i,
+    /je n[’']ai (?:pas|aucun) (?:de |le )?moyen/i,
     /je ne (?:peux|puis) (?:pas |donc pas |malheureusement pas )?(?:effectuer|acc[ée]der|ex[ée]cuter|lancer|lire|modifier|pousser|publier|v[ée]rifier|commit|c[ée]er|construire|g[ée]n[ée]rer|fabriquer|mod[ée]liser|produire|d[ée]velopper)/i,
     /depuis cette (?:conversation|session|interface|discussion)|from this (?:chat|conversation|session)/i,
     /(?:session|environnement|session .{0,40}) disposant/i,
     /outils? (?:locaux|local|de l[’']ide|de fichiers)|local tools?/i,
-    /aucune? (?:commit|push|publication|modification|fichier|action|commande)[^.]{0,80}n[’']a (?:été |pas été )?(?:effectu|modifi|ex[ée]cut|lanc|cré)/i,
+    /aucune? [^.]{0,40}(?:commit|push|publication|modification|fichier|action|commande)[^.]{0,80}n[’']a (?:été |pas été )?(?:effectu|modifi|ex[ée]cut|lanc|cré)/i,
+    /(?:écrire|envoyer|renvoyer)[^.]{0,60}(?:objet json|du json)[^.]{0,80}(?:ne (?:me )?(?:permet|garantit)|pas garanti|sans garantie)/i,
     /\bi (?:don[’']t|do not|cannot|can[’']t) (?:have )?(?:direct )?access/i,
     /no access to (?:the |your )?(?:repo|repository|file|local|tool|project)/i
 ];
@@ -213,9 +215,17 @@ const GAME_REFUSAL_PATTERNS = [
     /(?:cannot|can[’']t|unable to|not able to) (?:create|build|make|generate)[^.]{0,80}(?:game|roblox|3d|model)/i
 ];
 
+/**
+ * Une limite qui porte sur une pièce jointe, une image ou une capture ne doit
+ * pas être relancée comme si le projet local était inaccessible.
+ */
+const ATTACHMENT_LIMITATION =
+    /(?:pi[èe]ce jointe|fichier joint|attachment|image|photo|capture)[^.]{0,60}(?:outils? locaux|conversation|session|interface)/i;
+
 function looksLikeCapabilityRefusal(text) {
     const raw = String(text ?? "").trim();
     if (!raw || raw.length > 6000 || raw.includes("{")) return false;
+    if (ATTACHMENT_LIMITATION.test(raw)) return false;
     if (GAME_REFUSAL_PATTERNS.some(pattern => pattern.test(raw))) return true;
     const hits = CAPABILITY_REFUSAL_PATTERNS.filter(pattern => pattern.test(raw)).length;
     return hits >= 2;

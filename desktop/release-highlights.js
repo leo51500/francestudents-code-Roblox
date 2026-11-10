@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.1":{headline:"L’agent ne s’arrête plus sur un faux refus d’accès aux outils.",items:[
+        {icon:"chat",title:"Relance automatique",text:"Quand le modèle affirme ne pas pouvoir exécuter les outils locaux depuis la conversation, l’IDE le relance une fois avec le protocole d’outils."},
+        {icon:"tools",title:"Formulations reconnues",text:"Les tournures comme « je n’ai pas de moyen » ou « aucune création de fichier n’a été effectuée » déclenchent la même relance."},
+        {icon:"tools",title:"Échec réel conservé",text:"Si un outil échoue vraiment ou si le refus persiste, la réponse finale reste affichée avec son résultat."}
+    ]},
     "1.26.0":{headline:"Crée un projet Roblox et publie ses assets depuis l’agent.",items:[
         {icon:"tools",title:"Projet Roblox local",text:"roblox_game écrit la structure Rojo, les systèmes Luau, valide le projet et construit la place .rbxlx sans serveur MCP."},
         {icon:"tools",title:"Modèles créés ou importés",text:"roblox_asset pilote Blender, importe un GLB, FBX ou OBJ existant et produit les LOD0 à LOD3 avec un aperçu vérifiable."},

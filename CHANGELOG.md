@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## 1.26.1 — L'agent relance un refus d'accès aux outils
+
+- Une réponse finale qui affirme ne pas pouvoir exécuter les outils locaux
+  depuis la conversation est maintenant relancée une fois avec le protocole
+  d'outils, au lieu d'être affichée comme un compte rendu.
+- La détection couvre aussi les formulations « je n'ai pas de moyen »,
+  « aucune création de fichier n'a été effectuée » et « écrire un objet JSON
+  ne garantit pas l'exécution ».
+- Si le refus persiste après la relance, il est affiché tel quel ; un échec
+  d'outil réel reste expliqué à partir de son résultat.
+
 ## 1.26.0 — Projets Roblox et assets créés depuis l'agent
 
 - Deux nouveaux outils locaux, `roblox_game` et `roblox_asset`, créent la

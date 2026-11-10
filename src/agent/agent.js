@@ -505,6 +505,7 @@ async function runAgent(task, options = {}) {
     const observations = [];
     let recoveredUnsupportedTool = false;
     let recoveredWorkspaceAccess = false;
+    let recoveredCapabilityRefusal = false;
     const changesBefore = memory.sessionChanges();
 
     // Vérification réelle et interruptible avant tout accès au projet pour chaque tâche.
@@ -886,6 +887,17 @@ async function runAgent(task, options = {}) {
             const lateSteering = options.drainSteering?.() || [];
             if (lateSteering.length) {
                 deferredSteering = lateSteering;
+                continue;
+            }
+            // Un refus de capacité peut arriver dans un objet final valide et pas
+            // seulement en texte libre illisible. Une seule relance, puis le refus
+            // est présenté avec son résultat réel s'il persiste.
+            if (!recoveredCapabilityRefusal && !state.ecoMode && !options.readOnly &&
+                !hasExplicitWorkspaceBlock(observations) && looksLikeCapabilityRefusal(action.message)) {
+                recoveredCapabilityRefusal = true;
+                observations.push({ tool: "local_tool_protocol", ok: false,
+                    error: `${CAPABILITY_REFUSAL_REMINDER} Cette relance n’est tentée qu’une fois : si un outil échoue réellement, explique l’échec à partir de son résultat ; sinon termine avec final.` });
+                ui.info("Le modèle a décrit une limite d’accès ; je relance avec le protocole d’outils local.");
                 continue;
             }
             if (action.plan_progress !== undefined) applyProgress(state.agentPlan, action.plan_progress);

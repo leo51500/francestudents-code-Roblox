@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { parseAgentResponse, extractJsonObject } = require("../src/agent/agent");
-const { repairJsonText, normalizeActionShape, proseFinalAction, describeJsonFailure } = require("../src/agent/json-repair");
+const { repairJsonText, normalizeActionShape, proseFinalAction, describeJsonFailure, looksLikeCapabilityRefusal } = require("../src/agent/json-repair");
 const { normalizeProgress, fitProgress, applyProgress } = require("../src/agent/plan-progress");
 
 const fence = "\u0060\u0060\u0060";
@@ -104,4 +104,19 @@ test("parseAgentResponse ne rejette plus une action à cause d'un plan_progress 
     const action = parseAgentResponse('{"type":"tool","name":"list_directory","args":{"path":"."},"plan_progress":{"weird":true}}');
     assert.equal(action.name, "list_directory");
     assert.equal(action.plan_progress, undefined);
+});
+
+test("un refus de capacité est reconnu même sans le mot accès", () => {
+    const refusal = `Le résultat transmis décrit les arguments de get_addon_status ; il ne confirme pas une connexion à Blender. Je n'ai pas de moyen d'exécuter les outils locaux mentionnés depuis cette conversation, et écrire un objet JSON d'appel ne me permettrait pas d'en garantir l'exécution.
+
+Je peux rédiger dans le chat les fichiers Luau. En revanche, aucune création de fichier, capture, validation ou construction .rbxlx n'a été effectuée ici.`;
+    assert.equal(looksLikeCapabilityRefusal(refusal), true);
+    assert.equal(looksLikeCapabilityRefusal("Je ne peux pas créer ce jeu Roblox dans cette conversation."), true);
+});
+
+test("un compte rendu normal ou une limite externe n'est pas pris pour un refus", () => {
+    assert.equal(looksLikeCapabilityRefusal("J'ai créé les fichiers et lancé la validation ; tout est prêt."), false);
+    assert.equal(looksLikeCapabilityRefusal("Blender n'est pas lancé : le fichier .blend n'a pas pu être ouvert."), false);
+    assert.equal(looksLikeCapabilityRefusal("Je ne peux pas vérifier la pièce jointe avec les outils locaux."), false);
+    assert.equal(looksLikeCapabilityRefusal('{"type":"tool","name":"read_file"}'), false);
 });

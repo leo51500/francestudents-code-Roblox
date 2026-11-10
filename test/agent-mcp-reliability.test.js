@@ -68,3 +68,34 @@ for(const uncertain of [false,true])test(`MCP ${uncertain?"uncertain calls are n
     try{const result=await runAgent("Modify the test scene");assert.equal(result.completed,false);assert.equal(toolCalls,1);assert.equal(modelCalls,uncertain?3:2);}
     finally{Object.assign(manager,{ensureStarted:previous.start,catalog:previous.catalog,findTool:previous.find,call:previous.call});api.requestModel=previous.request;state.workspace=previous.workspace;state.ecoMode=previous.eco;setUiBackend(null);memory.close();resetConversation();fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+const CAPABILITY_DENIAL="Je n'ai pas de moyen d'exécuter les outils locaux mentionnés depuis cette conversation, et écrire un objet JSON d'appel ne me permettrait pas d'en garantir l'exécution.";
+
+for(const repeats of [false,true])test(`un final qui refuse les outils locaux est relancé une fois${repeats?" puis accepté s'il persiste":""}`,async()=>{
+    const dir=fs.mkdtempSync(path.join(os.tmpdir(),"frst-capability-"));
+    const previous={request:api.requestModel,start:manager.ensureStarted,catalog:manager.catalog,workspace:state.workspace,eco:state.ecoMode};
+    resetConversation();state.workspace=dir;state.ecoMode=false;await memory.open(dir);
+    let modelCalls=0;
+    setUiBackend({...quietUi(),spinner:()=>({stop(){}})});
+    manager.ensureStarted=async()=>[];manager.catalog=()=>"";
+    api.requestModel=async prompt=>{
+        modelCalls++;state.chatIds.agent="capability";state.chatId="capability";
+        if(modelCalls===1)return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});
+        if(modelCalls===2){
+            assert.match(prompt,/LOCALEMENT/);
+            if(repeats)return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});
+            return JSON.stringify({type:"tool",name:"list_directory",args:{path:"."},reason:"Vérifier le projet"});
+        }
+        assert.match(prompt,/list_directory/);
+        return JSON.stringify({type:"final",message:"Le dossier du projet est accessible.",completed:true});
+    };
+    try{
+        const result=await runAgent("Crée le jeu Ville Vivante");
+        assert.equal(modelCalls,repeats?2:3);
+        assert.equal(result.completed,!repeats);
+        if(repeats)assert.equal(result.message,CAPABILITY_DENIAL);
+    }finally{
+        Object.assign(manager,{ensureStarted:previous.start,catalog:previous.catalog});
+        api.requestModel=previous.request;state.workspace=previous.workspace;state.ecoMode=previous.eco;setUiBackend(null);memory.close();resetConversation();fs.rmSync(dir,{recursive:true,force:true});
+    }
+});
