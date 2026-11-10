@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## 1.26.4 — L'application clignote à chaque notification
+
+- Quand une notification arrive alors que la fenêtre n'est pas au premier plan,
+  l'icône de la barre des tâches clignote pour attirer l'attention.
+- Le clignotement s'arrête dès que la fenêtre revient au premier plan ou que la
+  notification est cliquée.
+- La couleur (orange/rouge) est choisie par Windows ; l'application ne peut pas
+  la modifier.
+- Si la fenêtre est déjà active, aucune notification de tâche n'est affichée et
+  rien ne clignote inutilement.
+
 ## 1.26.3 — Blender ouvert par l'agent et notifications sans clignotement
 
 - L'agent ouvre lui-même Blender ou Roblox Studio avec `open_program` quand un

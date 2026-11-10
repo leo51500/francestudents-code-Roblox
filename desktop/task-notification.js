@@ -3,12 +3,6 @@
 const activeNotifications = new Set();
 const MAX_ACTIVE_NOTIFICATIONS = 20;
 
-// Windows fait clignoter l'icône de la barre des tâches en rouge/orange pour
-// réclamer l'attention. Electron et le shell le déclenchent parfois quand un
-// toast est affiché, même si la fenêtre est déjà au premier plan. La
-// notification reste affichée et sonore : on annule seulement ce clignotement.
-const FLASH_CANCEL_DELAYS = [0, 200, 600, 1200, 2500];
-
 const PROMPT_TITLES = {
     question: "L’agent a une question",
     ask: "L’agent attend ta réponse",
@@ -17,26 +11,27 @@ const PROMPT_TITLES = {
     secret: "Code secret demandé"
 };
 
-function cancelAttentionFlash(window) {
+// Windows signale une demande d'attention en faisant clignoter l'icône de la
+// barre des tâches en orange/rouge. On le déclenche volontairement à chaque
+// notification quand la fenêtre n'est pas au premier plan, et on l'arrête dès
+// que la fenêtre revient au premier plan (ou que la notification est cliquée).
+function requestAttentionFlash(window) {
     if (!window || typeof window.flashFrame !== "function") return;
-    const stop = () => {
-        try {
-            if (!window.isDestroyed?.()) window.flashFrame(false);
-        } catch {
-            // Fenêtre déjà fermée : rien à annuler.
-        }
-    };
-    for (const delay of FLASH_CANCEL_DELAYS) {
-        if (delay === 0) {
-            stop();
-            continue;
-        }
-        const timer = setTimeout(stop, delay);
-        timer.unref?.();
+    try {
+        if (window.isDestroyed?.() || window.isFocused?.()) return;
+        window.flashFrame(true);
+    } catch {
+        return;
     }
-    // Si la fenêtre revient au premier plan, le clignotement n'a plus de raison
-    // d'être : on l'annule aussi à ce moment-là.
-    if (typeof window.once === "function") window.once("focus", stop);
+    if (typeof window.once === "function") {
+        window.once("focus", () => {
+            try {
+                if (!window.isDestroyed?.()) window.flashFrame(false);
+            } catch {
+                // Fenêtre déjà fermée : rien à arrêter.
+            }
+        });
+    }
 }
 
 function clipBody(value, limit = 180) {
@@ -66,7 +61,7 @@ function present({ Notification, window, title, body, force = false }) {
     }
 
     notification.show();
-    cancelAttentionFlash(window);
+    requestAttentionFlash(window);
     return true;
 }
 

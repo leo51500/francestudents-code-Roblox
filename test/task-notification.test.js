@@ -129,13 +129,17 @@ test("every agent prompt notifies even when the window is focused", () => {
     }
 });
 
-test("une notification n’entraîne pas le clignotement rouge de la barre des tâches", () => {
+test("une notification fait clignoter la fenêtre inactive jusqu’au retour au premier plan", () => {
     const Notification = createNotificationClass();
     const flashes = [];
+    let onFocus = null;
     const window = {
         isDestroyed: () => false,
-        isFocused: () => true,
-        flashFrame: value => flashes.push(value)
+        isFocused: () => false,
+        flashFrame: value => flashes.push(value),
+        once: (event, handler) => {
+            if (event === "focus") onFocus = handler;
+        }
     };
 
     assert.equal(showPromptNotification({
@@ -143,7 +147,29 @@ test("une notification n’entraîne pas le clignotement rouge de la barre des t
         window,
         prompt: { kind: "confirm", question: "Autoriser la commande ?" }
     }), true);
-    assert.deepEqual(flashes, [false]);
+    assert.deepEqual(flashes, [true]);
+    assert.equal(typeof onFocus, "function");
+
+    onFocus();
+    assert.deepEqual(flashes, [true, false]);
+});
+
+test("une notification ne fait pas clignoter la fenêtre déjà active", () => {
+    const Notification = createNotificationClass();
+    const flashes = [];
+    const window = {
+        isDestroyed: () => false,
+        isFocused: () => true,
+        flashFrame: value => flashes.push(value),
+        once: () => {}
+    };
+
+    assert.equal(showPromptNotification({
+        Notification,
+        window,
+        prompt: { kind: "ask", question: "Quel style ?" }
+    }), true);
+    assert.deepEqual(flashes, []);
 });
 
 test("une fenêtre sans flashFrame ne fait pas échouer la notification", () => {

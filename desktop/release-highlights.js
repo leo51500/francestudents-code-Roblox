@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.4":{headline:"L’application clignote quand une notification arrive.",items:[
+        {icon:"chat",title:"Clignotement à chaque notification",text:"Si la fenêtre n’est pas au premier plan, l’icône de la barre des tâches clignote jusqu’à ton retour."},
+        {icon:"tools",title:"Arrêt automatique",text:"Le clignotement s’arrête dès que tu reviens sur la fenêtre ou que tu cliques la notification."},
+        {icon:"tools",title:"Aucun clignotement inutile",text:"Quand la fenêtre est déjà active, aucune notification de fin de tâche n’est affichée."}
+    ]},
     "1.26.3":{headline:"L’agent ouvre Blender lui-même et les notifications ne font plus clignoter la fenêtre.",items:[
         {icon:"tools",title:"Blender et Studio ouverts par l’agent",text:"Quand un MCP ne répond pas, l’agent lance l’application avec open_program, attend son démarrage et relance le diagnostic au lieu de te demander de le faire."},
         {icon:"chat",title:"Connexion du plugin rétablie",text:"Le skill Roblox + Blender utilise roblox_asset action:login pour ouvrir la page Roblox avant de solliciter une intervention manuelle."},
