@@ -82,6 +82,7 @@ for(const repeats of [false,true])test(`un final qui refuse les outils locaux es
         modelCalls++;state.chatIds.agent="capability";state.chatId="capability";
         if(modelCalls===1)return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});
         if(modelCalls===2){
+            assert.match(prompt,/FORMAT DE SORTIE/);
             assert.match(prompt,/LOCALEMENT/);
             if(repeats)return JSON.stringify({type:"final",message:CAPABILITY_DENIAL,completed:false});
             return JSON.stringify({type:"tool",name:"list_directory",args:{path:"."},reason:"Vérifier le projet"});

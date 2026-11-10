@@ -204,15 +204,18 @@ const CAPABILITY_REFUSAL_PATTERNS = [
 ];
 
 /**
- * Refus explicite de créer un jeu ou un modèle. Un seul indice suffit ici :
- * c'est exactement le comportement que l'agent local doit corriger, et il est
- * plus grave de laisser passer ce refus que de relancer une réponse ambiguë.
+ * Refus explicite de créer un jeu ou un modèle, ou d'exécuter les outils
+ * locaux décrits dans la demande. Un seul indice suffit ici : c'est exactement
+ * le comportement que l'agent local doit corriger, et il est plus grave de
+ * laisser passer ce refus que de relancer une réponse ambiguë.
  */
 const GAME_REFUSAL_PATTERNS = [
     /je ne (?:peux|puis) (?:pas |donc pas |malheureusement pas )?(?:cr[ée]er|construire|g[ée]n[ée]rer|fabriquer|mod[ée]liser|produire|d[ée]velopper)[^.]{0,100}(?:jeu|game|roblox|map|niveau|asset|mod[èe]le|3d|blender)/i,
     /(?:cr[ée]er|construire|g[ée]n[ée]rer|fabriquer)[^.]{0,60}(?:jeu|game)[^.]{0,80}(?:pas possible|impossible|hors de (?:ma|mes) (?:port[ée]e|capacit[ée])|ne m[’']est pas)/i,
     /en tant qu[’'](?:ia|assistant|mod[èe]le)[^.]{0,140}(?:pas |impossible)[^.]{0,80}(?:jeu|roblox|3d|blender)/i,
-    /(?:cannot|can[’']t|unable to|not able to) (?:create|build|make|generate)[^.]{0,80}(?:game|roblox|3d|model)/i
+    /(?:cannot|can[’']t|unable to|not able to) (?:create|build|make|generate)[^.]{0,80}(?:game|roblox|3d|model)/i,
+    /(?:mais )?pas (?:piloter|ex[ée]cuter|utiliser)[^.]{0,60}(?:agent local|catalogue d[’']outils|outils locaux)/i,
+    /catalogue d[’']outils[^.]{0,40}(?:d[ée]crit|non ex[ée]cut|pas ex[ée]cut)/i
 ];
 
 /**

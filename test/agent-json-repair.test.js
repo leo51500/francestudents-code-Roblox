@@ -112,6 +112,7 @@ test("un refus de capacité est reconnu même sans le mot accès", () => {
 Je peux rédiger dans le chat les fichiers Luau. En revanche, aucune création de fichier, capture, validation ou construction .rbxlx n'a été effectuée ici.`;
     assert.equal(looksLikeCapabilityRefusal(refusal), true);
     assert.equal(looksLikeCapabilityRefusal("Je ne peux pas créer ce jeu Roblox dans cette conversation."), true);
+    assert.equal(looksLikeCapabilityRefusal("Je peux écrire les scripts Luau et les scripts Python pour Blender dans cette conversation, mais pas piloter un agent local ni exécuter le catalogue d'outils décrit dans tes messages."), true);
 });
 
 test("un compte rendu normal ou une limite externe n'est pas pris pour un refus", () => {

@@ -506,6 +506,7 @@ async function runAgent(task, options = {}) {
     let recoveredUnsupportedTool = false;
     let recoveredWorkspaceAccess = false;
     let recoveredCapabilityRefusal = false;
+    let forceFullPrompt = false;
     const changesBefore = memory.sessionChanges();
 
     // Vérification réelle et interruptible avant tout accès au projet pour chaque tâche.
@@ -720,7 +721,7 @@ async function runAgent(task, options = {}) {
                 // les suivis rappellent la demande, le plan et le dernier résultat d'outil.
                 // Sans conversation (aucun identifiant reçu), on renvoie tout, projet compris.
                 // Un fournisseur personnalisé est sans état, même si son journal a un ID local.
-                const hasConversation = Boolean(state.chatIds.agent) && !String(state.model).startsWith("custom:");
+                const hasConversation = !forceFullPrompt && Boolean(state.chatIds.agent) && !String(state.model).startsWith("custom:");
                 const signature=promptCache.fingerprint({
                     workspace:state.workspace,model:state.model,
                     env,instructions,preprompt,mcpCatalog,skillsCatalog,
@@ -747,6 +748,7 @@ async function runAgent(task, options = {}) {
                         ? buildResumePrompt({task:currentTask,observations,activeFile:state.activeFile,
                             editorFiles:state.openFiles,plan:state.agentPlan,requestNumber,correction,mcpCatalog})
                         : fullPrompt(!hasConversation);
+                forceFullPrompt = false;
 
                 try{lastResponse = await api.requestModel(prompt, {
                     conversationMode: "agent",
@@ -890,13 +892,20 @@ async function runAgent(task, options = {}) {
                 continue;
             }
             // Un refus de capacité peut arriver dans un objet final valide et pas
-            // seulement en texte libre illisible. Une seule relance, puis le refus
-            // est présenté avec son résultat réel s'il persiste.
+            // seulement en texte libre illisible. Une seule relance, en repartant
+            // du prompt complet : un fil où le modèle a déjà refusé renforce souvent
+            // le même refus. Puis le refus est présenté avec son résultat réel.
             if (!recoveredCapabilityRefusal && !state.ecoMode && !options.readOnly &&
                 !hasExplicitWorkspaceBlock(observations) && looksLikeCapabilityRefusal(action.message)) {
                 recoveredCapabilityRefusal = true;
+                forceFullPrompt = true;
+                const described = [...observations].reverse().find(item =>
+                    item.tool === "mcp_call" && item.args?.describe === true);
+                const hint = described
+                    ? ` Le schéma de ${described.args.server}/${described.args.tool} a déjà été fourni : appelle maintenant mcp_call sans describe, avec les arguments du schéma, et attends son résultat.`
+                    : "";
                 observations.push({ tool: "local_tool_protocol", ok: false,
-                    error: `${CAPABILITY_REFUSAL_REMINDER} Cette relance n’est tentée qu’une fois : si un outil échoue réellement, explique l’échec à partir de son résultat ; sinon termine avec final.` });
+                    error: `${CAPABILITY_REFUSAL_REMINDER}${hint} Cette relance n’est tentée qu’une fois : si un outil échoue réellement, explique l’échec à partir de son résultat ; sinon termine avec final.` });
                 ui.info("Le modèle a décrit une limite d’accès ; je relance avec le protocole d’outils local.");
                 continue;
             }

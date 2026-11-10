@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## 1.26.2 — Relance complète après un refus d'exécuter les outils
+
+- Un refus qui mentionne le catalogue d'outils, un agent local ou le fait
+  d'écrire du code « dans cette conversation » est maintenant reconnu et
+  relancé.
+- La relance renvoie le prompt complet (identité, catalogue, format JSON,
+  demande) au lieu d'un simple rappel dans le fil où le modèle a déjà refusé.
+- Si un schéma MCP vient d'être décrit, la relance demande d'appeler l'outil
+  réel sans `describe` et d'attendre son résultat.
+- Les limites de pièce jointe et les refus de permission restent exemptés.
+
 ## 1.26.1 — L'agent relance un refus d'accès aux outils
 
 - Une réponse finale qui affirme ne pas pouvoir exécuter les outils locaux

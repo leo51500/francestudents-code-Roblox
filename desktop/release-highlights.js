@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.2":{headline:"Une relance complète quand le modèle refuse d’exécuter les outils.",items:[
+        {icon:"chat",title:"Refus mieux reconnu",text:"Les réponses qui parlent de catalogue d’outils, d’agent local ou de code écrit « dans cette conversation » déclenchent la relance."},
+        {icon:"tools",title:"Protocole renvoyé en entier",text:"L’IDE renvoie l’identité, le catalogue, le format JSON et la demande au lieu d’un simple rappel dans le fil."},
+        {icon:"tools",title:"Appel MCP concret",text:"Après la découverte d’un schéma, la relance demande d’appeler l’outil réel sans describe et d’attendre son résultat."}
+    ]},
     "1.26.1":{headline:"L’agent ne s’arrête plus sur un faux refus d’accès aux outils.",items:[
         {icon:"chat",title:"Relance automatique",text:"Quand le modèle affirme ne pas pouvoir exécuter les outils locaux depuis la conversation, l’IDE le relance une fois avec le protocole d’outils."},
         {icon:"tools",title:"Formulations reconnues",text:"Les tournures comme « je n’ai pas de moyen » ou « aucune création de fichier n’a été effectuée » déclenchent la même relance."},
