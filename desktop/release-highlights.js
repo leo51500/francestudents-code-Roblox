@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.3":{headline:"L’agent ouvre Blender lui-même et les notifications ne font plus clignoter la fenêtre.",items:[
+        {icon:"tools",title:"Blender et Studio ouverts par l’agent",text:"Quand un MCP ne répond pas, l’agent lance l’application avec open_program, attend son démarrage et relance le diagnostic au lieu de te demander de le faire."},
+        {icon:"chat",title:"Connexion du plugin rétablie",text:"Le skill Roblox + Blender utilise roblox_asset action:login pour ouvrir la page Roblox avant de solliciter une intervention manuelle."},
+        {icon:"tools",title:"Plus de clignotement rouge",text:"L’icône de la barre des tâches cesse de clignoter à l’arrivée d’une notification, qui reste affichée et sonore."}
+    ]},
     "1.26.2":{headline:"Une relance complète quand le modèle refuse d’exécuter les outils.",items:[
         {icon:"chat",title:"Refus mieux reconnu",text:"Les réponses qui parlent de catalogue d’outils, d’agent local ou de code écrit « dans cette conversation » déclenchent la relance."},
         {icon:"tools",title:"Protocole renvoyé en entier",text:"L’IDE renvoie l’identité, le catalogue, le format JSON et la demande au lieu d’un simple rappel dans le fil."},

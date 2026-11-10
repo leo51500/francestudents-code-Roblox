@@ -43,6 +43,15 @@ test("le routage Roblox/Blender est automatique et la preuve visuelle est impos�
     assert.match(prompt, /action:import/);
     assert.match(prompt, /action:upload/);
     assert.match(prompt, /OBJECTIF : TÂCHE ROBLOX\/BLENDER/);
+    // L'agent ouvre lui-même Blender/Studio au lieu de le demander à l'utilisateur.
+    assert.match(prompt, /open_program/);
+    assert.match(prompt, /ne demande pas à l'utilisateur de le faire avant d'avoir essayé/);
+});
+
+test("le suivi rappelle d’ouvrir Blender/Studio avant de se déclarer bloqué", () => {
+    const prompt = buildFollowUpPrompt({ task: "Crée une épée Roblox", turn: 2, maxTurns: 15 });
+    assert.match(prompt, /open_program/);
+    assert.match(prompt, /relance le diagnostic/);
 });
 
 test("une demande sans 3D garde le brief générique mais la spécialisation reste rappelée", () => {

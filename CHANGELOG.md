@@ -1,5 +1,18 @@
 # Journal des modifications
 
+## 1.26.3 — Blender ouvert par l'agent et notifications sans clignotement
+
+- L'agent ouvre lui-même Blender ou Roblox Studio avec `open_program` quand un
+  MCP ne répond pas, attend le démarrage puis relance le diagnostic ; il ne
+  demande plus à l'utilisateur d'ouvrir l'application avant d'avoir essayé.
+- Le skill `roblox-blender` suit la même règle et rétablit la connexion du
+  plugin avec `roblox_asset action:login` avant de solliciter l'utilisateur.
+- L'icône de la barre des tâches ne clignote plus en rouge/orange à l'arrivée
+  d'une notification : le clignotement Windows est annulé juste après
+  l'affichage, puis aux échéances suivantes et au retour au premier plan.
+- La notification reste affichée et sonore ; seule la demande d'attention de
+  la barre des tâches est retirée.
+
 ## 1.26.2 — Relance complète après un refus d'exécuter les outils
 
 - Un refus qui mentionne le catalogue d'outils, un agent local ou le fait

@@ -129,6 +129,36 @@ test("every agent prompt notifies even when the window is focused", () => {
     }
 });
 
+test("une notification n’entraîne pas le clignotement rouge de la barre des tâches", () => {
+    const Notification = createNotificationClass();
+    const flashes = [];
+    const window = {
+        isDestroyed: () => false,
+        isFocused: () => true,
+        flashFrame: value => flashes.push(value)
+    };
+
+    assert.equal(showPromptNotification({
+        Notification,
+        window,
+        prompt: { kind: "confirm", question: "Autoriser la commande ?" }
+    }), true);
+    assert.deepEqual(flashes, [false]);
+});
+
+test("une fenêtre sans flashFrame ne fait pas échouer la notification", () => {
+    const Notification = createNotificationClass();
+    const window = { isDestroyed: () => false, isFocused: () => true };
+    assert.equal(showTaskNotification({
+        Notification,
+        window,
+        title: "Test",
+        outcome: "success",
+        force: true
+    }), true);
+    assert.equal(Notification.last.shown, true);
+});
+
 test("a long question is shortened in the notification body", () => {
     const Notification = createNotificationClass();
     const inactiveWindow = { isDestroyed: () => false, isFocused: () => false };

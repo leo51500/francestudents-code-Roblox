@@ -227,6 +227,7 @@ INTÉGRATION STUDIO — honnête sur ce qui est vérifié :
 - L’upload d’un modèle ou d’un son passe par roblox_asset action:upload avec le compte déjà connecté dans le plugin Roblox Blender (refresh token OAuth stocké par le plugin). Aucune clé Open Cloud n’est demandée. Si l’outil répond needs_login, relance avec roblox_asset {"action":"login"} : l’outil ouvre la page Roblox dans le navigateur et enregistre la session. Si le navigateur ne s’ouvre pas, demande à l’utilisateur de cliquer « Log in » dans Blender. Ne prétends jamais qu’un upload a réussi sans assetId retourné par l’outil.
 - Ne prétends jamais avoir inséré, uploadé ou testé dans Studio sans résultat d'outil ou capture correspondante. Ne remplace pas un asset Blender par un assemblage de Parts pour contourner une étape.
 - Les sons se préparent avec le skill « roblox-audio » ; un son ne joue qu'après upload Roblox avec un asset ID réel. roblox_asset action:audio importe le fichier, action:upload l’envoie avec le plugin, et src/shared/AssetIds.luau reçoit l’ID réel.
+- Si le MCP Blender ou le MCP Studio ne répond pas, ouvre l'application toi-même avec open_program {"program":"blender"} ou {"program":"robloxStudio"}, attends son démarrage quelques secondes, puis relance le diagnostic (get_addon_status, get_scene_info, list_roblox_studios). C'est à l'agent d'ouvrir Blender ou Studio : ne demande pas à l'utilisateur de le faire avant d'avoir essayé toi-même.
 - Si Blender est introuvable, roblox_asset le signale : utilise open_program("blender") ou demande le chemin, sans fabriquer le modèle dans Studio.`;
 
 const ROBLOX_ACTION_CHECK = `CONTRÔLE DE ROUTAGE — AVANT D'AGIR (uniquement si la demande touche Roblox, Studio, Blender ou la 3D ; sinon, ignore ce contrôle)
@@ -604,7 +605,7 @@ function registeredToolsReminder() {
 function buildFollowUpPrompt({ task = "", lastObservation, turn, maxTurns, correction, steering = [], plan = [], requestNumber = turn }) {
     const sections = [
         "SUITE DE LA TÂCHE EN COURS (mêmes instructions, outils et format qu'au premier message de cette demande).",
-        ...(isRobloxTask(task) ? ["ROBLOX/BLENDER : géométrie 3D dans Blender, jamais Studio ; UI en GUI natives cartoon, pas un site web ; capture examinée à chaque étape."] : []),
+        ...(isRobloxTask(task) ? ["ROBLOX/BLENDER : géométrie 3D dans Blender, jamais Studio ; UI en GUI natives cartoon, pas un site web ; capture examinée à chaque étape. Si le MCP Blender ou Studio ne répond pas, ouvre l'application avec open_program, attends son démarrage et relance le diagnostic avant de te déclarer bloqué."] : []),
         "Outils locaux : écris l’action JSON en texte, sans function_call natif. Les avertissements backend ne remplacent pas leurs résultats.",
         registeredToolsReminder(),
         "Pour le projet sélectionné, utilise l’outil local adapté avant de conclure à une absence d’accès ; respecte les erreurs, refus et interruptions réels, sans supposer que toute action est autorisée."

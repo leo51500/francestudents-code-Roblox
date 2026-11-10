@@ -78,16 +78,27 @@ roblox_asset {"action":"import","path":"C:/Users/moi/Downloads/chest.glb","id":"
   l'inventaire du créateur : demande confirmation si l'utilisateur n'a pas demandé
   clairement « importe / publie / upload ».
 - **Ne demande jamais d'identifiants Roblox.** Le plugin utilise une connexion
-  OAuth dans le navigateur. Si la session n'est pas ouverte, demande à
+  OAuth dans le navigateur. Si la session n'est pas ouverte, lance
+  `roblox_asset {"action":"login"}` : l'outil ouvre la page Roblox et enregistre
+  la session. Si le navigateur ne s'ouvre pas, alors seulement, demande à
   l'utilisateur de cliquer sur « Log in » dans Blender. La clé Open Cloud reste
   une option (`provider:"opencloud"`) : ne l'écris jamais dans le projet et ne
   la répète jamais dans une réponse.
 
 ## 2. Diagnostic avant d'agir
 
+C'est à l'agent d'ouvrir les applications, pas à l'utilisateur. Avant de
+conclure qu'un MCP est indisponible, ouvre le programme avec
+`open_program` (`"blender"` ou `"robloxStudio"`), attends quelques secondes,
+puis relance le diagnostic. Ne demande à l'utilisateur d'ouvrir Blender ou
+Studio que si le programme reste introuvable.
+
 1. Vérifie le MCP Blender :
    - `get_addon_status` : version de Blender, addon MCP connecté.
    - `get_scene_info` : objets, sélection, unités, santé des meshes.
+   - Si le MCP ne répond pas : `open_program {"program":"blender"}`, attends le
+     démarrage, puis relance `get_addon_status`. Si Blender reste introuvable,
+     demande son chemin ; ne fabrique pas le modèle dans Studio.
 2. Vérifie le plugin Roblox dans Blender :
    ```python
    import bpy
@@ -98,13 +109,16 @@ roblox_asset {"action":"import","path":"C:/Users/moi/Downloads/chest.glb","id":"
    Si `rbx.upload` manque : le plugin `Upload to Roblox` n'est pas installé.
    Explique l'installation depuis
    <https://github.com/Roblox/roblox-blender-plugin/releases> et arrête-toi.
-   Si `is_logged_in` est faux : demande à l'utilisateur de se connecter via
-   `N` > onglet `Roblox` > `Log in`, puis reprends. Ne continue pas sans login.
+   Si `is_logged_in` est faux : lance `roblox_asset {"action":"login"}` toi-même.
+   Si le navigateur ne s'ouvre pas, demande alors à l'utilisateur de se connecter
+   via `N` > onglet `Roblox` > `Log in`, puis reprends. Ne continue pas sans login.
 3. Vérifie le MCP Roblox Studio : `list_roblox_studios`. S'il n'y a aucune
-   instance, demande à l'utilisateur d'ouvrir le jeu dans Studio. Ne prétends
-   jamais avoir inséré un objet sans résultat d'outil.
-4. Si un des deux MCP manque, indique précisément lequel et propose
-   `docs/roblox-blender.md`. Ne contourne pas le pipeline.
+   instance : `open_program {"program":"robloxStudio"}`, attends le démarrage,
+   puis relance `list_roblox_studios`. Ne prétends jamais avoir inséré un objet
+   sans résultat d'outil.
+4. Si un des deux MCP manque malgré l'ouverture de l'application, indique
+   précisément lequel et propose `docs/roblox-blender.md`. Ne contourne pas le
+   pipeline.
 
 ## 3. Cadrage du modèle
 
