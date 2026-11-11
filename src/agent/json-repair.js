@@ -194,10 +194,11 @@ const CAPABILITY_REFUSAL_PATTERNS = [
     /je n[’']ai (?:pas |aucun |plus |donc pas )?(?:acc[èe]s|d[’']acc[èe]s)/i,
     /je n[’']ai (?:pas|aucun) (?:de |le )?moyen/i,
     /je ne (?:peux|puis) (?:pas |donc pas |malheureusement pas )?(?:effectuer|acc[ée]der|ex[ée]cuter|lancer|lire|modifier|pousser|publier|v[ée]rifier|commit|c[ée]er|construire|g[ée]n[ée]rer|fabriquer|mod[ée]liser|produire|d[ée]velopper)/i,
-    /depuis cette (?:conversation|session|interface|discussion)|from this (?:chat|conversation|session)/i,
+    /depuis cette (?:conversation|session|interface|discussion)|dans (?:le|ce|cette) (?:chat|conversation)|from this (?:chat|conversation|session)/i,
     /(?:session|environnement|session .{0,40}) disposant/i,
     /outils? (?:locaux|local|de l[’']ide|de fichiers)|local tools?/i,
     /aucune? [^.]{0,40}(?:commit|push|publication|modification|fichier|action|commande)[^.]{0,80}n[’']a (?:été |pas été )?(?:effectu|modifi|ex[ée]cut|lanc|cré)/i,
+    /aucun[^.]{0,90}n[’']est établi/i,
     /(?:écrire|envoyer|renvoyer)[^.]{0,60}(?:objet json|du json)[^.]{0,80}(?:ne (?:me )?(?:permet|garantit)|pas garanti|sans garantie)/i,
     /\bi (?:don[’']t|do not|cannot|can[’']t) (?:have )?(?:direct )?access/i,
     /no access to (?:the |your )?(?:repo|repository|file|local|tool|project)/i
@@ -221,7 +222,10 @@ const GAME_REFUSAL_PATTERNS = [
     /ni modifi[ée][^.]{0,80}ni ex[ée]cut[ée][^.]{0,80}ni (?:construit|test[ée]|build)/i,
     /(?:pas|ne pas|impossible de) (?:pouvoir )?ex[ée]cuter[^.]{0,80}(?:catalogue|outils?)[^.]{0,50}(?:local|json)/i,
     /objets? json[^.]{0,100}pr[ée]sent[ée]s? comme (?:des )?appels? d[’']outils/i,
-    /(?:transmets|partage|colle|envoie|fournis)[^.]{0,80}contenu[^.]{0,140}(?:\.luau|\.json|\.js|\.ts|src[\\/]|game\.|fichiers? du projet)/i
+    /(?:transmets|partage|colle|envoie|fournis)[^.]{0,80}contenu[^.]{0,140}(?:\.luau|\.json|\.js|\.ts|src[\\/]|game\.|fichiers? du projet)/i,
+    /(?:mais )?pas (?:ex[ée]cuter|effectuer|lancer)[^.]{0,60}(?:actions? locales?|actions de ton ide|outils? locaux)/i,
+    /(?:demande|partage|colle|envoie|fournis)[^.]{0,140}(?:fichiers?|scripts?|code)[^.]{0,60}(?:à|a) (?:copier|coller)/i,
+    /(?:partage|colle|envoie|fournis)[^.]{0,80}(?:scripts?|fichiers?)[^.]{0,50}(?:compl[ée]ter|corriger|remplir)/i
 ];
 
 /**

@@ -116,6 +116,12 @@ Je peux rédiger dans le chat les fichiers Luau. En revanche, aucune création d
     assert.equal(looksLikeCapabilityRefusal("Je peux développer le code Luau et les interfaces de ce jeu dans la conversation, mais les outils locaux roblox_game, roblox_asset et MCP décrits dans ton message ne sont pas disponibles parmi mes outils effectifs. Je n'ai donc ni modifié le projet, ni exécuté Blender, ni construit ou testé une place Roblox."), true);
     assert.equal(looksLikeCapabilityRefusal("Le résultat transmis décrit les paramètres de upload_image ; il ne confirme ni une connexion à Studio ni un accès aux fichiers. Je peux analyser et corriger le code partagé ici, mais pas exécuter ce catalogue local par des objets JSON présentés comme des appels d'outils."), true);
     assert.equal(looksLikeCapabilityRefusal("Pour poursuivre la correction du projet existant, partage le contenu de src/server/services/CityService.luau et de src/server/services/CityHazardService.luau. L'arborescence seule ne permet pas de vérifier leur fonctionnement. Aucun fichier n'a été modifié ni testé."), true);
+    const ideRefusal = `Le résultat fourni décrit le schéma de get_addon_status ; il ne prouve pas une connexion à Blender. Aucun projet créé, modèle exporté ou build réussi n'est établi par les résultats transmis.
+
+Je peux écrire et corriger le code du jeu dans le chat, mais pas exécuter les actions locales de ton IDE. Pour poursuivre concrètement, partage les scripts à compléter ou demande un premier ensemble de fichiers Luau à copier : progression des cinq quartiers, batteries, ascenseur collectif et événements du sol.`;
+    assert.equal(looksLikeCapabilityRefusal(ideRefusal), true);
+    assert.equal(looksLikeCapabilityRefusal("Je peux écrire et corriger le code du jeu dans le chat, mais pas exécuter les actions locales de ton IDE."), true);
+    assert.equal(looksLikeCapabilityRefusal("Partage les scripts à compléter pour que je puisse les corriger."), true);
 });
 
 test("un compte rendu normal ou une limite externe n'est pas pris pour un refus", () => {
@@ -124,5 +130,6 @@ test("un compte rendu normal ou une limite externe n'est pas pris pour un refus"
     assert.equal(looksLikeCapabilityRefusal("Je ne peux pas vérifier la pièce jointe avec les outils locaux."), false);
     assert.equal(looksLikeCapabilityRefusal("J'ai lu src/app.js avec read_file et corrigé deux lignes."), false);
     assert.equal(looksLikeCapabilityRefusal("Partage le contenu de ton fichier de configuration externe si tu veux que je l'adapte."), false);
+    assert.equal(looksLikeCapabilityRefusal("J'ai corrigé les scripts à copier puis lancé le build ; les cinq quartiers sont prêts."), false);
     assert.equal(looksLikeCapabilityRefusal('{"type":"tool","name":"read_file"}'), false);
 });

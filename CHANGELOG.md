@@ -1,5 +1,13 @@
 # Journal des modifications
 
+## 1.26.7 — Refus « actions locales de ton IDE » reconnu
+
+- Les refus « pas exécuter les actions locales de ton IDE », « partage les
+  scripts à compléter » et « demande un premier ensemble de fichiers à copier »
+  déclenchent la relance dans un nouveau fil.
+- « Aucun projet créé… n'est établi par les résultats transmis » et « dans le
+  chat » comptent aussi comme indices de refus.
+
 ## 1.26.6 — Refus après un schéma MCP et lecture des fichiers
 
 - Les refus « pas exécuter ce catalogue local par des objets JSON présentés

@@ -1,6 +1,11 @@
 "use strict";
 // Keep only the notes for the current project version.
 const releases={
+    "1.26.7":{headline:"Les refus qui parlent d’« actions locales de ton IDE » sont relancés.",items:[
+        {icon:"chat",title:"Nouvelles formulations",text:"« Pas exécuter les actions locales de ton IDE » et « partage les scripts à compléter » déclenchent la relance dans un nouveau fil."},
+        {icon:"tools",title:"Collage refusé",text:"L’agent ne te demande plus de copier les fichiers du projet : il les lit avec read_file."},
+        {icon:"tools",title:"Résultats vérifiés",text:"« Aucun projet créé… n’est établi » est traité comme un refus, pas comme un compte rendu."}
+    ]},
     "1.26.6":{headline:"Refus après un schéma MCP : l’agent relance et lit les fichiers lui-même.",items:[
         {icon:"chat",title:"Refus après describe reconnu",text:"Quand le modèle dit qu’il ne peut pas exécuter le catalogue local par des objets JSON, l’IDE relance dans un nouveau fil."},
         {icon:"tools",title:"Lecture au lieu du collage",text:"L’agent lit les fichiers du projet avec read_file et ne te demande plus de coller leur contenu."},
